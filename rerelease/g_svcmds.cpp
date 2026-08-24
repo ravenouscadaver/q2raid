@@ -2,6 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 
 #include "g_local.h"
+#include "raid_director.h"
 
 void Svcmd_Test_f()
 {
@@ -297,6 +298,14 @@ void ServerCommand()
 		SVCmd_WriteIP_f();
 	else if (Q_strcasecmp(cmd, "nextmap") == 0)
 		SVCmd_NextMap_f();
+	else if (Q_strcasecmp(cmd, "raid_load") == 0)
+		RaidDirector_Load(gi.argv(2));
+	else if (Q_strcasecmp(cmd, "raid_reload") == 0)
+		RaidDirector_Reload();
+	else if (Q_strcasecmp(cmd, "raid_dump") == 0)
+		RaidDirector_Dump();
+	else if (Q_strcasecmp(cmd, "raid_set_state") == 0)
+		RaidDirector_SetState(gi.argv(2));
 	else
 		gi.LocClient_Print(nullptr, PRINT_HIGH, "Unknown server command \"{}\"\n", cmd);
 }

@@ -3,6 +3,7 @@
 
 #include "g_local.h"
 #include "bots/bot_includes.h"
+#include "raid_director.h"
 
 CHECK_GCLIENT_INTEGRITY;
 CHECK_EDICT_INTEGRITY;
@@ -219,6 +220,7 @@ void InitGame()
 	gi.Com_Print("==== InitGame ====\n");
 
 	InitSave();
+	RaidDirector_Init();
 
 	// seed RNG
 	mt_rand.seed((uint32_t) std::chrono::system_clock::now().time_since_epoch().count());
@@ -385,6 +387,7 @@ void InitGame()
 void ShutdownGame()
 {
 	gi.Com_Print("==== ShutdownGame ====\n");
+	RaidDirector_Shutdown();
 
 	gi.FreeTags(TAG_LEVEL);
 	gi.FreeTags(TAG_GAME);
@@ -829,6 +832,7 @@ inline void G_RunFrame_(bool main_loop)
 	Bot_UpdateDebug();
 
 	level.time += FRAME_TIME_MS;
+	RaidDirector_RunFrame();
 
 	if (level.intermission_fading)
 	{

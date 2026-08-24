@@ -2,6 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 
 #include "g_local.h"
+#include "raid_director.h"
 
 struct spawn_t
 {
@@ -1168,6 +1169,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 	globals.server_flags &= SERVER_FLAG_LOADING;
 
 	Q_strlcpy(level.mapname, mapname, sizeof(level.mapname));
+	RaidDirector_ResetForMap(level.mapname);
 	// Paril: fixes a bug where autosaves will start you at
 	// the wrong spawnpoint if they happen to be non-empty
 	// (mine2 -> mine3)
@@ -1272,6 +1274,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 	// ROGUE
 
 	setup_shadow_lights();
+	RaidDirector_OnMapReady();
 }
 
 //===================================================================
