@@ -16,6 +16,12 @@
     "party": {
       "enter": [
         {
+          "op": "set_field",
+          "target": "door",
+          "field": "wait",
+          "value": -1
+        },
+        {
           "op": "fire_target",
           "target": "door"
         },

@@ -123,6 +123,29 @@ void RaidDirector_DisableEntity(const std::string &targetname)
         gi.Com_PrintFmt("[raid] disable target '{}' not found\n", targetname);
 }
 
+void RaidDirector_SetField(const std::string &targetname, const std::string &field, const Json::Value &value)
+{
+    edict_t *entity = nullptr;
+    int matches = 0;
+    while ((entity = G_FindByString<&edict_t::targetname>(entity, targetname.c_str())))
+    {
+        if (field == "wait" && value.isNumeric())
+        {
+            entity->wait = value.asFloat();
+            entity->moveinfo.wait = entity->wait;
+            ++matches;
+        }
+        else
+        {
+            gi.Com_PrintFmt("[raid] unsupported field write '{}.{}'\n", targetname, field);
+            return;
+        }
+    }
+
+    if (!matches)
+        gi.Com_PrintFmt("[raid] field target '{}' not found\n", targetname);
+}
+
 void RaidDirector_ExecuteEnter(const std::string &state_name, edict_t *activator)
 {
     const Json::Value &operations = director.document["states"][state_name]["enter"];
@@ -139,6 +162,10 @@ void RaidDirector_ExecuteEnter(const std::string &state_name, edict_t *activator
         else if (op == "disable_entity")
         {
             RaidDirector_DisableEntity(operation.get("target", "").asString());
+        }
+        else if (op == "set_field")
+        {
+            RaidDirector_SetField(operation.get("target", "").asString(), operation.get("field", "").asString(), operation["value"]);
         }
         else if (op == "color_cycle")
         {
