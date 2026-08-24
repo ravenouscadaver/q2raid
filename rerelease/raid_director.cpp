@@ -4,7 +4,7 @@
 #include "g_local.h"
 #include "raid_director.h"
 
-#include "jsoncpp/json/json.h"
+#include "json/json.h"
 
 #include <filesystem>
 #include <fstream>
