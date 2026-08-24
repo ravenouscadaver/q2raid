@@ -22,6 +22,7 @@ jobs:
       - name: Install dependencies
         shell: pwsh
         run: |
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" integrate install
           & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
             --triplet x64-windows-static `
             --x-manifest-root="$env:GITHUB_WORKSPACE\rerelease"
@@ -43,4 +44,3 @@ jobs:
             game_x64.dll
             game_x64.pdb
           if-no-files-found: error
-
