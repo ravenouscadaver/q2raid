@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "json/json-forwards.h"
+#include "json/forwards.h"
 
 // Server-authoritative raid encounter coordinator. There is deliberately one
 // runtime instance in the game DLL; clients only receive its normal replicated
