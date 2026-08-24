@@ -77,11 +77,11 @@ void RaidDirector_PostMessage(edict_t *activator, const std::string &message, bo
     if (broadcast)
     {
         for (edict_t *player : active_players())
-            gi.LocCenter_Print(player, "{}", message);
+            gi.LocCenter_Print(player, "{}", message.c_str());
     }
     else if (activator && activator->client)
     {
-        gi.LocCenter_Print(activator, "{}", message);
+        gi.LocCenter_Print(activator, "{}", message.c_str());
     }
 }
 
