@@ -23,9 +23,6 @@ jobs:
         shell: pwsh
         run: |
           & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" integrate install
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
-            --triplet x64-windows-static `
-            --x-manifest-root="$env:GITHUB_WORKSPACE\rerelease"
 
       - name: Build release DLL
         shell: pwsh
