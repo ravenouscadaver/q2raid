@@ -5,6 +5,8 @@
 
 #include "json/forwards.h"
 
+struct edict_t;
+
 // Server-authoritative raid encounter coordinator. There is deliberately one
 // runtime instance in the game DLL; clients only receive its normal replicated
 // gameplay outputs.
@@ -13,6 +15,7 @@ void RaidDirector_Shutdown();
 void RaidDirector_ResetForMap(const char *mapname);
 void RaidDirector_OnMapReady();
 void RaidDirector_RunFrame();
+void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t *activator);
 
 bool RaidDirector_Load(const char *path);
 bool RaidDirector_Reload();
