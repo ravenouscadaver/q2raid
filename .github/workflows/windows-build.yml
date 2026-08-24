@@ -23,6 +23,10 @@ jobs:
         shell: pwsh
         run: |
           & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" integrate install
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+            --triplet x64-windows-static `
+            --x-manifest-root="$env:GITHUB_WORKSPACE\rerelease" `
+            --x-install-root="$env:GITHUB_WORKSPACE\vcpkg_installed"
 
       - name: Build release DLL
         shell: pwsh
@@ -31,7 +35,9 @@ jobs:
             /m `
             /p:Configuration=Release `
             /p:Platform=x64 `
-            /p:VcpkgTriplet=x64-windows-static
+            /p:VcpkgEnableManifest=false `
+            /p:VcpkgTriplet=x64-windows-static `
+            /p:VcpkgInstalledDir="$env:GITHUB_WORKSPACE\vcpkg_installed\"
 
       - name: Upload game DLL
         uses: actions/upload-artifact@v4
