@@ -69,6 +69,7 @@ enum
 	CONFIG_HEALTH_BAR_NAME, // active health bar name
 
 	CONFIG_STORY,
+	CONFIG_RAID_MESSAGE,
 
 	CONFIG_LAST
 };
@@ -260,6 +261,12 @@ enum player_stat_t
 	// q2raid per-player status HUD
 	STAT_RAID_STATUS,
 	STAT_RAID_STATUS_TIME,
+	STAT_RAID_STATUS_2,
+	STAT_RAID_STATUS_TIME_2,
+	STAT_RAID_STATUS_3,
+	STAT_RAID_STATUS_TIME_3,
+	STAT_RAID_STATUS_4,
+	STAT_RAID_STATUS_TIME_4,
 
 	// don't use; just for verification
     STAT_LAST

@@ -1732,14 +1732,33 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
     {
         CG_ExecuteLayoutString(cgi.get_configstring(CS_STATUSBAR), hud_vrect, hud_safe, scale, playernum, ps);
 
-        if (ps->stats[STAT_RAID_STATUS] == 1)
+        constexpr std::array<player_stat_t, 4> status_stats = {
+            STAT_RAID_STATUS, STAT_RAID_STATUS_2, STAT_RAID_STATUS_3, STAT_RAID_STATUS_4
+        };
+        constexpr std::array<player_stat_t, 4> status_time_stats = {
+            STAT_RAID_STATUS_TIME, STAT_RAID_STATUS_TIME_2, STAT_RAID_STATUS_TIME_3, STAT_RAID_STATUS_TIME_4
+        };
+        int status_row = 0;
+        for (size_t slot = 0; slot < status_stats.size(); ++slot)
         {
-            const std::string status = fmt::format("VOLATILE  {:02}", std::max<int16_t>(0, ps->stats[STAT_RAID_STATUS_TIME]));
+            const int code = ps->stats[status_stats[slot]];
+            if (!code)
+                continue;
+            const char *label = code == 1 ? "VOLATILE" : code == 2 ? "DOOMSDAY" : "STATUS";
+            const std::string status = fmt::format("{}  {:02}", label, std::max<int16_t>(0, ps->stats[status_time_stats[slot]]));
             cgi.SCR_DrawFontString(status.c_str(),
                 (hud_vrect.x + (hud_vrect.width / 2)) * scale,
-                (hud_vrect.y + hud_vrect.height - 52) * scale,
-                scale, { 255, 196, 64, 255 }, true, text_align_t::CENTER);
+                (hud_vrect.y + hud_vrect.height - 52 - (status_row * 12)) * scale,
+                scale, code == 1 ? rgba_t{ 255, 196, 64, 255 } : rgba_t{ 255, 64, 64, 255 }, true, text_align_t::CENTER);
+            ++status_row;
         }
+
+        const char *raid_message = cgi.get_configstring(CONFIG_RAID_MESSAGE);
+        if (raid_message && *raid_message)
+            cgi.SCR_DrawFontString(raid_message,
+                (hud_vrect.x + 100) * scale,
+                (hud_vrect.y + hud_vrect.height - 76) * scale,
+                scale, rgba_white, true, text_align_t::CENTER);
     }
 
     // draw centerprint string

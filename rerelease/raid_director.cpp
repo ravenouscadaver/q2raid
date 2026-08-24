@@ -43,6 +43,7 @@ struct raid_player_status_t
     std::string name;
     gtime_t     expires_at;
     std::string expire_message;
+    Json::Value on_expire;
 };
 
 raid_director_runtime_t director;
@@ -51,13 +52,37 @@ std::vector<raid_player_status_t> player_statuses;
 cvar_t *raid_script = nullptr;
 cvar_t *raid_script_root = nullptr;
 cvar_t *raid_autoload = nullptr;
+gtime_t raid_message_expires;
+int raid_message_priority = 0;
+
+void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::string &context, edict_t *activator);
+
+constexpr std::array<player_stat_t, 4> raid_status_stats = {
+    STAT_RAID_STATUS, STAT_RAID_STATUS_2, STAT_RAID_STATUS_3, STAT_RAID_STATUS_4
+};
+constexpr std::array<player_stat_t, 4> raid_status_time_stats = {
+    STAT_RAID_STATUS_TIME, STAT_RAID_STATUS_TIME_2, STAT_RAID_STATUS_TIME_3, STAT_RAID_STATUS_TIME_4
+};
+
+void RaidDirector_ClearStatusHUD(edict_t *player)
+{
+    if (!player || !player->client)
+        return;
+    for (size_t slot = 0; slot < raid_status_stats.size(); ++slot)
+    {
+        player->client->ps.stats[raid_status_stats[slot]] = 0;
+        player->client->ps.stats[raid_status_time_stats[slot]] = 0;
+    }
+}
 
 void RaidDirector_ClearDocument()
 {
+    if (director.loaded && director.document["states"].isMember(director.state))
+        RaidDirector_ExecuteOperations(director.document["states"][director.state]["exit"], fmt::format("state '{}' exit", director.state), nullptr);
+
     for (edict_t *player : active_players())
     {
-        player->client->ps.stats[STAT_RAID_STATUS] = 0;
-        player->client->ps.stats[STAT_RAID_STATUS_TIME] = 0;
+        RaidDirector_ClearStatusHUD(player);
     }
 
     director.loaded = false;
@@ -67,6 +92,10 @@ void RaidDirector_ClearDocument()
     director.document = Json::Value();
     color_cycles.clear();
     player_statuses.clear();
+    raid_message_expires = 0_ms;
+    raid_message_priority = 0;
+    if (director.initialized)
+        gi.configstring(CONFIG_RAID_MESSAGE, "");
 }
 
 void RaidDirector_PostMessage(edict_t *activator, const std::string &message, bool broadcast)
@@ -85,9 +114,25 @@ void RaidDirector_PostMessage(edict_t *activator, const std::string &message, bo
     }
 }
 
+void RaidDirector_PostEncounterMessage(const Json::Value &operation)
+{
+    const std::string text = operation.get("text", "").asString();
+    const int priority = operation.get("priority", 0).asInt();
+    if (text.empty() || (raid_message_expires > level.time && priority < raid_message_priority))
+        return;
+
+    gi.configstring(CONFIG_RAID_MESSAGE, text.c_str());
+    raid_message_priority = priority;
+    raid_message_expires = level.time + gtime_t::from_sec(std::max(0.1f, operation.get("duration", 5.0f).asFloat()));
+}
+
 int RaidDirector_StatusCode(const std::string &name)
 {
-    return Q_strcasecmp(name.c_str(), "volatile") == 0 ? 1 : 0;
+    if (Q_strcasecmp(name.c_str(), "volatile") == 0)
+        return 1;
+    if (Q_strcasecmp(name.c_str(), "doomsday") == 0)
+        return 2;
+    return 0;
 }
 
 void RaidDirector_ClearPlayerStatus(edict_t *player, const std::string &name)
@@ -99,8 +144,6 @@ void RaidDirector_ClearPlayerStatus(edict_t *player, const std::string &name)
         [player, &name](const raid_player_status_t &status) {
             return status.entity_number == player->s.number && (name.empty() || Q_strcasecmp(status.name.c_str(), name.c_str()) == 0);
         }), player_statuses.end());
-    player->client->ps.stats[STAT_RAID_STATUS] = 0;
-    player->client->ps.stats[STAT_RAID_STATUS_TIME] = 0;
 }
 
 void RaidDirector_ApplyPlayerStatus(edict_t *player, const Json::Value &operation)
@@ -119,12 +162,27 @@ void RaidDirector_ApplyPlayerStatus(edict_t *player, const Json::Value &operatio
         return;
     }
 
-    RaidDirector_ClearPlayerStatus(player, name);
     const float duration = std::max(0.1f, operation.get("duration", 15.0f).asFloat());
+    const std::string policy = operation.get("stack_policy", "refresh").asString();
+    auto existing = std::find_if(player_statuses.begin(), player_statuses.end(), [player, &name](const raid_player_status_t &status) {
+        return status.entity_number == player->s.number && Q_strcasecmp(status.name.c_str(), name.c_str()) == 0;
+    });
+    if (policy == "ignore" && existing != player_statuses.end())
+        return;
+    if (policy == "extend" && existing != player_statuses.end())
+    {
+        existing->expires_at += gtime_t::from_sec(duration);
+        existing->expire_message = operation.get("expire_message", existing->expire_message).asString();
+        existing->on_expire = operation["on_expire"];
+        return;
+    }
+    if (policy == "replace")
+        RaidDirector_ClearPlayerStatus(player, "");
+    else if (policy != "stack")
+        RaidDirector_ClearPlayerStatus(player, name);
+
     player_statuses.push_back({ player->s.number, player->spawn_count, name,
-        level.time + gtime_t::from_sec(duration), operation.get("expire_message", "").asString() });
-    player->client->ps.stats[STAT_RAID_STATUS] = code;
-    player->client->ps.stats[STAT_RAID_STATUS_TIME] = static_cast<int16_t>(std::ceil(duration));
+        level.time + gtime_t::from_sec(duration), operation.get("expire_message", "").asString(), operation["on_expire"] });
 }
 
 int32_t RaidDirector_PackColor(const rgba_t &color)
@@ -245,6 +303,10 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
         {
             RaidDirector_PostMessage(activator, operation.get("text", "").asString(), operation.get("scope", "activator").asString() == "all");
         }
+        else if (op == "post_encounter_message")
+        {
+            RaidDirector_PostEncounterMessage(operation);
+        }
         else if (op == "apply_status")
         {
             RaidDirector_ApplyPlayerStatus(activator, operation);
@@ -252,6 +314,41 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
         else if (op == "clear_status")
         {
             RaidDirector_ClearPlayerStatus(activator, operation.get("status", "").asString());
+        }
+        else if (op == "damage_player")
+        {
+            if (activator && activator->client)
+            {
+                const int damage = std::max(0, operation.get("amount", 0).asInt());
+                T_Damage(activator, activator, activator, vec3_origin, activator->s.origin, vec3_origin,
+                    damage, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
+            }
+        }
+        else if (op == "kill_player")
+        {
+            if (activator && activator->client)
+                T_Damage(activator, activator, activator, vec3_origin, activator->s.origin, vec3_origin,
+                    100000, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
+        }
+        else if (op == "screen_shake")
+        {
+            const float duration = std::max(0.0f, operation.get("duration", 1.0f).asFloat());
+            const bool all = operation.get("scope", "activator").asString() == "all";
+            for (edict_t *player : active_players())
+                if (all || player == activator)
+                    player->client->quake_time = std::max(player->client->quake_time, level.time + gtime_t::from_sec(duration));
+        }
+        else if (op == "play_sound")
+        {
+            const std::string sound = operation.get("sound", "").asString();
+            const bool all = operation.get("scope", "activator").asString() == "all";
+            if (!sound.empty())
+            {
+                const int sound_index = gi.soundindex(sound.c_str());
+                for (edict_t *player : active_players())
+                    if (all || player == activator)
+                        gi.sound(player, CHAN_AUTO, sound_index, 1.0f, ATTN_NONE, 0.0f);
+            }
         }
         else if (op == "color_cycle")
         {
@@ -287,6 +384,69 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
 void RaidDirector_ExecuteEnter(const std::string &state_name, edict_t *activator)
 {
     RaidDirector_ExecuteOperations(director.document["states"][state_name]["enter"], fmt::format("state '{}'", state_name), activator);
+}
+
+bool RaidDirector_ValidateOperations(const Json::Value &operations, const std::string &context, std::string &error)
+{
+    if (!operations.isArray())
+    {
+        error = fmt::format("{} must be an array", context);
+        return false;
+    }
+
+    static const std::vector<std::string> known_ops = {
+        "fire_target", "disable_entity", "set_field", "post_message", "post_encounter_message",
+        "apply_status", "clear_status", "damage_player", "kill_player", "screen_shake",
+        "play_sound", "color_cycle"
+    };
+
+    for (Json::ArrayIndex i = 0; i < operations.size(); ++i)
+    {
+        const Json::Value &operation = operations[i];
+        if (!operation.isObject() || !operation["op"].isString())
+        {
+            error = fmt::format("{}[{}] requires a string op", context, i);
+            return false;
+        }
+
+        const std::string op = operation["op"].asString();
+        if (std::find(known_ops.begin(), known_ops.end(), op) == known_ops.end())
+        {
+            error = fmt::format("{}[{}] uses unknown op '{}'", context, i, op);
+            return false;
+        }
+
+        if ((op == "fire_target" || op == "disable_entity" || op == "set_field") &&
+            (!operation["target"].isString() || operation["target"].asString().empty()))
+        {
+            error = fmt::format("{}[{}] op '{}' requires target", context, i, op);
+            return false;
+        }
+        if ((op == "post_message" || op == "post_encounter_message") && !operation["text"].isString())
+        {
+            error = fmt::format("{}[{}] op '{}' requires text", context, i, op);
+            return false;
+        }
+        if ((op == "apply_status" || op == "clear_status") && !operation["status"].isString())
+        {
+            error = fmt::format("{}[{}] op '{}' requires status", context, i, op);
+            return false;
+        }
+        if (op == "play_sound" && !operation["sound"].isString())
+        {
+            error = fmt::format("{}[{}] play_sound requires sound", context, i);
+            return false;
+        }
+        if (op == "color_cycle" && (!operation["targets"].isArray() || !operation["colors"].isArray()))
+        {
+            error = fmt::format("{}[{}] color_cycle requires targets and colors arrays", context, i);
+            return false;
+        }
+        if (op == "apply_status" && operation.isMember("on_expire") &&
+            !RaidDirector_ValidateOperations(operation["on_expire"], fmt::format("{}[{}].on_expire", context, i), error))
+            return false;
+    }
+    return true;
 }
 
 bool RaidDirector_Validate(const Json::Value &root, std::string &error)
@@ -331,23 +491,52 @@ bool RaidDirector_Validate(const Json::Value &root, std::string &error)
             return false;
         }
 
-        if (state.isMember("enter"))
+        if (state.isMember("enter") && !RaidDirector_ValidateOperations(state["enter"], fmt::format("state '{}'.enter", name), error))
+            return false;
+
+        if (state.isMember("exit") && !state["exit"].isArray())
         {
-            for (const Json::Value &operation : state["enter"])
-            {
-                if (!operation.isObject() || !operation.isMember("op") || !operation["op"].isString())
-                {
-                    error = fmt::format("state '{}'.enter operations require a string op", name);
-                    return false;
-                }
-            }
+            error = fmt::format("state '{}'.exit must be an array", name);
+            return false;
         }
+        if (state.isMember("exit") && !RaidDirector_ValidateOperations(state["exit"], fmt::format("state '{}'.exit", name), error))
+            return false;
     }
 
     if (root.isMember("events") && !root["events"].isArray())
     {
         error = "events must be an array";
         return false;
+    }
+
+    if (root.isMember("events"))
+    {
+        for (Json::ArrayIndex i = 0; i < root["events"].size(); ++i)
+        {
+            const Json::Value &event = root["events"][i];
+            if (!event.isObject() || !event["source"].isString() || event["source"].asString().empty())
+            {
+                error = fmt::format("events[{}].source must be a non-empty string", i);
+                return false;
+            }
+            if (event.isMember("signal") && !event["signal"].isString())
+            {
+                error = fmt::format("events[{}].signal must be a string", i);
+                return false;
+            }
+            if (event.isMember("do") && !event["do"].isArray())
+            {
+                error = fmt::format("events[{}].do must be an array", i);
+                return false;
+            }
+            if (event.isMember("do") && !RaidDirector_ValidateOperations(event["do"], fmt::format("events[{}].do", i), error))
+                return false;
+            if (event.isMember("set_state") && (!event["set_state"].isString() || !root["states"].isMember(event["set_state"].asString())))
+            {
+                error = fmt::format("events[{}].set_state references an unknown state", i);
+                return false;
+            }
+        }
     }
 
     return true;
@@ -396,6 +585,13 @@ void RaidDirector_OnMapReady()
 
 void RaidDirector_RunFrame()
 {
+    if (raid_message_expires && raid_message_expires <= level.time)
+    {
+        gi.configstring(CONFIG_RAID_MESSAGE, "");
+        raid_message_expires = 0_ms;
+        raid_message_priority = 0;
+    }
+
     for (raid_color_cycle_t &cycle : color_cycles)
     {
         const float elapsed = std::max(0.0f, (level.time - cycle.started_at).seconds<float>());
@@ -417,10 +613,21 @@ void RaidDirector_RunFrame()
         }
     }
 
+    for (edict_t *player : active_players())
+        RaidDirector_ClearStatusHUD(player);
+
+    struct expired_status_t
+    {
+        edict_t *player;
+        std::string message;
+        Json::Value operations;
+    };
+    std::vector<expired_status_t> expired_statuses;
+
     for (auto it = player_statuses.begin(); it != player_statuses.end();)
     {
         edict_t *player = (it->entity_number > 0 && it->entity_number < globals.num_edicts) ? &g_edicts[it->entity_number] : nullptr;
-        if (!player || !player->inuse || !player->client || player->spawn_count != it->spawn_count)
+        if (!player || !player->inuse || !player->client || player->spawn_count != it->spawn_count || player->health <= 0)
         {
             it = player_statuses.erase(it);
             continue;
@@ -429,16 +636,31 @@ void RaidDirector_RunFrame()
         const float remaining = (it->expires_at - level.time).seconds<float>();
         if (remaining <= 0.0f)
         {
-            player->client->ps.stats[STAT_RAID_STATUS] = 0;
-            player->client->ps.stats[STAT_RAID_STATUS_TIME] = 0;
-            RaidDirector_PostMessage(player, it->expire_message, false);
+            expired_statuses.push_back({ player, it->expire_message, it->on_expire });
             it = player_statuses.erase(it);
             continue;
         }
-
-        player->client->ps.stats[STAT_RAID_STATUS] = RaidDirector_StatusCode(it->name);
-        player->client->ps.stats[STAT_RAID_STATUS_TIME] = static_cast<int16_t>(std::ceil(remaining));
         ++it;
+    }
+
+    for (const expired_status_t &expired : expired_statuses)
+    {
+        RaidDirector_PostMessage(expired.player, expired.message, false);
+        RaidDirector_ExecuteOperations(expired.operations, "status expiry", expired.player);
+    }
+
+    for (const raid_player_status_t &status : player_statuses)
+    {
+        edict_t *player = &g_edicts[status.entity_number];
+        for (size_t slot = 0; slot < raid_status_stats.size(); ++slot)
+        {
+            if (player->client->ps.stats[raid_status_stats[slot]])
+                continue;
+            player->client->ps.stats[raid_status_stats[slot]] = RaidDirector_StatusCode(status.name);
+            player->client->ps.stats[raid_status_time_stats[slot]] = static_cast<int16_t>(
+                std::ceil(std::max(0.0f, (status.expires_at - level.time).seconds<float>())));
+            break;
+        }
     }
 }
 
@@ -471,6 +693,7 @@ void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t
             }
 
             const std::string previous = director.state;
+            RaidDirector_ExecuteOperations(director.document["states"][previous]["exit"], fmt::format("state '{}' exit", previous), activator);
             director.state = next_state;
             color_cycles.clear();
             gi.Com_PrintFmt("[raid] Event '{}:{}': '{}' -> '{}'\n", source->targetname, signal, previous, director.state);
@@ -517,6 +740,7 @@ bool RaidDirector_Load(const char *path)
         return false;
     }
 
+    RaidDirector_ClearDocument();
     director.document = std::move(root);
     director.script_path = path;
     director.encounter_name = director.document.get("encounter", director.mapname).asString();
@@ -562,6 +786,7 @@ bool RaidDirector_SetState(const char *state_name)
     }
 
     const std::string previous = director.state;
+    RaidDirector_ExecuteOperations(director.document["states"][previous]["exit"], fmt::format("state '{}' exit", previous), nullptr);
     director.state = state_name;
     color_cycles.clear();
     gi.Com_PrintFmt("[raid] State: '{}' -> '{}'\n", previous, director.state);
