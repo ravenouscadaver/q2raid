@@ -36,20 +36,95 @@ struct raid_color_cycle_t
     float                    transition_seconds = 0.5f;
 };
 
+struct raid_player_status_t
+{
+    int32_t     entity_number = 0;
+    int32_t     spawn_count = 0;
+    std::string name;
+    gtime_t     expires_at;
+    std::string expire_message;
+};
+
 raid_director_runtime_t director;
 std::vector<raid_color_cycle_t> color_cycles;
+std::vector<raid_player_status_t> player_statuses;
 cvar_t *raid_script = nullptr;
 cvar_t *raid_script_root = nullptr;
 cvar_t *raid_autoload = nullptr;
 
 void RaidDirector_ClearDocument()
 {
+    for (edict_t *player : active_players())
+    {
+        player->client->ps.stats[STAT_RAID_STATUS] = 0;
+        player->client->ps.stats[STAT_RAID_STATUS_TIME] = 0;
+    }
+
     director.loaded = false;
     director.script_path.clear();
     director.encounter_name.clear();
     director.state.clear();
     director.document = Json::Value();
     color_cycles.clear();
+    player_statuses.clear();
+}
+
+void RaidDirector_PostMessage(edict_t *activator, const std::string &message, bool broadcast)
+{
+    if (message.empty())
+        return;
+
+    if (broadcast)
+    {
+        for (edict_t *player : active_players())
+            gi.LocCenter_Print(player, "{}", message);
+    }
+    else if (activator && activator->client)
+    {
+        gi.LocCenter_Print(activator, "{}", message);
+    }
+}
+
+int RaidDirector_StatusCode(const std::string &name)
+{
+    return Q_strcasecmp(name.c_str(), "volatile") == 0 ? 1 : 0;
+}
+
+void RaidDirector_ClearPlayerStatus(edict_t *player, const std::string &name)
+{
+    if (!player || !player->client)
+        return;
+
+    player_statuses.erase(std::remove_if(player_statuses.begin(), player_statuses.end(),
+        [player, &name](const raid_player_status_t &status) {
+            return status.entity_number == player->s.number && (name.empty() || Q_strcasecmp(status.name.c_str(), name.c_str()) == 0);
+        }), player_statuses.end());
+    player->client->ps.stats[STAT_RAID_STATUS] = 0;
+    player->client->ps.stats[STAT_RAID_STATUS_TIME] = 0;
+}
+
+void RaidDirector_ApplyPlayerStatus(edict_t *player, const Json::Value &operation)
+{
+    if (!player || !player->client)
+    {
+        gi.Com_Print("[raid] apply_status requires a player activator\n");
+        return;
+    }
+
+    const std::string name = operation.get("status", "").asString();
+    const int code = RaidDirector_StatusCode(name);
+    if (!code)
+    {
+        gi.Com_PrintFmt("[raid] unknown status '{}'\n", name);
+        return;
+    }
+
+    RaidDirector_ClearPlayerStatus(player, name);
+    const float duration = std::max(0.1f, operation.get("duration", 15.0f).asFloat());
+    player_statuses.push_back({ player->s.number, player->spawn_count, name,
+        level.time + gtime_t::from_sec(duration), operation.get("expire_message", "").asString() });
+    player->client->ps.stats[STAT_RAID_STATUS] = code;
+    player->client->ps.stats[STAT_RAID_STATUS_TIME] = static_cast<int16_t>(std::ceil(duration));
 }
 
 int32_t RaidDirector_PackColor(const rgba_t &color)
@@ -146,9 +221,8 @@ void RaidDirector_SetField(const std::string &targetname, const std::string &fie
         gi.Com_PrintFmt("[raid] field target '{}' not found\n", targetname);
 }
 
-void RaidDirector_ExecuteEnter(const std::string &state_name, edict_t *activator)
+void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::string &context, edict_t *activator)
 {
-    const Json::Value &operations = director.document["states"][state_name]["enter"];
     if (!operations.isArray())
         return;
 
@@ -166,6 +240,18 @@ void RaidDirector_ExecuteEnter(const std::string &state_name, edict_t *activator
         else if (op == "set_field")
         {
             RaidDirector_SetField(operation.get("target", "").asString(), operation.get("field", "").asString(), operation["value"]);
+        }
+        else if (op == "post_message")
+        {
+            RaidDirector_PostMessage(activator, operation.get("text", "").asString(), operation.get("scope", "activator").asString() == "all");
+        }
+        else if (op == "apply_status")
+        {
+            RaidDirector_ApplyPlayerStatus(activator, operation);
+        }
+        else if (op == "clear_status")
+        {
+            RaidDirector_ClearPlayerStatus(activator, operation.get("status", "").asString());
         }
         else if (op == "color_cycle")
         {
@@ -193,9 +279,14 @@ void RaidDirector_ExecuteEnter(const std::string &state_name, edict_t *activator
         }
         else
         {
-            gi.Com_PrintFmt("[raid] Unknown operation '{}' in state '{}'\n", op, state_name);
+            gi.Com_PrintFmt("[raid] Unknown operation '{}' in {}\n", op, context);
         }
     }
+}
+
+void RaidDirector_ExecuteEnter(const std::string &state_name, edict_t *activator)
+{
+    RaidDirector_ExecuteOperations(director.document["states"][state_name]["enter"], fmt::format("state '{}'", state_name), activator);
 }
 
 bool RaidDirector_Validate(const Json::Value &root, std::string &error)
@@ -325,6 +416,30 @@ void RaidDirector_RunFrame()
             });
         }
     }
+
+    for (auto it = player_statuses.begin(); it != player_statuses.end();)
+    {
+        edict_t *player = (it->entity_number > 0 && it->entity_number < globals.num_edicts) ? &g_edicts[it->entity_number] : nullptr;
+        if (!player || !player->inuse || !player->client || player->spawn_count != it->spawn_count)
+        {
+            it = player_statuses.erase(it);
+            continue;
+        }
+
+        const float remaining = (it->expires_at - level.time).seconds<float>();
+        if (remaining <= 0.0f)
+        {
+            player->client->ps.stats[STAT_RAID_STATUS] = 0;
+            player->client->ps.stats[STAT_RAID_STATUS_TIME] = 0;
+            RaidDirector_PostMessage(player, it->expire_message, false);
+            it = player_statuses.erase(it);
+            continue;
+        }
+
+        player->client->ps.stats[STAT_RAID_STATUS] = RaidDirector_StatusCode(it->name);
+        player->client->ps.stats[STAT_RAID_STATUS_TIME] = static_cast<int16_t>(std::ceil(remaining));
+        ++it;
+    }
 }
 
 void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t *activator)
@@ -346,6 +461,7 @@ void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t
             continue;
 
         const std::string next_state = event.get("set_state", "").asString();
+        RaidDirector_ExecuteOperations(event["do"], fmt::format("event '{}:{}'", source->targetname, signal), activator);
         if (!next_state.empty())
         {
             if (!director.document["states"].isMember(next_state))

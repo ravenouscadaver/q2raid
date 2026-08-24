@@ -385,6 +385,19 @@
 	shadowlightresolution(integer) : "Shadow map resolution; leave blank to automatically determine from radius"
 ]
 
+@PointClass size(-8 -8 -8, 8 8 8) color(255 64 255) base(EditorFlags, Target, Targetable) = target_light : "Runtime colored point light" [
+	_color(color255) : "Runtime light color" : "255 255 255"
+	radius(float) : "Runtime light radius" : "150"
+	style(integer) : "Lightstyle index" : "0"
+	speed(float) : "Lightstyle interpolation speed" : "1"
+	spawnflags(Flags) =
+	[
+		1 : "Start On" : 0
+		2 : "No Lerp" : 0
+		4 : "Flicker" : 0
+	]
+]
+
 //
 // player start, deathmatch, coop, deathmatch intermission
 //

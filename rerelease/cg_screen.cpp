@@ -1729,7 +1729,18 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
 
     // draw HUD
     if (!cl_skipHud->integer && !(ps->stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD))
+    {
         CG_ExecuteLayoutString(cgi.get_configstring(CS_STATUSBAR), hud_vrect, hud_safe, scale, playernum, ps);
+
+        if (ps->stats[STAT_RAID_STATUS] == 1)
+        {
+            const std::string status = fmt::format("VOLATILE  {:02}", std::max<int16_t>(0, ps->stats[STAT_RAID_STATUS_TIME]));
+            cgi.SCR_DrawFontString(status.c_str(),
+                (hud_vrect.x + (hud_vrect.width / 2)) * scale,
+                (hud_vrect.y + hud_vrect.height - 52) * scale,
+                scale, { 255, 196, 64, 255 }, true, text_align_t::CENTER);
+        }
+    }
 
     // draw centerprint string
     CG_CheckDrawCenterString(ps, hud_vrect, hud_safe, isplit, scale);

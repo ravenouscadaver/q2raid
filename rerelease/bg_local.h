@@ -257,6 +257,10 @@ enum player_stat_t
 	// [Paril-KEX]
 	STAT_ACTIVE_WEAPON,
 
+	// q2raid per-player status HUD
+	STAT_RAID_STATUS,
+	STAT_RAID_STATUS_TIME,
+
 	// don't use; just for verification
     STAT_LAST
 };
