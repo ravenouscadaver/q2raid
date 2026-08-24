@@ -389,7 +389,7 @@
 // player start, deathmatch, coop, deathmatch intermission
 //
 
-@baseclass base(EditorFlags, Angleable) size(-16 -16 -24, 16 16 32) color(0 255 0) model({ "path": ":models/monsters/insane/tris.md2", "frame":209, "skin":1}) = PlayerClass []
+@baseclass base(EditorFlags, Angleable) size(-16 -16 -24, 16 16 32) color(0 255 0) = PlayerClass []
 
 @PointClass base(PlayerClass) = info_player_start : "Player start" []
 @PointClass base(PlayerClass) = info_player_deathmatch : "Player deathmatch start" []
@@ -428,94 +428,94 @@
 @BaseClass base(Item) color(76 255 255) size(-16 -16 -16, 16 16 16) = Items []
 @BaseClass base(Item) color(0 128 204) size(-16 -16 -16, 16 16 16) = Keys []
 
-@PointClass base(Ammo) model({ "path": ":models/items/ammo/shells/medium/tris.md2" }) = ammo_shells : "Shotgun ammo" []
-@PointClass base(Ammo) model({ "path": ":models/items/ammo/bullets/medium/tris.md2" }) = ammo_bullets : "Machine/Chain gun ammo" []
-@PointClass base(Ammo) model({ "path": ":models/items/ammo/cells/medium/tris.md2" }) = ammo_cells : "Blaster/BFG ammo" []
-@PointClass base(Ammo) model({ "path": ":models/items/ammo/grenades/medium/tris.md2" }) = ammo_grenades : "Grenades" []
-@PointClass base(Ammo) model({ "path": ":models/items/ammo/rockets/medium/tris.md2" }) = ammo_rockets : "Rockets" []
-@PointClass base(Ammo) model({ "path": ":models/items/ammo/slugs/medium/tris.md2" }) = ammo_slugs : "Rail gun ammo" []
+@PointClass base(Ammo) = ammo_shells : "Shotgun ammo" []
+@PointClass base(Ammo) = ammo_bullets : "Machine/Chain gun ammo" []
+@PointClass base(Ammo) = ammo_cells : "Blaster/BFG ammo" []
+@PointClass base(Ammo) = ammo_grenades : "Grenades" []
+@PointClass base(Ammo) = ammo_rockets : "Rockets" []
+@PointClass base(Ammo) = ammo_slugs : "Rail gun ammo" []
 
-@PointClass base(Ammo) model({ "path": ":models/objects/ammo/tris.md2" }) = ammo_magslug : "Phalanx ammo" []
-@PointClass base(Ammo) model({ "path": ":models/ammo/am_flechette/tris.md2" }) = ammo_flechettes : "ETF Rifle ammo" []
-@PointClass base(Ammo) model({ "path": ":models/ammo/am_flechette/tris.md2" }) = ammo_nails : "ETF Rifle ammo" []
-@PointClass base(Ammo) model({ "path": ":models/ammo/am_prox/tris.md2" }) = ammo_prox : "Prox Launcher ammo" []
-@PointClass base(Ammo) model({ "path": ":models/ammo/am_disr/tris.md2" }) = ammo_disruptor : "Disruptor ammo" []
-@PointClass base(Ammo) model({ "path": ":models/weapons/g_trap/tris.md2" }) = ammo_trap : "Traps" []
-@PointClass base(Ammo) model({ "path": ":models/ammo/am_tesl/tris.md2" }) = ammo_tesla : "Teslas" []
-@PointClass base(Ammo) model({ "path": ":models/weapons/g_nuke/tris.md2" }) = ammo_nuke : "A-M Bomb (usable nuke); DM only" []
+@PointClass base(Ammo) = ammo_magslug : "Phalanx ammo" []
+@PointClass base(Ammo) = ammo_flechettes : "ETF Rifle ammo" []
+@PointClass base(Ammo) = ammo_nails : "ETF Rifle ammo" []
+@PointClass base(Ammo) = ammo_prox : "Prox Launcher ammo" []
+@PointClass base(Ammo) = ammo_disruptor : "Disruptor ammo" []
+@PointClass base(Ammo) = ammo_trap : "Traps" []
+@PointClass base(Ammo) = ammo_tesla : "Teslas" []
+@PointClass base(Ammo) = ammo_nuke : "A-M Bomb (usable nuke); DM only" []
 
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_shotg/tris.md2" }) = weapon_shotgun : "Shotgun" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_shotg2/tris.md2" }) = weapon_supershotgun : "Super shotgun" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_machn/tris.md2" }) = weapon_machinegun : "Machinegun" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_chain/tris.md2" }) = weapon_chaingun : "Chain gun" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_launch/tris.md2" }) = weapon_grenadelauncher : "Grenade launcher" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_rocket/tris.md2" }) = weapon_rocketlauncher : "Rocket launcher" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_hyperb/tris.md2" }) = weapon_hyperblaster : "Hyperblaster" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_rail/tris.md2" }) = weapon_railgun : "Rail gun" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_bfg/tris.md2" }) = weapon_bfg : "Big Freakin Gun!" []
+@PointClass base(Weapons) = weapon_shotgun : "Shotgun" []
+@PointClass base(Weapons) = weapon_supershotgun : "Super shotgun" []
+@PointClass base(Weapons) = weapon_machinegun : "Machinegun" []
+@PointClass base(Weapons) = weapon_chaingun : "Chain gun" []
+@PointClass base(Weapons) = weapon_grenadelauncher : "Grenade launcher" []
+@PointClass base(Weapons) = weapon_rocketlauncher : "Rocket launcher" []
+@PointClass base(Weapons) = weapon_hyperblaster : "Hyperblaster" []
+@PointClass base(Weapons) = weapon_railgun : "Rail gun" []
+@PointClass base(Weapons) = weapon_bfg : "Big Freakin Gun!" []
 
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_chainf/tris.md2" }) = weapon_chainfist : "Chainfist" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_etf_rifle/tris.md2" }) = weapon_etf_rifle : "ETF Rifle" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_etf_rifle/tris.md2" }) = weapon_nailgun : "ETF Rifle" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_plaunch/tris.md2" }) = weapon_proxlauncher : "Prox Launcher" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_boom/tris.md2" }) = weapon_boomer : "Ionripper" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_beamer/tris.md2" }) = weapon_plasmabeam : "Plasma Beam" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_beamer/tris.md2" }) = weapon_heatbeam : "Plasma Beam" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_shotx/tris.md2" }) = weapon_phalanx : "Phalanx" []
-@PointClass base(Weapons) model({ "path": ":models/weapons/g_dist/tris.md2" }) = weapon_disintegrator : "Disruptor" []
+@PointClass base(Weapons) = weapon_chainfist : "Chainfist" []
+@PointClass base(Weapons) = weapon_etf_rifle : "ETF Rifle" []
+@PointClass base(Weapons) = weapon_nailgun : "ETF Rifle" []
+@PointClass base(Weapons) = weapon_proxlauncher : "Prox Launcher" []
+@PointClass base(Weapons) = weapon_boomer : "Ionripper" []
+@PointClass base(Weapons) = weapon_plasmabeam : "Plasma Beam" []
+@PointClass base(Weapons) = weapon_heatbeam : "Plasma Beam" []
+@PointClass base(Weapons) = weapon_phalanx : "Phalanx" []
+@PointClass base(Weapons) = weapon_disintegrator : "Disruptor" []
 
-@PointClass base(Items) model({ "path": ":models/items/adrenal/tris.md2" }) = item_adrenaline : "+1 to max health" []
-@PointClass base(Items) model({ "path": ":models/items/c_head/tris.md2" }) = item_ancient_head : "+2 to max health" []
-@PointClass base(Items) model({ "path": ":models/items/armor/body/tris.md2" }) = item_armor_body : "Body armor" []
-@PointClass base(Items) model({ "path": ":models/items/armor/combat/tris.md2" }) = item_armor_combat : "Combat armor" []
-@PointClass base(Items) model({ "path": ":models/items/armor/jacket/tris.md2" }) = item_armor_jacket : "Jacket armor" []
-@PointClass base(Items) model({ "path": ":models/items/armor/shard/tris.md2" }) = item_armor_shard : "Armor shard" []
-@PointClass base(Items) model({ "path": ":models/items/band/tris.md2" }) = item_bandolier : "Equipment belt" []
-@PointClass base(Items) model({ "path": ":models/items/breather/tris.md2" }) = item_breather : "Underwater breather" []
-@PointClass base(Items) model({ "path": ":models/items/enviro/tris.md2" }) = item_enviro : "Enviro-Suit" []
-@PointClass base(Items) model({ "path": ":models/items/healing/medium/tris.md2" }) = item_health : "+10 health" []
-@PointClass base(Items) model({ "path": ":models/items/healing/stimpack/tris.md2" }) = item_health_small : "+2 health" []
-@PointClass base(Items) model({ "path": ":models/items/healing/large/tris.md2" }) = item_health_large : "+25 health" []
-@PointClass base(Items) model({ "path": ":models/items/mega_h/tris.md2" }) = item_health_mega : "+100 health" []
-@PointClass base(Items) model({ "path": ":models/items/invulner/tris.md2" }) = item_invulnerability : "Invulnerability" []
-@PointClass base(Items) model({ "path": ":models/items/pack/tris.md2" }) = item_pack : "Heavy backpack" []
-@PointClass base(Items) model({ "path": ":models/items/armor/screen/tris.md2" }) = item_power_screen : "Power screen" []
-@PointClass base(Items) model({ "path": ":models/items/armor/shield/tris.md2" }) = item_power_shield : "Power shield" []
-@PointClass base(Items) model({ "path": ":models/items/quaddama/tris.md2" }) = item_quad : "Quad damage" []
-@PointClass base(Items) model({ "path": ":models/items/silencer/tris.md2" }) = item_silencer : "Silencer" []
-@PointClass base(Items) model({ "path": ":models/items/silencer/tris.md2" }) = item_flashlight : "Flashlight" []
+@PointClass base(Items) = item_adrenaline : "+1 to max health" []
+@PointClass base(Items) = item_ancient_head : "+2 to max health" []
+@PointClass base(Items) = item_armor_body : "Body armor" []
+@PointClass base(Items) = item_armor_combat : "Combat armor" []
+@PointClass base(Items) = item_armor_jacket : "Jacket armor" []
+@PointClass base(Items) = item_armor_shard : "Armor shard" []
+@PointClass base(Items) = item_bandolier : "Equipment belt" []
+@PointClass base(Items) = item_breather : "Underwater breather" []
+@PointClass base(Items) = item_enviro : "Enviro-Suit" []
+@PointClass base(Items) = item_health : "+10 health" []
+@PointClass base(Items) = item_health_small : "+2 health" []
+@PointClass base(Items) = item_health_large : "+25 health" []
+@PointClass base(Items) = item_health_mega : "+100 health" []
+@PointClass base(Items) = item_invulnerability : "Invulnerability" []
+@PointClass base(Items) = item_pack : "Heavy backpack" []
+@PointClass base(Items) = item_power_screen : "Power screen" []
+@PointClass base(Items) = item_power_shield : "Power shield" []
+@PointClass base(Items) = item_quad : "Quad damage" []
+@PointClass base(Items) = item_silencer : "Silencer" []
+@PointClass base(Items) = item_flashlight : "Flashlight" []
 
-@PointClass base(Items) model({ "path": ":models/items/quadfire/tris.md2" }) = item_quadfire : "DualFire Damage" []
-@PointClass base(Items) model({ "path": ":models/items/goggles/tris.md2" }) = item_ir_goggles : "IR Goggles" []
-@PointClass base(Items) model({ "path": ":models/items/ddamage/tris.md2" }) = item_double : "Double Damage" []
+@PointClass base(Items) = item_quadfire : "DualFire Damage" []
+@PointClass base(Items) = item_ir_goggles : "IR Goggles" []
+@PointClass base(Items) = item_double : "Double Damage" []
 
-@PointClass base(Items) model({ "path": ":models/items/vengnce/tris.md2" }) = item_sphere_vengeance : "vengeance sphere" []
-@PointClass base(Items) model({ "path": ":models/items/hunter/tris.md2" }) = item_sphere_hunter : "hunter sphere" []
-@PointClass base(Items) model({ "path": ":models/items/defender/tris.md2" }) = item_sphere_defender : "defender sphere" []
-@PointClass base(Items) model({ "path": ":models/items/dopple/tris.md2" }) = item_doppleganger : "Doppleganger" []
+@PointClass base(Items) = item_sphere_vengeance : "vengeance sphere" []
+@PointClass base(Items) = item_sphere_hunter : "hunter sphere" []
+@PointClass base(Items) = item_sphere_defender : "defender sphere" []
+@PointClass base(Items) = item_doppleganger : "Doppleganger" []
 
 
-@PointClass base(Keys) model({ "path": ":models/items/keys/target/tris.md2" }) = key_airstrike_target : "Tank commander's head" []
-@PointClass base(Keys) model({ "path": ":models/items/keys/key/tris.md2" }) = key_blue_key : "Normal door key - blue" []
-@PointClass base(Keys) model({ "path": ":models/monsters/commandr/head/tris.md2" }) = key_commander_head : "Tank commander's head (key)" []
-@PointClass base(Keys) model({ "path": ":models/items/keys/data_cd/tris.md2" }) = key_data_cd : "Data CD key for computer centers" []
-@PointClass base(Keys) model({ "path": ":models/items/keys/spinner/tris.md2" }) = key_data_spinner : "Data Spinner key for city computer" []
-@PointClass base(Keys) model({ "path": ":models/items/keys/pass/tris.md2" }) = key_pass : "Security pass for secret level" []
+@PointClass base(Keys) = key_airstrike_target : "Tank commander's head" []
+@PointClass base(Keys) = key_blue_key : "Normal door key - blue" []
+@PointClass base(Keys) = key_commander_head : "Tank commander's head (key)" []
+@PointClass base(Keys) = key_data_cd : "Data CD key for computer centers" []
+@PointClass base(Keys) = key_data_spinner : "Data Spinner key for city computer" []
+@PointClass base(Keys) = key_pass : "Security pass for secret level" []
 
-@PointClass base(Keys) model({ "path": ":models/items/keys/power/tris.md2" }) = key_power_cube : "Warehouse circuits" []
-@PointClass base(Keys) model({ "path": ":models/items/keys/pyramid/tris.md2" }) = key_pyramid : "Pyramid Key for entrance to jail3" []
-@PointClass base(Keys) model({ "path": ":models/items/keys/red_key/tris.md2" }) = key_red_key : "normal door key - red" []
+@PointClass base(Keys) = key_power_cube : "Warehouse circuits" []
+@PointClass base(Keys) = key_pyramid : "Pyramid Key for entrance to jail3" []
+@PointClass base(Keys) = key_red_key : "normal door key - red" []
 // Expansions
-@PointClass base(Keys) model({ "path": ":models/items/keys/green_key/tris.md2" }) = key_green_key : "normal door key - green" []
-@PointClass base(Keys) model({ "path": ":models/weapons/g_nuke/tris.md2" }) = key_nuke_container : "Antimatter Pod (nuke key part 1)" []
-@PointClass base(Keys) model({ "path": ":models/weapons/g_nuke/tris.md2" }) = key_nuke : "Antimatter Bomb (nuke key part 2)" []
+@PointClass base(Keys) = key_green_key : "normal door key - green" []
+@PointClass base(Keys) = key_nuke_container : "Antimatter Pod (nuke key part 1)" []
+@PointClass base(Keys) = key_nuke : "Antimatter Bomb (nuke key part 2)" []
 // N64
-@PointClass base(Keys) model({ "path": ":models/items/n64/charge/tris.md2" }) = key_explosive_charges : "Explosive Charge" []
-@PointClass base(Keys) model({ "path": ":models/items/n64/yellow_key/tris.md2" }) = key_yellow_key : "Yellow Key" []
-@PointClass base(Keys) model({ "path": ":models/items/n64/power_core/tris.md2" }) = key_power_core : "Power Core" []
+@PointClass base(Keys) = key_explosive_charges : "Explosive Charge" []
+@PointClass base(Keys) = key_yellow_key : "Yellow Key" []
+@PointClass base(Keys) = key_power_core : "Power Core" []
 // CTF
-@PointClass base(Keys) model({ "path": ":players/male/flag1.md2" }) = item_flag_team1 : "CTF Flag (red)" []
-@PointClass base(Keys) model({ "path": ":players/male/flag2.md2" }) = item_flag_team2 : "CTF Flag (blue)" []
+@PointClass base(Keys) = item_flag_team1 : "CTF Flag (red)" []
+@PointClass base(Keys) = item_flag_team2 : "CTF Flag (blue)" []
 
 
 // Keep in mind when using func_areaportal that it must
@@ -798,11 +798,11 @@
     ]
 ]
 
-@PointClass base(EditorFlags, Targetable, Target) color(0 255 0) size(-2 -2 -12, 2 2 12) model({ "path": ":models/objects/minelite/light1/tris.md2", "skin": 0 }) = light_mine1 : "Clean fluorescent light fixture"   []
-@PointClass base(EditorFlags, Targetable, Target) color(0 255 0) size(-2 -2 -12, 2 2 12) model({ "path": ":models/objects/minelite/light2/tris.md2", "skin": 0 }) = light_mine2 : "Dusty fluorescent light fixture"   []
+@PointClass base(EditorFlags, Targetable, Target) color(0 255 0) size(-2 -2 -12, 2 2 12) = light_mine1 : "Clean fluorescent light fixture"   []
+@PointClass base(EditorFlags, Targetable, Target) color(0 255 0) size(-2 -2 -12, 2 2 12) = light_mine2 : "Dusty fluorescent light fixture"   []
 
-@PointClass base(EditorFlags) color(255 128 0) size(-4 -4 0, 4 4 246) model({ "path": ":models/objects/banner/tris.md2" }) = misc_banner : "Flowing banner" []
-@PointClass base(EditorFlags, Targetable, Scale, Alpha) color(255 128 0) size(-8 -8 -8, 8 8 8) model({ "path": ":models/objects/black/tris.md2" }) = misc_blackhole : "Blackhole" [
+@PointClass base(EditorFlags) color(255 128 0) size(-4 -4 0, 4 4 246) = misc_banner : "Flowing banner" []
+@PointClass base(EditorFlags, Targetable, Scale, Alpha) color(255 128 0) size(-8 -8 -8, 8 8 8) = misc_blackhole : "Blackhole" [
     spawnflags(Flags) =
     [
         1 : "Auto-Noise (N64)" : 0
@@ -810,20 +810,13 @@
 ]
 
 // Expansion
-@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-8 -8 -8, 8 8 8) model({ "path": ":models/objects/core/tris.md2" }) = misc_nuke_core : "Nuke Core (must be targeted to appear)" []
+@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-8 -8 -8, 8 8 8) = misc_nuke_core : "Nuke Core (must be targeted to appear)" []
 
-@PointClass base(EditorFlags) color(255 128 0) size(-8 -8 -8, 8 8 8) model({ "path": ":models/items/spawngro2/tris.md2", "frame": 2 }) = target_orb : "Large Orb" []
+@PointClass base(EditorFlags) color(255 128 0) size(-8 -8 -8, 8 8 8) = target_orb : "Large Orb" []
 
-@PointClass base(EditorFlags) color(255 128 0) size(-8 -8 -8, 8 8 8) model({ "path": ":models/items/spawngro2/tris.md2", "frame": 1 }) = target_blacklight : "Large Orb (black light)" []
+@PointClass base(EditorFlags) color(255 128 0) size(-8 -8 -8, 8 8 8) = target_blacklight : "Large Orb (black light)" []
 
-@PointClass base(EditorFlags) color(255 128 0) size(-16 -16 0, 16 16 16)    model({{
-  spawnflags & 32 -> { "path": ":models/deadbods/dude/tris.md2", "frame": 5 },
-  spawnflags & 16 -> { "path": ":models/deadbods/dude/tris.md2", "frame": 4 },
-  spawnflags &  8 -> { "path": ":models/deadbods/dude/tris.md2", "frame": 3 },
-  spawnflags &  4 -> { "path": ":models/deadbods/dude/tris.md2", "frame": 2 },
-  spawnflags &  2 -> { "path": ":models/deadbods/dude/tris.md2", "frame": 1 },
-                                ":models/deadbods/dude/tris.md2"
-  }}) = misc_deadsoldier : "Dead guys! 6 of em!"
+@PointClass base(EditorFlags) color(255 128 0) size(-16 -16 0, 16 16 16) = misc_deadsoldier : "Dead guys! 6 of em!"
 [
     spawnflags(Flags) =
     [
@@ -837,11 +830,11 @@
 ]
 
 // The following three entities are eye-candy - they don't do anything
-@PointClass base(EditorFlags) color(255 128 0) size(-32 -32 -16, 32 32 32) model({ "path": ":models/monsters/tank/tris.md2",    "frame":254, "skin": 2}) = misc_eastertank : "Tank sitting down. Make him a chair out of brushes." []
-@PointClass base(EditorFlags) color(255 128 0) size(-32 -32 0, 32 32 32) model({ "path": ":models/monsters/bitch/tris.md2", "frame":208}) = misc_easterchick : "Chick #1 sitting: Place her near misc_eastertank." []
-@PointClass base(EditorFlags) color(255 128 0) size(-32 -32 0, 32 32 32) model({ "path": ":models/monsters/bitch/tris.md2", "frame":248}) = misc_easterchick2 : "Chick #2 sitting w/ different pose. Can be placed close to misc_eastertank's for full effect." []
+@PointClass base(EditorFlags) color(255 128 0) size(-32 -32 -16, 32 32 32) = misc_eastertank : "Tank sitting down. Make him a chair out of brushes." []
+@PointClass base(EditorFlags) color(255 128 0) size(-32 -32 0, 32 32 32) = misc_easterchick : "Chick #1 sitting: Place her near misc_eastertank." []
+@PointClass base(EditorFlags) color(255 128 0) size(-32 -32 0, 32 32 32) = misc_easterchick2 : "Chick #2 sitting w/ different pose. Can be placed close to misc_eastertank's for full effect." []
 
-@PointClass base(EditorFlags) color(0 128 204) size(-16 -16 0, 16 16 40) model({ "path": ":models/objects/barrels/tris.md2" }) = misc_explobox : "Large exploding box"
+@PointClass base(EditorFlags) color(0 128 204) size(-16 -16 0, 16 16 40) = misc_explobox : "Large exploding box"
 [
     mass(float) : "Mass" : "100"
     health(float) : "Health" : "80"
@@ -849,18 +842,12 @@
 ]
 
 // set angle for gib direction, otherwise it just drops
-@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) model({ "path": ":models/objects/gibs/arm/tris.md2" }) = misc_gib_arm : "arm gib, use with target_spawner" []
-@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) model({ "path": ":models/objects/gibs/head/tris.md2" }) = misc_gib_head : "head gib, use with target_spawner" []
-@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) model({ "path": ":models/objects/gibs/arm/tris.md2" }) = misc_gib_leg : "leg gib, use with target_spawner" []
+@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_gib_arm : "arm gib, use with target_spawner" []
+@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_gib_head : "head gib, use with target_spawner" []
+@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_gib_leg : "leg gib, use with target_spawner" []
 
 
-@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-64 -64 0, 64 64 128)
-    model(
-        {{
-            spawnflags & 32 -> { "path": ":models/objects/satellite/tris.md2", "frame": 38 },
-                                  ":models/objects/satellite/tris.md2"
-        }}
-    ) =
+@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-64 -64 0, 64 64 128) =
 misc_satellite_dish : "Satellite Dish" 
 [
    spawnflags(Flags) =
@@ -869,12 +856,12 @@ misc_satellite_dish : "Satellite Dish"
    ]
 ]
 
-@PointClass base(EditorFlags, Targetable, Target) color(255 128 0) size(-16 -16 0, 16 16 32) model({ "path": ":models/ships/strogg1/tris.md2" }) = misc_strogg_ship : "Strogg ship for flybys"
+@PointClass base(EditorFlags, Targetable, Target) color(255 128 0) size(-16 -16 0, 16 16 32) = misc_strogg_ship : "Strogg ship for flybys"
 [
     speed(float) : "Speed" : "300"
 ]
 
-@PointClass base(EditorFlags, Target) color(255 0 0) size(-32 -32 -24, 32 32 -16) model({ "path": ":models/objects/dmspot/tris.md2", "skin": 1 }) = misc_teleporter : "Teleporter: To hide the teleport pads, place them units 10 units into a brush."
+@PointClass base(EditorFlags, Target) color(255 0 0) size(-32 -32 -24, 32 32 -16) = misc_teleporter : "Teleporter: To hide the teleport pads, place them units 10 units into a brush."
 [
     spawnflags(Flags) =
     [
@@ -884,28 +871,28 @@ misc_satellite_dish : "Satellite Dish"
     ]
 ]
 
-@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-32 -32 -24, 32 32 -16) model({ "path": ":models/objects/dmspot/tris.md2", "skin": 0 }) = misc_teleporter_dest : "Teleport Destination: To hide the teleport pads, place them units 10 units into a brush or use an info_notnull." []
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-32 -32 -24, 32 32 -16) = misc_teleporter_dest : "Teleport Destination: To hide the teleport pads, place them units 10 units into a brush or use an info_notnull." []
 
-@PointClass base(EditorFlags) color(255 128 0) size(-176 -120 -24, 176 120 72) model({ "path": ":models/ships/bigviper/tris.md2" }) = misc_bigviper : "Large stationary Viper" []
+@PointClass base(EditorFlags) color(255 128 0) size(-176 -120 -24, 176 120 72) = misc_bigviper : "Large stationary Viper" []
 
-@PointClass base(misc_strogg_ship) model({ "path": ":models/ships/viper/tris.md2" }) = misc_viper : "Viper for flybys" []
+@PointClass base(misc_strogg_ship) = misc_viper : "Viper for flybys" []
 
-@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) model({ "path": ":models/objects/bomb/tris.md2" }) = misc_viper_bomb : "Viper Bomb"
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_viper_bomb : "Viper Bomb"
 [
     dmg(float) : "Damage"
 ]
 
 // Expansion
-@PointClass base(misc_strogg_ship) model({ "path": ":models/ships/viper/tris.md2" }) = misc_crashviper : "Viper that crashes"
+@PointClass base(misc_strogg_ship) = misc_crashviper : "Viper that crashes"
 [
 ]
 
-@PointClass base(EditorFlags, Targetable, Target) color(255 0 0) size(-8 -8 -8, 8 8 8) model({ "path": ":models/objects/bomb/tris.md2" }) = misc_viper_missile : "Viper Missile"
+@PointClass base(EditorFlags, Targetable, Target) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_viper_missile : "Viper Missile"
 [
     dmg(float) : "Damage" : "250"
 ]
 
-@PointClass base(misc_strogg_ship) model({ "path": ":models/objects/ship/tris.md2" }) = misc_transport : "Xatrix Transport"
+@PointClass base(misc_strogg_ship) = misc_transport : "Xatrix Transport"
 [
 ]
 
@@ -942,14 +929,7 @@ misc_satellite_dish : "Satellite Dish"
     ]
 ]
 
-@PointClass base(Monsters) color(255 128 0) size(-16 -16 -24, 16 16 32) model({{
-  spawnflags & 32 -> { "path": ":models/monsters/insane/tris.md2", "frame": 0 },
-  spawnflags & 16 -> { "path": ":models/monsters/insane/tris.md2", "frame": 74 },
-  spawnflags &  8 -> { "path": ":models/monsters/insane/tris.md2", "frame": 252 },
-  spawnflags &  4 -> { "path": ":models/monsters/insane/tris.md2", "frame": 38 },
-  spawnflags &  2 -> { "path": ":models/monsters/insane/tris.md2", "frame": 0 },
-                                ":models/monsters/insane/tris.md2"
-  }}) = misc_insane : "Insane Soldiers"
+@PointClass base(Monsters) color(255 128 0) size(-16 -16 -24, 16 16 32) = misc_insane : "Insane Soldiers"
 [
     spawnflags(Flags) =
     [
@@ -961,13 +941,13 @@ misc_satellite_dish : "Satellite Dish"
     ]
 ]
 
-@PointClass base(Monsters) model({ "path": ":models/monsters/berserk/tris.md2" }) = monster_berserk : "Berserker" [
+@PointClass base(Monsters) = monster_berserk : "Berserker" [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) size(-56 -56 0, 56 56 80) model({ "path": ":models/monsters/boss2/tris.md2" }) = monster_boss2 : "Hornet"
+@PointClass base(Monsters) size(-56 -56 0, 56 56 80) = monster_boss2 : "Hornet"
 [
     spawnflags(Flags) =
     [
@@ -978,8 +958,8 @@ misc_satellite_dish : "Satellite Dish"
 // Just fidgets in one spot and teleports away when triggered
 //
 // 0221 - removed Monsters class inheritance
-@PointClass base(EditorFlags, Targetable) size(-32 -32 0, 32 32 80) model({ "path": ":models/monsters/boss3/rider/tris.md2", "frame": 414}) = monster_boss3_stand : "Stationnary Makron" []
-@PointClass base(Monsters) model({ "path": ":models/monsters/brain/tris.md2" }) = monster_brain : "Brains"
+@PointClass base(EditorFlags, Targetable) size(-32 -32 0, 32 32 80) = monster_boss3_stand : "Stationnary Makron" []
+@PointClass base(Monsters) = monster_brain : "Brains"
 [
 	spawnflags(Flags) =
 	[
@@ -988,10 +968,10 @@ misc_satellite_dish : "Satellite Dish"
 		8 : "no laser eyes" : 0
 	]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/bitch/tris.md2" }) size(-16 -16 0, 16 16 56) = monster_chick : "Iron Maiden" []
-@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-32 -32 0, 32 32 48) model({ "path": ":models/monsters/commandr/tris.md2" }) = monster_commander_body : "Tank commander's decapitated body" []
-@PointClass base(Monsters) model({ "path": ":models/monsters/flipper/tris.md2" }) = monster_flipper : "Barracuda shark" []
-@PointClass base(Monsters) size(-24 -24 -24, 24 24 48) model({ "path": ":models/monsters/float/tris.md2" }) = monster_floater : "Technician"
+@PointClass base(Monsters) size(-16 -16 0, 16 16 56) = monster_chick : "Iron Maiden" []
+@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-32 -32 0, 32 32 48) = monster_commander_body : "Tank commander's decapitated body" []
+@PointClass base(Monsters) = monster_flipper : "Barracuda shark" []
+@PointClass base(Monsters) size(-24 -24 -24, 24 24 48) = monster_floater : "Technician"
 [
     spawnflags(Flags) =
     [
@@ -1000,42 +980,36 @@ misc_satellite_dish : "Satellite Dish"
         8 : "Disguise as barrel" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/flyer/tris.md2" }) = monster_flyer : "Flyer" []
-@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) model({ "path": ":models/monsters/gladiatr/tris.md2" }) = monster_gladiator : "Gladiator" []
-@PointClass base(Monsters) model({ "path": ":models/monsters/gunner/tris.md2" }) = monster_gunner : "Gunner"
+@PointClass base(Monsters) = monster_flyer : "Flyer" []
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) = monster_gladiator : "Gladiator" []
+@PointClass base(Monsters) = monster_gunner : "Gunner"
 [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/gunner/tris.md2", "frame": 249 }) = monster_guncmdr : "Gunner Commander"
+@PointClass base(Monsters) = monster_guncmdr : "Gunner Commander"
 [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/hover/tris.md2" }) = monster_hover : "Icarus" []
-@PointClass base(Monsters) model({ "path": ":models/monsters/infantry/tris.md2", "frame": 64}) = monster_infantry : "Infantry"
+@PointClass base(Monsters) = monster_hover : "Icarus" []
+@PointClass base(Monsters) = monster_infantry : "Infantry"
 [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) size(-80 -80 0, 90 90 140) model({ "path": ":models/monsters/boss3/jorg/tris.md2" }) = monster_jorg : "Jorg" []
+@PointClass base(Monsters) size(-80 -80 0, 90 90 140) = monster_jorg : "Jorg" []
 
 // 0221 - this entity can only spawn once the Jorg dies ... im sure someone will change that tho
-@PointClass base(Monsters) size(-32 -32 0, 32 32 80) model({ "path": ":models/monsters/boss3/rider/tris.md2", "frame": 414}) = monster_makron : "Makron" []
-@PointClass base(Monsters) model({ "path": ":models/monsters/medic/tris.md2" }) = monster_medic : "Medic" []
-@PointClass base(Monsters) size(-32 -32 -24, 32 32 32)
-    model(
-        {{
-            spawnflags & 65536 -> { "path": ":models/monsters/mutant/tris.md2", "skin": 1, "frame": 33 },
-                                  ":models/monsters/mutant/tris.md2"
-        }}
-    ) =
+@PointClass base(Monsters) size(-32 -32 0, 32 32 80) = monster_makron : "Makron" []
+@PointClass base(Monsters) = monster_medic : "Medic" []
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 32) =
 monster_mutant : "Mutant"
 [
     spawnflags(Flags) =
@@ -1043,14 +1017,14 @@ monster_mutant : "Mutant"
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/parasite/tris.md2" }) = monster_parasite : "Parasite"
+@PointClass base(Monsters) = monster_parasite : "Parasite"
 [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/soldier/tris.md2", "skin": 0 }) = monster_soldier_light : "Light Soldier"
+@PointClass base(Monsters) = monster_soldier_light : "Light Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1059,7 +1033,7 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/soldier/tris.md2", "skin": 2 }) = monster_soldier : "Soldier"
+@PointClass base(Monsters) = monster_soldier : "Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1068,7 +1042,7 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/soldier/tris.md2", "skin": 4 }) = monster_soldier_ss : "SS Soldier"
+@PointClass base(Monsters) = monster_soldier_ss : "SS Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1077,8 +1051,8 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) model({ "path": ":models/monsters/tank/tris.md2" }) = monster_tank : "Tank" []
-@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) model({ "path": ":models/monsters/tank/tris.md2", "skin": 2 }) = monster_tank_commander : "Tank Commander"
+@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) = monster_tank : "Tank" []
+@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) = monster_tank_commander : "Tank Commander"
 [
 	speed(float) : "homing missile speed" : "0.0"
     spawnflags(Flags) =
@@ -1087,7 +1061,7 @@ monster_mutant : "Mutant"
 		16 : "Heat-Seeking Missiles" : 0
     ]
 ]
-@PointClass base(Monsters) size(-64 -64 0, 64 64 72) model({ "path": ":models/monsters/boss1/tris.md2" }) = monster_supertank : "Super Tank Boss"
+@PointClass base(Monsters) size(-64 -64 0, 64 64 72) = monster_supertank : "Super Tank Boss"
 [
     spawnflags(Flags) =
     [
@@ -1098,7 +1072,7 @@ monster_mutant : "Mutant"
 ]
 
 // Expansions
-@PointClass base(Monsters) model({ "path": ":models/monsters/soldier/tris.md2", "skin": 6 }) = monster_soldier_ripper : "Ripper Soldier"
+@PointClass base(Monsters) = monster_soldier_ripper : "Ripper Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1107,7 +1081,7 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/soldier/tris.md2", "skin": 8 }) = monster_soldier_hypergun : "Hypergun Soldier"
+@PointClass base(Monsters) = monster_soldier_hypergun : "Hypergun Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1116,7 +1090,7 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/soldier/tris.md2", "skin": 10 }) = monster_soldier_lasergun : "Lasergun Soldier"
+@PointClass base(Monsters) = monster_soldier_lasergun : "Lasergun Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1126,7 +1100,7 @@ monster_mutant : "Mutant"
     ]
 ]
 
-@PointClass base(Monsters) size(-32 -32 -24, 32 32 24) model({ "path": ":models/monsters/fixbot/tris.md2" }) = monster_fixbot : "Fixbot"
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 24) = monster_fixbot : "Fixbot"
 [
     spawnflags(Flags) =
     [
@@ -1143,13 +1117,7 @@ monster_mutant : "Mutant"
     delay(float) : "delay between sparks" : "1"
 ]
 
-@PointClass base(Monsters) size(-24 -24 -24, 24 24 24)
-    model(
-        {{
-            spawnflags & 65536 -> { "path": ":models/monsters/gekk/tris.md2", "skin": 2, "frame": 141 },
-                                  ":models/monsters/gekk/tris.md2"
-        }}
-    ) =
+@PointClass base(Monsters) size(-24 -24 -24, 24 24 24) =
 monster_gekk : "Gekk"
 [
     spawnflags(Flags) =
@@ -1161,10 +1129,10 @@ monster_gekk : "Gekk"
         32: "No swimming" : 0
     ]
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/bitch/tris.md2", "skin": 2 }) size(-16 -16 0, 16 16 56) = monster_chick_heat : "Iron Maiden (heat-seeking missile)" []
-@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) model({ "path": ":models/monsters/gladiatr/tris.md2", "skin": 2 }) = monster_gladb : "Gladiator (phalanx)" []
+@PointClass base(Monsters) size(-16 -16 0, 16 16 56) = monster_chick_heat : "Iron Maiden (heat-seeking missile)" []
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) = monster_gladb : "Gladiator (phalanx)" []
 
-@PointClass base(Monsters) size(-64 -64 0, 64 64 72) model({ "path": ":models/monsters/boss1/tris.md2", "skin": 2 }) = monster_boss5 : "Super Tank Boss (power armor)" []
+@PointClass base(Monsters) size(-64 -64 0, 64 64 72) = monster_boss5 : "Super Tank Boss (power armor)" []
 
 @PointClass base(info_notnull, Target, Targetable) = hint_path : "Monster Path"
 [
@@ -1175,26 +1143,26 @@ monster_gekk : "Gekk"
     wait(float) : "wait for this amount of time" : "0"
 ]
 
-@PointClass base(Monsters) model({ "path": ":models/monsters/hover/tris.md2", "skin": 2 }) = monster_daedalus : "Daedalus" []
+@PointClass base(Monsters) = monster_daedalus : "Daedalus" []
 
-@PointClass base(Monsters) size(-56 -56 -44, 56 56 44) model({ "path": ":models/monsters/carrier/tris.md2" }) = monster_carrier : "Carrier"
+@PointClass base(Monsters) size(-56 -56 -44, 56 56 44) = monster_carrier : "Carrier"
 [
     reinforcements(string): "Semicolon separated list of entity classes and cost of monster to spawn" : "monster_flyer 1;monster_flyer 1;monster_flyer 1;monster_kamikaze 1"
     monster_slots(integer) : "How many points to spend on monster spawns. Increases by up to 2x for Hard skill" : 3
 ]
 
-@PointClass base(Monsters) size(-40 -40 0, 40 40 144) model({ "path": ":models/monsters/blackwidow/tris.md2" }) = monster_widow : "Black Widow (on foot)" []
+@PointClass base(Monsters) size(-40 -40 0, 40 40 144) = monster_widow : "Black Widow (on foot)" []
 //Why is there two of these with no difference?
-//@PointClass base(Monsters) size(-70 -70 0, 70 70 144) model({ "path": ":models/monsters/blackwidow2/tris.md2" }) = monster_widow : "Black Widow (spider)" []
+//@PointClass base(Monsters) size(-70 -70 0, 70 70 144) = monster_widow : "Black Widow (spider)" []
 
-@PointClass base(Monsters) model({ "path": ":models/monsters/medic/tris.md2", "skin": 2 }) = monster_medic_commander : "Medic Commander"
+@PointClass base(Monsters) = monster_medic_commander : "Medic Commander"
 [
     reinforcements(string): "Semicolon separated list of entity classes and cost of monster to spawn" : "monster_soldier_light 1;monster_soldier 2;monster_soldier_ss 2;monster_infantry 3;monster_gunner 4;monster_medic 5;monster_gladiator 6"
     monster_slots(integer) : "How many points to spend on monster spawns. Increases by up to 2x for Hard skill" : 3
 ]
-@PointClass base(Monsters) model({ "path": ":models/monsters/flyer/tris.md2" }) = monster_kamikaze : "Flyer (kamikaze)" []
+@PointClass base(Monsters) = monster_kamikaze : "Flyer (kamikaze)" []
 
-@PointClass base(Monsters) size(-12 -12 -12, 12 12 12) model({ "path": ":models/monsters/turret/tris.md2" }) = monster_turret : "Turret Monster"
+@PointClass base(Monsters) size(-12 -12 -12, 12 12 12) = monster_turret : "Turret Monster"
 [
     spawnflags(Flags) =
     [
@@ -1208,7 +1176,7 @@ monster_gekk : "Gekk"
     ]
 ]
 
-@PointClass base(Monsters) size(-28 -28 -18, 28 28 18) model({ "path": ":models/monsters/stalker/tris.md2" }) = monster_stalker : "Stalker"
+@PointClass base(Monsters) size(-28 -28 -18, 28 28 18) = monster_stalker : "Stalker"
 [
     spawnflags(Flags) =
     [
@@ -1626,7 +1594,7 @@ monster_gekk : "Gekk"
 [
 ]
 
-@PointClass base(EditorFlags) color(128 255 128) size(-16 -16 -24, 16 16 32) model({ "path": ":models/monsters/infantry/tris.md2"}) = turret_driver : "Turret driver"   [   target(target_destination) : "Target (turret_breach)"   ]
+@PointClass base(EditorFlags) color(128 255 128) size(-16 -16 -24, 16 16 32) = turret_driver : "Turret driver"   [   target(target_destination) : "Target (turret_breach)"   ]
 
 // Expansions
 @PointClass base(EditorFlags) color(128 255 128) size(-4 -4 -4, 4 4 4) = turret_invisible_brain : "Turret invisible brain"
@@ -1639,7 +1607,7 @@ monster_gekk : "Gekk"
 @SolidClass base(EWT_base_BModel) color(0 128 204) = func_group : "group" []
 
 // Paril: CTF
-@PointClass base(EditorFlags) color(255 128 0) size(-4 -4 0, 4 4 246) model({ "path": ":models/ctf/banner/tris.md2" }) = misc_ctf_banner : "Flowing CTF banner"
+@PointClass base(EditorFlags) color(255 128 0) size(-4 -4 0, 4 4 246) = misc_ctf_banner : "Flowing CTF banner"
 [
     spawnflags(Flags) =
     [
@@ -1647,7 +1615,7 @@ monster_gekk : "Gekk"
     ]
 ]
 
-@PointClass base(EditorFlags) color(255 128 0) size(-4 -4 0, 4 4 246) model({ "path": ":models/ctf/banner/small.md2" }) = misc_ctf_small_banner : "Smaller flowing CTF banner"
+@PointClass base(EditorFlags) color(255 128 0) size(-4 -4 0, 4 4 246) = misc_ctf_small_banner : "Smaller flowing CTF banner"
 [
     spawnflags(Flags) =
     [
@@ -1758,7 +1726,7 @@ monster_gekk : "Gekk"
 [
 ]
 
-@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) model({ "path": ":models/monsters/shambler/tris.md2" }) = monster_shambler : "Shambler"
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) = monster_shambler : "Shambler"
 [
 ]
 
@@ -1851,8 +1819,8 @@ monster_gekk : "Gekk"
 	wait(float) : "1.0" : "Time in seconds for auto-fire triggers to check bounds"
 ]
 
-@PointClass base(Monsters) size(-96 -96 -66, 96 96 62) model({ "path": ":models/monsters/guardian/tris.md2" }) = monster_guardian : "Guardian (PSX)" []
-@PointClass base(Monsters) size(-48 -48 -20, 48 48 48) model({ "path": ":models/monsters/arachnid/tris.md2" }) = monster_arachnid : "Arachnid (PSX)" []
+@PointClass base(Monsters) size(-96 -96 -66, 96 96 62) = monster_guardian : "Guardian (PSX)" []
+@PointClass base(Monsters) size(-48 -48 -20, 48 48 48) = monster_arachnid : "Arachnid (PSX)" []
 
 @PointClass base(EditorFlags, Targetable, Teamable) color(255 0 0) size(-4 -4 -4, 4 4 4) = target_poi : "Compass POI"
 [
@@ -1905,7 +1873,7 @@ monster_gekk : "Gekk"
     skyautorotate(integer) : "Disable to set sky rotation manually" : 1
 ]
 
-@PointClass base(EditorFlags, Targetable) color(255 128 255) size(-16 -16 -24, 16 16 32) model({ "path": ":models/monsters/insane/tris.md2", "frame":209, "skin":1}) = misc_player_mannequin : "Player Mannequin"
+@PointClass base(EditorFlags, Targetable) color(255 128 255) size(-16 -16 -24, 16 16 32) = misc_player_mannequin : "Player Mannequin"
 [
   distance(integer) : "Gesture To Use When Triggered. 0 = FlipOff, 1 = Salute, 2 = Taunt, 3 = Wave, 4 = Point" : 1 
   height(integer) : "Type Of Model To Use. 1 = Female, 2 = Male, 3 = Cyborg" : 1
