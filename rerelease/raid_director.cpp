@@ -4,7 +4,7 @@
 #include "g_local.h"
 #include "raid_director.h"
 
-#include "json/json.h"
+#include "jsoncpp/json/json.h"
 
 #include <filesystem>
 #include <fstream>
@@ -254,4 +254,3 @@ void RaidDirector_ReadSave(const Json::Value &input)
     if (!script.empty() && RaidDirector_Load(script.c_str()) && !state.empty())
         RaidDirector_SetState(state.c_str());
 }
-

@@ -9,7 +9,7 @@
 #pragma clang diagnostic push
 #pragma GCC diagnostic ignored "-Weverything"
 #endif
-#include "json/json.h"
+#include "jsoncpp/json/json.h"
 #include "raid_director.h"
 #include "json/config.h"
 #ifdef __clang__
