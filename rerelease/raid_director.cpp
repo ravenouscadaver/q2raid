@@ -38,7 +38,7 @@ struct raid_color_cycle_t
 
 struct raid_player_status_t
 {
-    int32_t     entity_number = 0;
+    uint32_t    entity_number = 0;
     int32_t     spawn_count = 0;
     std::string name;
     gtime_t     expires_at;
