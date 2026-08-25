@@ -3,6 +3,7 @@
 #include "g_local.h"
 #include "m_player.h"
 #include "bots/bot_includes.h"
+#include "raid_director.h"
 #include "raid_thirdperson.h"
 #include "raid_items.h"
 
