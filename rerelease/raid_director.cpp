@@ -76,7 +76,7 @@ struct raid_entity_snapshot_t
     contents_t clipmask;
     movetype_t movetype = MOVETYPE_NONE;
     ent_flags_t flags;
-    spawnflags_t spawnflags;
+    spawnflags_t spawnflags = SPAWNFLAG_NONE;
     gtime_t nextthink;
     save_think_t think;
     int32_t health = 0, max_health = 0, count = 0;
