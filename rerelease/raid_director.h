@@ -19,6 +19,7 @@ void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t
 
 bool RaidDirector_Load(const char *path);
 bool RaidDirector_Reload();
+bool RaidDirector_ResetEncounter();
 bool RaidDirector_SetState(const char *state_name);
 void RaidDirector_Dump();
 

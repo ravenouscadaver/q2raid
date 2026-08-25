@@ -7,32 +7,98 @@ void InitTrigger(edict_t *self);
 
 namespace
 {
-struct raid_carry_state_t { edict_t *item = nullptr; };
+enum raid_carry_mode_t { RAID_CARRY_AUTO = 0, RAID_CARRY_HEAVY = 1, RAID_CARRY_WEAPON = 2 };
+
+struct raid_carry_state_t
+{
+    edict_t *item = nullptr;
+    gitem_t *previous_weapon = nullptr;
+    int previous_relic_inventory = 0;
+};
 raid_carry_state_t carry_states[MAX_CLIENTS];
 
 raid_carry_state_t &CarryState(edict_t *player) { return carry_states[player->s.number - 1]; }
-bool IsPowerCore(edict_t *item) { return item && item->message && !Q_strcasecmp(item->message, "power_core"); }
+bool IsSupportedRaidItem(edict_t *item)
+{
+    return item && item->message &&
+        (!Q_strcasecmp(item->message, "power_core") || !Q_strcasecmp(item->message, "bfg_relic"));
+}
+
+bool IsWeaponRelic(edict_t *item)
+{
+    return item && (item->style == RAID_CARRY_WEAPON ||
+        (item->style == RAID_CARRY_AUTO && item->message && !Q_strcasecmp(item->message, "bfg_relic")));
+}
+
+gitem_t *RelicWeapon(edict_t *item)
+{
+    const char *classname = item && item->pathtarget ? item->pathtarget : "weapon_bfg";
+    return FindItemByClassname(classname);
+}
 
 void FinishCarry(edict_t *player)
 {
-    CarryState(player).item = nullptr;
-    RaidThirdPerson_SetCarry(player, false);
+    auto &state = CarryState(player);
+    if (IsWeaponRelic(state.item))
+    {
+        gitem_t *weapon = RelicWeapon(state.item);
+        if (weapon)
+            player->client->pers.inventory[weapon->id] = state.previous_relic_inventory;
+        player->client->newweapon = state.previous_weapon;
+        ChangeWeapon(player);
+    }
+    else
+        RaidThirdPerson_SetCarry(player, false);
+    state = {};
+}
+
+void RestoreRaidItem(edict_t *item)
+{
+    item->s.origin = item->move_origin;
+    item->s.angles = item->move_angles;
+    item->velocity = {};
+    item->avelocity = {};
+    item->solid = SOLID_TRIGGER;
+    item->movetype = MOVETYPE_TOSS;
+    item->svflags &= ~SVF_NOCLIENT;
+    item->s.effects = EF_ROTATE | EF_BOB;
+    item->touch_debounce_time = 0_ms;
+    gi.linkentity(item);
 }
 
 TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool) -> void
 {
     if (!other->client || other->deadflag || level.time < self->touch_debounce_time ||
-        RaidCarry_IsCarrying(other) || !IsPowerCore(self))
+        RaidCarry_IsCarrying(other) || !IsSupportedRaidItem(self))
         return;
 
-    CarryState(other).item = self;
+    auto &state = CarryState(other);
+    state.item = self;
     self->solid = SOLID_NOT;
     self->movetype = MOVETYPE_NONE;
     self->svflags |= SVF_NOCLIENT;
     gi.unlinkentity(self);
-    RaidThirdPerson_SetCarry(other, true, self->model, self->s.scale);
+    if (IsWeaponRelic(self))
+    {
+        gitem_t *weapon = RelicWeapon(self);
+        if (!weapon)
+        {
+            gi.Com_PrintFmt("[raid] raid_item '{}' weapon '{}' not found\n",
+                self->targetname ? self->targetname : "<unnamed>", self->pathtarget ? self->pathtarget : "weapon_bfg");
+            RestoreRaidItem(self);
+            state = {};
+            return;
+        }
+        state.previous_weapon = other->client->pers.weapon;
+        state.previous_relic_inventory = other->client->pers.inventory[weapon->id];
+        other->client->pers.inventory[weapon->id] = std::max(1, state.previous_relic_inventory);
+        other->client->newweapon = weapon;
+        ChangeWeapon(other);
+    }
+    else
+        RaidThirdPerson_SetCarry(other, true, self->model, self->s.scale);
     RaidDirector_NotifyEntityEvent(self, "pickup", other);
-    gi.LocClient_Print(other, PRINT_HIGH, "POWER CORE ACQUIRED\n");
+    gi.LocClient_Print(other, PRINT_HIGH, IsWeaponRelic(self) ? "BFG RELIC ACQUIRED\n" : "POWER CORE ACQUIRED\n");
 }
 
 edict_t *FindSocket(edict_t *trigger, edict_t *item)
@@ -81,7 +147,10 @@ TOUCH(raid_deposit_touch) (edict_t *self, edict_t *other, const trace_t &, bool)
 void SP_raid_item(edict_t *ent)
 {
     if (!ent->message) ent->message = "power_core";
-    if (!ent->model) ent->model = "models/items/keys/power/tris.md2";
+    if (!ent->model) ent->model = IsWeaponRelic(ent) ? "models/weapons/g_bfg/tris.md2" : "models/items/keys/power/tris.md2";
+    if (!ent->speed) ent->speed = 0.45f;
+    ent->move_origin = ent->s.origin;
+    ent->move_angles = ent->s.angles;
     gi.setmodel(ent, ent->model);
     ent->mins = { -16, -16, -16 };
     ent->maxs = { 16, 16, 16 };
@@ -114,6 +183,22 @@ bool RaidCarry_IsCarrying(edict_t *player)
     return player && player->client && player->s.number >= 1 && player->s.number <= MAX_CLIENTS && CarryState(player).item;
 }
 
+bool RaidCarry_BlocksWeapons(edict_t *player)
+{
+    return RaidCarry_IsCarrying(player) && !IsWeaponRelic(CarryState(player).item);
+}
+
+bool RaidCarry_IsWeaponRelic(edict_t *player)
+{
+    return RaidCarry_IsCarrying(player) && IsWeaponRelic(CarryState(player).item);
+}
+
+float RaidCarry_MovementScale(edict_t *player)
+{
+    if (!RaidCarry_IsCarrying(player)) return 1.0f;
+    return std::clamp(CarryState(player).item->speed, 0.1f, 1.0f);
+}
+
 bool RaidCarry_Drop(edict_t *player)
 {
     if (!RaidCarry_IsCarrying(player)) return false;
@@ -137,6 +222,27 @@ void RaidCarry_Update(edict_t *player)
 {
     if (!RaidCarry_IsCarrying(player)) return;
     if (player->deadflag || player->health <= 0) { RaidCarry_Drop(player); return; }
-    player->client->weapon_fire_buffered = false;
-    player->client->latched_buttons &= ~BUTTON_ATTACK;
+    if (RaidCarry_BlocksWeapons(player))
+    {
+        player->client->weapon_fire_buffered = false;
+        player->client->latched_buttons &= ~BUTTON_ATTACK;
+    }
+}
+
+void RaidCarry_ResetAll()
+{
+    for (edict_t *player : active_players())
+        if (RaidCarry_IsCarrying(player))
+            FinishCarry(player);
+
+    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+    {
+        edict_t *entity = &g_edicts[i];
+        if (!entity->inuse || !entity->classname)
+            continue;
+        if (!Q_strcasecmp(entity->classname, "raid_item"))
+            RestoreRaidItem(entity);
+        else if (!Q_strcasecmp(entity->classname, "raid_gadget"))
+            entity->health = 0;
+    }
 }

@@ -302,6 +302,8 @@ void ServerCommand()
 		RaidDirector_Load(gi.argv(2));
 	else if (Q_strcasecmp(cmd, "raid_reload") == 0)
 		RaidDirector_Reload();
+	else if (Q_strcasecmp(cmd, "raid_reset") == 0)
+		RaidDirector_ResetEncounter();
 	else if (Q_strcasecmp(cmd, "raid_dump") == 0)
 		RaidDirector_Dump();
 	else if (Q_strcasecmp(cmd, "raid_set_state") == 0)

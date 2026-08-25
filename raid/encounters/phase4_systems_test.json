@@ -1,6 +1,9 @@
 {
   "encounter": "phase4_systems_test",
   "initial_state": "idle",
+  "reset": [
+    { "op": "post_encounter_message", "text": "ENCOUNTER RESET", "duration": 3, "priority": 100 }
+  ],
   "events": [
     {
       "source": "trigger",
@@ -70,6 +73,22 @@
       "do": [
         { "op": "post_message", "text": "CORE COLLECTED" },
         { "op": "play_sound", "sound": "misc/power1.wav" }
+      ]
+    },
+    {
+      "source": "bfg_relic_1",
+      "signal": "pickup",
+      "do": [
+        { "op": "post_message", "text": "BFG RELIC ACQUIRED" },
+        { "op": "play_sound", "sound": "misc/w_pkup.wav" }
+      ]
+    },
+    {
+      "source": "bfg_relic_1",
+      "signal": "drop",
+      "do": [
+        { "op": "post_message", "text": "BFG RELIC EJECTED" },
+        { "op": "play_sound", "sound": "weapons/change.wav" }
       ]
     },
     {

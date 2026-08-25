@@ -2934,6 +2934,7 @@ void ClientDisconnect(edict_t *ent)
 	if (!ent->client)
 		return;
 
+	RaidCarry_Drop(ent);
 	RaidThirdPerson_Disconnect(ent);
 
 	// ZOID
@@ -3256,6 +3257,9 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 			pm.snapinitial = true;
 
 		pm.cmd = *ucmd;
+		const float raid_move_scale = RaidCarry_MovementScale(ent);
+		pm.cmd.forwardmove *= raid_move_scale;
+		pm.cmd.sidemove *= raid_move_scale;
 		pm.player = ent;
 		pm.trace = gi.game_import_t::trace;
 		pm.clip = SV_PM_Clip;

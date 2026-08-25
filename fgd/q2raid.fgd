@@ -287,6 +287,11 @@
 	targetname(target_source) : "Name for firing"
 ]
 
+// Compatibility alias used by early Q2RAID FGD drafts.
+@baseclass = Targetname [
+	targetname(target_source) : "Name for firing"
+]
+
 // Entity will call G_UseTargets
 @baseclass = UseTargets [
 	target(target_destination) : "Target to fire"
@@ -1891,7 +1896,16 @@ monster_gekk : "Gekk"
     item_type(choices) : "Item type" : "power_core" =
     [
         "power_core" : "Power Core"
+        "bfg_relic" : "BFG10K Weapon Relic"
     ]
+    carry_mode(choices) : "Carry mode" : 0 =
+    [
+        0 : "Automatic from item type"
+        1 : "Heavy object (forced third person, weapons blocked)"
+        2 : "Weapon relic (first person, equipped weapon active)"
+    ]
+    weapon(string) : "Weapon classname for weapon relic" : "weapon_bfg"
+    encumber_scale(float) : "Movement scale while carried" : 0.45
     model(studio) : "World/carried/deposited model" : "models/items/keys/power/tris.md2"
     scale(float) : "Model scale" : 1
 ]

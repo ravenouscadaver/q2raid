@@ -3,6 +3,7 @@
 
 #include "g_local.h"
 #include "raid_director.h"
+#include "raid_items.h"
 
 #include "json/json.h"
 
@@ -46,9 +47,22 @@ struct raid_player_status_t
     Json::Value on_expire;
 };
 
+struct raid_entity_snapshot_t
+{
+    uint32_t entity_number = 0;
+    int32_t spawn_count = 0;
+    solid_t solid = SOLID_NOT;
+    save_touch_t touch;
+    save_use_t use;
+    float wait = 0.0f;
+    float moveinfo_wait = 0.0f;
+    int32_t skinnum = 0;
+};
+
 raid_director_runtime_t director;
 std::vector<raid_color_cycle_t> color_cycles;
 std::vector<raid_player_status_t> player_statuses;
+std::vector<raid_entity_snapshot_t> entity_snapshots;
 cvar_t *raid_script = nullptr;
 cvar_t *raid_script_root = nullptr;
 cvar_t *raid_autoload = nullptr;
@@ -56,6 +70,49 @@ gtime_t raid_message_expires;
 int raid_message_priority = 0;
 
 void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::string &context, edict_t *activator);
+void RaidDirector_ClearStatusHUD(edict_t *player);
+
+void RaidDirector_SnapshotEntity(edict_t *entity)
+{
+    if (!entity || std::any_of(entity_snapshots.begin(), entity_snapshots.end(), [entity](const raid_entity_snapshot_t &snapshot) {
+        return snapshot.entity_number == entity->s.number && snapshot.spawn_count == entity->spawn_count;
+    }))
+        return;
+    entity_snapshots.push_back({ entity->s.number, entity->spawn_count, entity->solid, entity->touch, entity->use,
+        entity->wait, entity->moveinfo.wait, entity->s.skinnum });
+}
+
+void RaidDirector_RestoreEntitySnapshots()
+{
+    for (const raid_entity_snapshot_t &snapshot : entity_snapshots)
+    {
+        if (!snapshot.entity_number || snapshot.entity_number >= globals.num_edicts)
+            continue;
+        edict_t *entity = &g_edicts[snapshot.entity_number];
+        if (!entity->inuse || entity->spawn_count != snapshot.spawn_count)
+            continue;
+        entity->solid = snapshot.solid;
+        entity->touch = snapshot.touch;
+        entity->use = snapshot.use;
+        entity->wait = snapshot.wait;
+        entity->moveinfo.wait = snapshot.moveinfo_wait;
+        entity->s.skinnum = snapshot.skinnum;
+        gi.linkentity(entity);
+    }
+    entity_snapshots.clear();
+}
+
+void RaidDirector_ClearTransientState()
+{
+    for (edict_t *player : active_players())
+        RaidDirector_ClearStatusHUD(player);
+    color_cycles.clear();
+    player_statuses.clear();
+    raid_message_expires = 0_ms;
+    raid_message_priority = 0;
+    if (director.initialized)
+        gi.configstring(CONFIG_RAID_MESSAGE, "");
+}
 
 constexpr std::array<player_stat_t, 4> raid_status_stats = {
     STAT_RAID_STATUS, STAT_RAID_STATUS_2, STAT_RAID_STATUS_3, STAT_RAID_STATUS_4
@@ -80,22 +137,15 @@ void RaidDirector_ClearDocument()
     if (director.loaded && director.document["states"].isMember(director.state))
         RaidDirector_ExecuteOperations(director.document["states"][director.state]["exit"], fmt::format("state '{}' exit", director.state), nullptr);
 
-    for (edict_t *player : active_players())
-    {
-        RaidDirector_ClearStatusHUD(player);
-    }
+    RaidDirector_RestoreEntitySnapshots();
+    RaidCarry_ResetAll();
+    RaidDirector_ClearTransientState();
 
     director.loaded = false;
     director.script_path.clear();
     director.encounter_name.clear();
     director.state.clear();
     director.document = Json::Value();
-    color_cycles.clear();
-    player_statuses.clear();
-    raid_message_expires = 0_ms;
-    raid_message_priority = 0;
-    if (director.initialized)
-        gi.configstring(CONFIG_RAID_MESSAGE, "");
 }
 
 void RaidDirector_PostMessage(edict_t *activator, const std::string &message, bool broadcast)
@@ -214,6 +264,7 @@ void RaidDirector_SetNamedColor(const std::string &targetname, const rgba_t &col
     int matches = 0;
     while ((entity = G_FindByString<&edict_t::targetname>(entity, targetname.c_str())))
     {
+        RaidDirector_SnapshotEntity(entity);
         entity->s.skinnum = RaidDirector_PackColor(color);
         ++matches;
     }
@@ -245,6 +296,7 @@ void RaidDirector_DisableEntity(const std::string &targetname)
     int matches = 0;
     while ((entity = G_FindByString<&edict_t::targetname>(entity, targetname.c_str())))
     {
+        RaidDirector_SnapshotEntity(entity);
         entity->solid = SOLID_NOT;
         entity->touch = nullptr;
         entity->use = nullptr;
@@ -262,6 +314,7 @@ void RaidDirector_SetField(const std::string &targetname, const std::string &fie
     int matches = 0;
     while ((entity = G_FindByString<&edict_t::targetname>(entity, targetname.c_str())))
     {
+        RaidDirector_SnapshotEntity(entity);
         if (field == "wait" && value.isNumeric())
         {
             entity->wait = value.asFloat();
@@ -468,6 +521,14 @@ bool RaidDirector_Validate(const Json::Value &root, std::string &error)
         error = "states must be a non-empty object";
         return false;
     }
+
+    if (root.isMember("reset") && !root["reset"].isArray())
+    {
+        error = "reset must be an operation array";
+        return false;
+    }
+    if (root.isMember("reset") && !RaidDirector_ValidateOperations(root["reset"], "reset", error))
+        return false;
 
     const std::string initial_state = root["initial_state"].asString();
     if (!root["states"].isMember(initial_state))
@@ -770,6 +831,28 @@ bool RaidDirector_Reload()
 
     const std::string path = director.script_path;
     return RaidDirector_Load(path.c_str());
+}
+
+bool RaidDirector_ResetEncounter()
+{
+    if (!director.loaded)
+    {
+        gi.Com_Print("[raid] No encounter JSON is loaded\n");
+        return false;
+    }
+
+    if (director.document["states"].isMember(director.state))
+        RaidDirector_ExecuteOperations(director.document["states"][director.state]["exit"],
+            fmt::format("state '{}' exit", director.state), nullptr);
+
+    RaidDirector_RestoreEntitySnapshots();
+    RaidCarry_ResetAll();
+    RaidDirector_ClearTransientState();
+    director.state = director.document["initial_state"].asString();
+    RaidDirector_ExecuteOperations(director.document["reset"], "encounter reset", nullptr);
+    RaidDirector_ExecuteEnter(director.state, nullptr);
+    gi.Com_PrintFmt("[raid] Encounter '{}' reset to initial state '{}'\n", director.encounter_name, director.state);
+    return true;
 }
 
 bool RaidDirector_SetState(const char *state_name)
