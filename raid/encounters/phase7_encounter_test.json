@@ -209,6 +209,16 @@
         { "op": "fire_target", "target": "light_party4" },
         { "op": "fire_target", "target": "door" }
       ]
+    },
+    "wipe": {
+      "enter": [
+        {
+          "op": "post_encounter_message",
+          "text": "FIRETEAM LOST - RESETTING",
+          "duration": 5,
+          "priority": 100
+        }
+      ]
     }
   }
 }

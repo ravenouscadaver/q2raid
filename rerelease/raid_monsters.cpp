@@ -2,6 +2,8 @@
 #include "raid_director.h"
 #include "raid_monsters.h"
 
+#include <deque>
+
 namespace
 {
 struct entity_ref_t
@@ -51,16 +53,15 @@ struct door_runtime_t
 {
     entity_ref_t controller;
     bool active = false;
-    bool prepared = false;
     bool deployed_any = false;
     int release_remaining = 0;
+    size_t next_template = 0;
     gtime_t next_release;
     gtime_t replenish_at;
     std::vector<leash_state_t> leashes;
-    std::vector<roster_entry_t> roster;
 };
 
-std::vector<door_runtime_t> door_runtimes;
+std::deque<door_runtime_t> door_runtimes;
 std::vector<roster_entry_t> roster_templates;
 
 std::string CopyKey(const char *value)
@@ -103,6 +104,11 @@ bool IsRosterMember(edict_t *controller, edict_t *monster)
         monster->targetname && controller->target && !Q_strcasecmp(monster->targetname, controller->target);
 }
 
+bool IsDoorInstance(edict_t *controller, edict_t *monster)
+{
+    return IsRosterMember(controller, monster) && monster->owner == controller;
+}
+
 int CountRoster(edict_t *controller, bool hidden)
 {
     int count = 0;
@@ -117,29 +123,28 @@ int CountRoster(edict_t *controller, bool hidden)
     return count;
 }
 
+int CountRosterTotal(edict_t *controller)
+{
+    return CountRoster(controller, false) + CountRoster(controller, true);
+}
+
 void QueueInitialRelease(edict_t *controller, door_runtime_t &runtime)
 {
-    const int hidden = CountRoster(controller, true);
-    const int requested = controller->count > 0 ? controller->count : (controller->health > 0 ? controller->health : hidden);
-    runtime.release_remaining = std::min(hidden, requested);
+    runtime.leashes.clear();
+    runtime.deployed_any = false;
+    runtime.replenish_at = 0_ms;
+    const int active = CountRoster(controller, false);
+    const int max_active = controller->health > 0 ? controller->health : std::numeric_limits<int>::max();
+    const int requested = controller->count > 0 ? controller->count :
+        (controller->radius_dmg > 0 ? controller->radius_dmg : (controller->health > 0 ? controller->health : 1));
+    runtime.release_remaining = std::max(0, std::min(requested, max_active - active));
     runtime.next_release = level.time;
 }
 
-void CaptureRoster(edict_t *controller, door_runtime_t &runtime)
+void CaptureTemplate(edict_t *monster)
 {
-    runtime.roster.clear();
-    runtime.leashes.clear();
-    runtime.deployed_any = false;
-    runtime.release_remaining = 0;
-    runtime.replenish_at = 0_ms;
-
-    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
-    {
-        edict_t *monster = &g_edicts[i];
-        if (!IsRosterMember(controller, monster) || monster->health <= 0)
-            continue;
-        runtime.roster.push_back({});
-        roster_entry_t &entry = runtime.roster.back();
+        roster_templates.push_back({});
+        roster_entry_t &entry = roster_templates.back();
         entry.classname = CopyKey(monster->classname);
         entry.targetname = CopyKey(monster->targetname);
         entry.target = CopyKey(monster->target);
@@ -167,17 +172,9 @@ void CaptureRoster(edict_t *controller, door_runtime_t &runtime)
         entry.dmg = monster->dmg;
         entry.mass = monster->mass;
 
-        if (!monster->spawnflags.has(SPAWNFLAG_MONSTER_TRIGGER_SPAWN))
-            gi.Com_PrintFmt("[raid] roster monster '{}' lacked Trigger Spawn; Director will safely reconstruct it dormant\n",
-                monster->targetname ? monster->targetname : monster->classname);
-    }
-
-    runtime.prepared = false;
-    gi.Com_PrintFmt("[raid] monster door '{}' captured {} roster members for dormancy\n",
-        controller->targetname ? controller->targetname : "<unnamed>", runtime.roster.size());
 }
 
-edict_t *SpawnRosterMember(const roster_entry_t &entry)
+edict_t *SpawnRosterMember(const roster_entry_t &entry, edict_t *controller)
 {
     edict_t *monster = G_Spawn();
     monster->classname = RestoreKey(entry.classname);
@@ -190,8 +187,9 @@ edict_t *SpawnRosterMember(const roster_entry_t &entry)
     monster->combattarget = RestoreKey(entry.combattarget);
     monster->message = RestoreKey(entry.message);
     monster->model = RestoreKey(entry.model);
-    monster->s.origin = entry.origin;
-    monster->s.angles = entry.angles;
+    monster->s.origin = controller->s.origin;
+    monster->s.angles = controller->s.angles;
+    monster->owner = controller;
     monster->spawnflags = entry.spawnflags | SPAWNFLAG_MONSTER_TRIGGER_SPAWN;
     monster->speed = entry.speed;
     monster->accel = entry.accel;
@@ -212,25 +210,29 @@ edict_t *SpawnRosterMember(const roster_entry_t &entry)
     return monster->inuse ? monster : nullptr;
 }
 
-void RebuildRosters()
+void ClearRosterInstances()
 {
     for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
     {
         edict_t *monster = &g_edicts[i];
         if (!monster->inuse || !monster->classname || strncmp(monster->classname, "monster_", 8) || !monster->targetname)
             continue;
-        const bool roster_member = std::any_of(roster_templates.begin(), roster_templates.end(), [monster](const roster_entry_t &entry) {
-            return !Q_strcasecmp(entry.targetname.c_str(), monster->targetname);
-        });
-        if (roster_member)
+        if (monster->owner && monster->owner->inuse && monster->owner->classname &&
+            !Q_strcasecmp(monster->owner->classname, "raid_monster_door"))
             G_FreeEdict(monster);
     }
+}
 
-    int restored = 0;
+edict_t *CreateDoorInstance(edict_t *controller, door_runtime_t &runtime)
+{
+    std::vector<const roster_entry_t *> choices;
     for (const roster_entry_t &entry : roster_templates)
-        if (SpawnRosterMember(entry))
-            ++restored;
-    gi.Com_PrintFmt("[raid] restored {} roster monsters to mapper deployment positions\n", restored);
+        if (controller->target && !Q_strcasecmp(entry.targetname.c_str(), controller->target))
+            choices.push_back(&entry);
+    if (choices.empty())
+        return nullptr;
+    const roster_entry_t &entry = *choices[runtime.next_template++ % choices.size()];
+    return SpawnRosterMember(entry, controller);
 }
 
 edict_t *NearestPlayer(const vec3_t &origin)
@@ -254,7 +256,7 @@ edict_t *NearestPlayer(const vec3_t &origin)
 bool WakeMonster(edict_t *controller, edict_t *monster)
 {
     edict_t *player = NearestPlayer(monster->s.origin);
-    if (controller->pathtarget && *controller->pathtarget)
+    if (controller->mass == 2 && controller->pathtarget && *controller->pathtarget)
         monster->target = controller->pathtarget;
 
     if (monster->svflags & SVF_NOCLIENT)
@@ -281,7 +283,7 @@ bool ReleaseOne(edict_t *controller, door_runtime_t &runtime)
     for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
     {
         edict_t *monster = &g_edicts[i];
-        if (!IsRosterMember(controller, monster) || monster->health <= 0 || !(monster->svflags & SVF_NOCLIENT))
+        if (!IsDoorInstance(controller, monster) || monster->health <= 0 || !(monster->svflags & SVF_NOCLIENT))
             continue;
         if (!WakeMonster(controller, monster))
             continue;
@@ -290,7 +292,7 @@ bool ReleaseOne(edict_t *controller, door_runtime_t &runtime)
         RaidDirector_NotifyEntityEvent(controller, "deploy", monster);
         return true;
     }
-    return false;
+    return CreateDoorInstance(controller, runtime) != nullptr;
 }
 
 void UpdateLeashes(edict_t *controller, door_runtime_t &runtime)
@@ -351,10 +353,7 @@ USE(raid_monster_door_use) (edict_t *self, edict_t *, edict_t *) -> void
     runtime.replenish_at = 0_ms;
     if (runtime.active)
     {
-        if (!runtime.prepared)
-            CaptureRoster(self, runtime);
-        if (runtime.prepared)
-            QueueInitialRelease(self, runtime);
+        QueueInitialRelease(self, runtime);
         RaidDirector_NotifyEntityEvent(self, "activated", nullptr);
     }
     else
@@ -367,50 +366,35 @@ USE(raid_monster_door_use) (edict_t *self, edict_t *, edict_t *) -> void
 THINK(raid_monster_door_think) (edict_t *self) -> void
 {
     door_runtime_t &runtime = Runtime(self);
-    if (!runtime.prepared)
-    {
-        int total = 0;
-        int hidden = 0;
-        for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
-        {
-            edict_t *monster = &g_edicts[i];
-            if (!IsRosterMember(self, monster) || monster->health <= 0)
-                continue;
-            ++total;
-            if (monster->svflags & SVF_NOCLIENT)
-                ++hidden;
-        }
-        if (total == 0 || hidden == total)
-        {
-            runtime.prepared = true;
-            if (runtime.active)
-                QueueInitialRelease(self, runtime);
-            RaidDirector_NotifyEntityEvent(self, "roster_ready", nullptr);
-        }
-    }
     const float interval = self->wait > 0.0f ? self->wait : 0.5f;
     const int max_active = self->health > 0 ? self->health : std::numeric_limits<int>::max();
     int active = CountRoster(self, false);
 
     if (runtime.active && runtime.release_remaining > 0 && active < max_active && level.time >= runtime.next_release)
     {
+        edict_t *hidden_before = nullptr;
+        for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+            if (IsDoorInstance(self, &g_edicts[i]) && (g_edicts[i].svflags & SVF_NOCLIENT)) { hidden_before = &g_edicts[i]; break; }
         if (ReleaseOne(self, runtime))
         {
-            --runtime.release_remaining;
+            // Fresh instances need one engine frame to enter Trigger Spawn dormancy.
+            if (hidden_before)
+                --runtime.release_remaining;
             runtime.next_release = level.time + gtime_t::from_sec(interval);
-            ++active;
+            if (hidden_before)
+                ++active;
         }
         else
             runtime.release_remaining = 0;
     }
 
-    if (runtime.active && runtime.release_remaining == 0 && CountRoster(self, true) > 0)
+    if (runtime.active && runtime.release_remaining == 0)
     {
         int requested = 0;
         if (self->style == 1 && active < self->radius_dmg)
             requested = self->radius_dmg - active;
         else if (self->style == 2 && runtime.deployed_any && active == 0)
-            requested = self->dmg > 0 ? self->dmg : max_active;
+            requested = self->dmg > 0 ? self->dmg : (self->health > 0 ? self->health : 1);
 
         if (requested > 0)
         {
@@ -418,7 +402,7 @@ THINK(raid_monster_door_think) (edict_t *self) -> void
                 runtime.replenish_at = level.time + gtime_t::from_sec(std::max(0.0f, self->delay));
             else if (level.time >= runtime.replenish_at)
             {
-                runtime.release_remaining = std::min({ requested, CountRoster(self, true), max_active - active });
+                runtime.release_remaining = std::max(0, std::min(requested, max_active - CountRosterTotal(self)));
                 runtime.next_release = level.time;
                 runtime.replenish_at = 0_ms;
                 RaidDirector_NotifyEntityEvent(self, "replenish", nullptr);
@@ -442,6 +426,7 @@ void SP_raid_monster_door(edict_t *ent)
     if (ent->delay < 0.0f) ent->delay = 0.0f;
     if (ent->accel <= 0.0f) ent->accel = 64.0f;
     if (ent->speed < 0.0f) ent->speed = 0.0f;
+    if (!st.was_key_specified("wake_mode")) ent->mass = 1;
     ent->solid = SOLID_NOT;
     ent->movetype = MOVETYPE_NONE;
     ent->svflags |= SVF_NOCLIENT;
@@ -455,32 +440,42 @@ void RaidMonsters_PrepareRosters()
 {
     if (roster_templates.empty())
     {
+        std::vector<entity_ref_t> captured;
         for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
         {
-            edict_t *controller = &g_edicts[i];
-            if (!controller->inuse || !controller->classname || Q_strcasecmp(controller->classname, "raid_monster_door"))
+            edict_t *monster = &g_edicts[i];
+            if (!monster->inuse || !monster->classname || strncmp(monster->classname, "monster_", 8) || !monster->targetname)
                 continue;
-            door_runtime_t temporary;
-            CaptureRoster(controller, temporary);
-            roster_templates.insert(roster_templates.end(), temporary.roster.begin(), temporary.roster.end());
+            bool belongs = false;
+            for (uint32_t j = game.maxclients + 1; j < globals.num_edicts; ++j)
+            {
+                edict_t *controller = &g_edicts[j];
+                if (controller->inuse && controller->classname && !Q_strcasecmp(controller->classname, "raid_monster_door") &&
+                    controller->target && !Q_strcasecmp(controller->target, monster->targetname)) { belongs = true; break; }
+            }
+            if (!belongs)
+                continue;
+            CaptureTemplate(monster);
+            captured.push_back(Ref(monster));
         }
+        for (const entity_ref_t &ref : captured)
+            if (edict_t *monster = Resolve(ref)) G_FreeEdict(monster);
+        gi.Com_PrintFmt("[raid] captured {} reusable monster roster templates\n", roster_templates.size());
     }
-
-    RebuildRosters();
+    ClearRosterInstances();
     door_runtimes.clear();
     for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
     {
         edict_t *controller = &g_edicts[i];
         if (!controller->inuse || !controller->classname || Q_strcasecmp(controller->classname, "raid_monster_door"))
             continue;
-        CaptureRoster(controller, Runtime(controller));
+        Runtime(controller);
     }
 }
 
 void RaidMonsters_Reset()
 {
-    if (!roster_templates.empty())
-        RebuildRosters();
+    ClearRosterInstances();
     door_runtimes.clear();
 }
 

@@ -7,11 +7,15 @@ struct raid_thirdperson_state_t
 {
     bool enabled = false;
     bool carrying = false;
-    edict_t *avatar = nullptr;
-    edict_t *held_model = nullptr;
-    const char *held_model_name = nullptr;
+    uint32_t avatar_number = 0;
+    int32_t avatar_spawn_count = 0;
+    uint32_t held_model_number = 0;
+    int32_t held_model_spawn_count = 0;
+    std::string held_model_name;
     float held_model_scale = 0.0f;
     uint8_t saved_instance_bits = 0;
+    vec3_t previous_camera;
+    bool previous_camera_valid = false;
 };
 
 raid_thirdperson_state_t states[MAX_CLIENTS];
@@ -26,20 +30,29 @@ uint8_t ClientBit(edict_t *player)
     return static_cast<uint8_t>(1u << (player->s.number - 1));
 }
 
+edict_t *Resolve(uint32_t number, int32_t spawn_count)
+{
+    if (!number || number >= globals.num_edicts) return nullptr;
+    edict_t *entity = &g_edicts[number];
+    return entity->inuse && entity->spawn_count == spawn_count ? entity : nullptr;
+}
+
 void DestroyAvatar(edict_t *player)
 {
     auto &state = StateFor(player);
-    if (state.avatar && state.avatar->inuse)
-        G_FreeEdict(state.avatar);
-    state.avatar = nullptr;
+    if (edict_t *avatar = Resolve(state.avatar_number, state.avatar_spawn_count))
+        G_FreeEdict(avatar);
+    state.avatar_number = 0;
+    state.avatar_spawn_count = 0;
 }
 
 void DestroyHeldModel(edict_t *player)
 {
     auto &state = StateFor(player);
-    if (state.held_model && state.held_model->inuse)
-        G_FreeEdict(state.held_model);
-    state.held_model = nullptr;
+    if (edict_t *held = Resolve(state.held_model_number, state.held_model_spawn_count))
+        G_FreeEdict(held);
+    state.held_model_number = 0;
+    state.held_model_spawn_count = 0;
 }
 
 edict_t *CreateAvatar(edict_t *player)
@@ -76,23 +89,26 @@ void UpdateAvatar(edict_t *player, edict_t *avatar)
 void UpdateHeldModel(edict_t *player)
 {
     auto &state = StateFor(player);
-    if (!state.held_model || !state.held_model->inuse)
+    edict_t *held = Resolve(state.held_model_number, state.held_model_spawn_count);
+    if (!held)
     {
-        state.held_model = G_Spawn();
-        state.held_model->classname = "raid_held_item_model";
-        state.held_model->owner = player;
-        state.held_model->solid = SOLID_NOT;
-        state.held_model->movetype = MOVETYPE_NONE;
-        gi.setmodel(state.held_model, state.held_model_name);
-        state.held_model->s.renderfx = RF_GLOW | RF_NO_LOD;
-        state.held_model->s.scale = state.held_model_scale;
+        held = G_Spawn();
+        state.held_model_number = held->s.number;
+        state.held_model_spawn_count = held->spawn_count;
+        held->classname = "raid_held_item_model";
+        held->owner = player;
+        held->solid = SOLID_NOT;
+        held->movetype = MOVETYPE_NONE;
+        gi.setmodel(held, state.held_model_name.c_str());
+        held->s.renderfx = RF_GLOW | RF_NO_LOD;
+        held->s.scale = state.held_model_scale;
     }
 
     vec3_t forward;
     AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
-    state.held_model->s.origin = player->s.origin + (forward * 13.0f) + vec3_t{ 0, 0, 20.0f };
-    state.held_model->s.angles = { 0, player->client->v_angle[YAW] + 90.0f, 0 };
-    gi.linkentity(state.held_model);
+    held->s.origin = player->s.origin + (forward * 13.0f) + vec3_t{ 0, 0, 20.0f };
+    held->s.angles = { 0, player->client->v_angle[YAW] + 90.0f, 0 };
+    gi.linkentity(held);
 }
 }
 
@@ -104,7 +120,7 @@ void RaidThirdPerson_SetCarry(edict_t *player, bool carrying, const char *model,
     state.carrying = carrying;
     if (carrying)
     {
-        state.held_model_name = model;
+        state.held_model_name = model ? model : "models/items/keys/power/tris.md2";
         state.held_model_scale = scale;
         if (!state.enabled) state.saved_instance_bits = player->s.instance_bits;
         state.enabled = true;
@@ -115,8 +131,9 @@ void RaidThirdPerson_SetCarry(edict_t *player, bool carrying, const char *model,
         player->s.instance_bits = state.saved_instance_bits;
         DestroyAvatar(player);
         DestroyHeldModel(player);
-        state.held_model_name = nullptr;
+        state.held_model_name.clear();
         state.held_model_scale = 0.0f;
+        state.previous_camera_valid = false;
         if (player->client->pers.weapon && player->client->pers.weapon->view_model)
             player->client->ps.gunindex = gi.modelindex(player->client->pers.weapon->view_model);
     }
@@ -144,6 +161,7 @@ void RaidThirdPerson_Toggle(edict_t *player)
     {
         player->s.instance_bits = state.saved_instance_bits;
         DestroyAvatar(player);
+        state.previous_camera_valid = false;
         gi.LocClient_Print(player, PRINT_HIGH, "Raid third-person carry test OFF\n");
     }
 }
@@ -157,8 +175,13 @@ void RaidThirdPerson_Update(edict_t *player)
     if (!state.enabled || player->deadflag || player->client->resp.spectator)
         return;
 
-    if (!state.avatar || !state.avatar->inuse)
-        state.avatar = CreateAvatar(player);
+    edict_t *avatar = Resolve(state.avatar_number, state.avatar_spawn_count);
+    if (!avatar)
+    {
+        avatar = CreateAvatar(player);
+        state.avatar_number = avatar->s.number;
+        state.avatar_spawn_count = avatar->spawn_count;
+    }
 
     player->s.instance_bits = static_cast<uint8_t>(state.saved_instance_bits | ClientBit(player));
     if (state.carrying)
@@ -169,14 +192,27 @@ void RaidThirdPerson_Update(edict_t *player)
         player->s.skinnum = packed.skinnum;
         UpdateHeldModel(player);
     }
-    UpdateAvatar(player, state.avatar);
+    UpdateAvatar(player, avatar);
 
     vec3_t forward;
     AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
     const vec3_t eye = player->s.origin + vec3_t{ 0, 0, static_cast<float>(player->viewheight) };
     const vec3_t desired = eye - (forward * 88.0f) + vec3_t{ 0, 0, 18.0f };
-    const trace_t trace = gi.trace(eye, { -4, -4, -4 }, { 4, 4, 4 }, desired, player, MASK_SOLID);
-    player->client->ps.viewoffset = trace.endpos - player->s.origin;
+    trace_t trace = gi.trace(eye, { -6, -6, -8 }, { 6, 6, 8 }, desired, player, MASK_SOLID);
+    vec3_t camera = trace.endpos;
+    if (trace.startsolid || trace.allsolid)
+        camera = eye;
+    else if (trace.fraction < 1.0f)
+        camera += trace.plane.normal * 4.0f;
+    if (state.previous_camera_valid && (state.previous_camera - camera).length() < 256.0f)
+    {
+        const trace_t sweep = gi.trace(state.previous_camera, { -6, -6, -8 }, { 6, 6, 8 }, camera, player, MASK_SOLID);
+        if (!sweep.startsolid && !sweep.allsolid)
+            camera = sweep.endpos + (sweep.fraction < 1.0f ? sweep.plane.normal * 4.0f : vec3_origin);
+    }
+    state.previous_camera = camera;
+    state.previous_camera_valid = true;
+    player->client->ps.viewoffset = camera - player->s.origin;
     player->client->ps.gunindex = 0;
 }
 

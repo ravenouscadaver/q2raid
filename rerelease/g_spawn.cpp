@@ -701,6 +701,7 @@ static const std::initializer_list<field_t> entity_fields = {
 	FIELD_AUTO_NAMED("weapon", pathtarget),
 	FIELD_AUTO_NAMED("encumber_scale", speed),
 	FIELD_AUTO_NAMED("carry_status", deathtarget),
+	FIELD_AUTO_NAMED("held_model", combattarget),
 	FIELD_AUTO_NAMED("status_duration", delay),
 	FIELD_AUTO_NAMED("status_policy", healthtarget),
 	FIELD_AUTO_NAMED("clear_status_on_drop", sounds),

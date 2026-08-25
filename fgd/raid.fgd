@@ -19,6 +19,7 @@
     weapon(string) : "Weapon classname for weapon relic" : "weapon_bfg"
     encumber_scale(float) : "Movement multiplier while carried" : 0.45
     model(studio) : "World, carried and deposited model" : "models/items/keys/power/tris.md2"
+    held_model(studio) : "Optional model shown while carried; blank uses world model" : ""
     scale(float) : "Model scale" : 1
 
     carry_status(string) : "Status conferred to carrier (power cores default to volatile; use none to disable)" : ""

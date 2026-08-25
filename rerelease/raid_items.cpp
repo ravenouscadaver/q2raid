@@ -11,7 +11,8 @@ enum raid_carry_mode_t { RAID_CARRY_AUTO = 0, RAID_CARRY_HEAVY = 1, RAID_CARRY_W
 
 struct raid_carry_state_t
 {
-    edict_t *item = nullptr;
+    uint32_t item_number = 0;
+    int32_t item_spawn_count = 0;
     gitem_t *previous_weapon = nullptr;
     int previous_relic_inventory = 0;
 };
@@ -25,7 +26,32 @@ struct raid_hover_state_t
 };
 raid_hover_state_t hover_states[MAX_CLIENTS];
 
+struct gadget_state_t
+{
+    uint32_t entity_number = 0;
+    int32_t spawn_count = 0;
+    bool occupied = false;
+};
+std::vector<gadget_state_t> gadget_states;
+
+gadget_state_t &GadgetState(edict_t *gadget)
+{
+    auto found = std::find_if(gadget_states.begin(), gadget_states.end(), [gadget](const gadget_state_t &state) {
+        return state.entity_number == gadget->s.number && state.spawn_count == gadget->spawn_count;
+    });
+    if (found != gadget_states.end()) return *found;
+    gadget_states.push_back({ gadget->s.number, gadget->spawn_count, false });
+    return gadget_states.back();
+}
+
 raid_carry_state_t &CarryState(edict_t *player) { return carry_states[player->s.number - 1]; }
+edict_t *CarriedItem(const raid_carry_state_t &state)
+{
+    if (!state.item_number || state.item_number >= globals.num_edicts)
+        return nullptr;
+    edict_t *item = &g_edicts[state.item_number];
+    return item->inuse && item->spawn_count == state.item_spawn_count ? item : nullptr;
+}
 bool IsSupportedRaidItem(edict_t *item)
 {
     return item && item->message &&
@@ -47,11 +73,12 @@ gitem_t *RelicWeapon(edict_t *item)
 void FinishCarry(edict_t *player)
 {
     auto &state = CarryState(player);
-    if (state.item && state.item->deathtarget && state.item->sounds)
-        RaidDirector_ClearStatus(player, state.item->deathtarget);
-    if (IsWeaponRelic(state.item))
+    edict_t *item = CarriedItem(state);
+    if (item && item->deathtarget && item->sounds)
+        RaidDirector_ClearStatus(player, item->deathtarget);
+    if (IsWeaponRelic(item))
     {
-        gitem_t *weapon = RelicWeapon(state.item);
+        gitem_t *weapon = RelicWeapon(item);
         if (weapon)
             player->client->pers.inventory[weapon->id] = state.previous_relic_inventory;
         player->client->newweapon = state.previous_weapon;
@@ -91,7 +118,8 @@ TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool) ->
         return;
 
     auto &state = CarryState(other);
-    state.item = self;
+    state.item_number = self->s.number;
+    state.item_spawn_count = self->spawn_count;
     self->solid = SOLID_NOT;
     self->movetype = MOVETYPE_NONE;
     self->svflags |= SVF_NOCLIENT;
@@ -114,7 +142,8 @@ TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool) ->
         ChangeWeapon(other);
     }
     else
-        RaidThirdPerson_SetCarry(other, true, self->model, self->s.scale);
+        RaidThirdPerson_SetCarry(other, true,
+            self->combattarget && *self->combattarget ? self->combattarget : self->model, self->s.scale);
     if (self->deathtarget && *self->deathtarget)
     {
         const float configured_duration = self->delay > 0.0f
@@ -135,7 +164,7 @@ edict_t *FindSocket(edict_t *trigger, edict_t *item)
     for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
     {
         edict_t *gadget = &g_edicts[i];
-        if (!gadget->inuse || !gadget->classname || Q_strcasecmp(gadget->classname, "raid_gadget") || gadget->health)
+        if (!gadget->inuse || !gadget->classname || Q_strcasecmp(gadget->classname, "raid_gadget") || GadgetState(gadget).occupied)
             continue;
         if (!gadget->message || Q_strcasecmp(gadget->message, "core_socket"))
             continue;
@@ -153,12 +182,12 @@ TOUCH(raid_deposit_touch) (edict_t *self, edict_t *other, const trace_t &, bool)
 {
     if (!other->client || !RaidCarry_IsCarrying(other))
         return;
-    edict_t *item = CarryState(other).item;
+    edict_t *item = CarriedItem(CarryState(other));
     edict_t *socket = FindSocket(self, item);
     if (!socket)
         return;
 
-    socket->health = 1;
+    GadgetState(socket).occupied = true;
     item->s.origin = socket->s.origin;
     item->s.angles = socket->s.angles;
     item->solid = SOLID_NOT;
@@ -226,29 +255,29 @@ void SP_raid_hovertext(edict_t *ent)
 
 bool RaidCarry_IsCarrying(edict_t *player)
 {
-    return player && player->client && player->s.number >= 1 && player->s.number <= MAX_CLIENTS && CarryState(player).item;
+    return player && player->client && player->s.number >= 1 && player->s.number <= MAX_CLIENTS && CarriedItem(CarryState(player));
 }
 
 bool RaidCarry_BlocksWeapons(edict_t *player)
 {
-    return RaidCarry_IsCarrying(player) && !IsWeaponRelic(CarryState(player).item);
+    return RaidCarry_IsCarrying(player) && !IsWeaponRelic(CarriedItem(CarryState(player)));
 }
 
 bool RaidCarry_IsWeaponRelic(edict_t *player)
 {
-    return RaidCarry_IsCarrying(player) && IsWeaponRelic(CarryState(player).item);
+    return RaidCarry_IsCarrying(player) && IsWeaponRelic(CarriedItem(CarryState(player)));
 }
 
 float RaidCarry_MovementScale(edict_t *player)
 {
     if (!RaidCarry_IsCarrying(player)) return 1.0f;
-    return std::clamp(CarryState(player).item->speed, 0.1f, 1.0f);
+    return std::clamp(CarriedItem(CarryState(player))->speed, 0.1f, 1.0f);
 }
 
 bool RaidCarry_Drop(edict_t *player)
 {
     if (!RaidCarry_IsCarrying(player)) return false;
-    edict_t *item = CarryState(player).item;
+    edict_t *item = CarriedItem(CarryState(player));
     vec3_t forward;
     AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
     item->s.origin = player->s.origin + (forward * 28.0f) + vec3_t{ 0, 0, 8 };
@@ -268,7 +297,7 @@ void RaidCarry_OnPlayerDeath(edict_t *player)
 {
     if (!RaidCarry_IsCarrying(player))
         return;
-    edict_t *item = CarryState(player).item;
+    edict_t *item = CarriedItem(CarryState(player));
     if (item->deathtarget && item->timestamp && item->timestamp <= level.time)
         ReturnRaidItemToOrigin(player, item, "respawn");
     else
@@ -303,8 +332,11 @@ void RaidCarry_ResetAll()
             RestoreRaidItem(entity);
         }
         else if (!Q_strcasecmp(entity->classname, "raid_gadget"))
-            entity->health = 0;
+            GadgetState(entity).occupied = false;
     }
+    // Occupancy is derived encounter state. Recreate it lazily so an edict slot
+    // reused after a map/reset can never inherit a previous gadget's state.
+    gadget_states.clear();
 }
 
 void RaidHover_Reset()

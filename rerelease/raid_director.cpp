@@ -12,6 +12,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include <deque>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -95,6 +96,16 @@ cvar_t *raid_script_root = nullptr;
 cvar_t *raid_autoload = nullptr;
 gtime_t raid_message_expires;
 int raid_message_priority = 0;
+
+struct queued_raid_event_t
+{
+    std::string source;
+    std::string signal;
+    uint32_t activator_number = 0;
+    int32_t activator_spawn_count = 0;
+};
+std::deque<queued_raid_event_t> queued_events;
+bool dispatching_events = false;
 
 void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::string &context, edict_t *activator);
 void RaidDirector_ClearStatusHUD(edict_t *player);
@@ -219,6 +230,8 @@ void RaidDirector_ClearTransientState()
         RaidDirector_ClearStatusHUD(player);
     color_cycles.clear();
     player_statuses.clear();
+    queued_events.clear();
+    dispatching_events = false;
     raid_message_expires = 0_ms;
     raid_message_priority = 0;
     if (director.initialized)
@@ -792,6 +805,16 @@ std::filesystem::path RaidDirector_ResolvePath(const char *path)
 }
 }
 
+void RaidDirector_OnPartyWipe()
+{
+    if (!director.loaded)
+        return;
+    if (director.document["states"].isMember("wipe"))
+        RaidDirector_SetState("wipe");
+    else
+        gi.Com_PrintFmt("[raid] Party wipe detected in encounter '{}'\n", director.encounter_name);
+}
+
 void RaidDirector_ApplyStatus(edict_t *player, const char *status, float duration, const char *stack_policy)
 {
     ApplyStatusFromDefinition(player, status, duration, stack_policy);
@@ -835,10 +858,21 @@ void RaidDirector_ResetForMap(const char *mapname)
 void RaidDirector_OnMapReady()
 {
     RaidDirector_CaptureEntityBaseline();
-    if (!director.initialized || !raid_autoload || !raid_autoload->integer || !raid_script || !*raid_script->string)
+    if (!director.initialized || !raid_autoload || !raid_autoload->integer)
         return;
+    if (raid_script && *raid_script->string)
+    {
+        RaidDirector_Load(raid_script->string);
+        return;
+    }
 
-    RaidDirector_Load(raid_script->string);
+    const std::filesystem::path matched = std::filesystem::path("raid/encounters") / (director.mapname + ".json");
+    const std::filesystem::path resolved = RaidDirector_ResolvePath(matched.string().c_str());
+    if (std::filesystem::exists(resolved))
+    {
+        gi.Com_PrintFmt("[raid] Found map-matched encounter '{}'\n", matched.string());
+        RaidDirector_Load(matched.string().c_str());
+    }
 }
 
 void RaidDirector_RunFrame()
@@ -928,37 +962,63 @@ void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t
     if (!director.loaded || !source || !source->targetname || !signal)
         return;
 
-    const Json::Value &events = director.document["events"];
-    if (!events.isArray())
+    queued_events.push_back({ source->targetname, signal,
+        activator ? activator->s.number : 0, activator ? activator->spawn_count : 0 });
+    if (dispatching_events)
         return;
 
-    for (const Json::Value &event : events)
+    dispatching_events = true;
+    int budget = 1024;
+    while (!queued_events.empty() && budget-- > 0)
     {
-        if (event.get("source", "").asString() != source->targetname || event.get("signal", "activate").asString() != signal)
-            continue;
-
-        const std::string from_state = event.get("from_state", "").asString();
-        if (!from_state.empty() && from_state != director.state)
-            continue;
-
-        const std::string next_state = event.get("set_state", "").asString();
-        RaidDirector_ExecuteOperations(event["do"], fmt::format("event '{}:{}'", source->targetname, signal), activator);
-        if (!next_state.empty())
+        queued_raid_event_t queued = std::move(queued_events.front());
+        queued_events.pop_front();
+        edict_t *event_activator = nullptr;
+        if (queued.activator_number && queued.activator_number < globals.num_edicts)
         {
-            if (!director.document["states"].isMember(next_state))
-            {
-                gi.Com_PrintFmt("[raid] Event from '{}' references unknown state '{}'\n", source->targetname, next_state);
-                continue;
-            }
+            edict_t *candidate = &g_edicts[queued.activator_number];
+            if (candidate->inuse && candidate->spawn_count == queued.activator_spawn_count)
+                event_activator = candidate;
+        }
 
-            const std::string previous = director.state;
-            RaidDirector_ExecuteOperations(director.document["states"][previous]["exit"], fmt::format("state '{}' exit", previous), activator);
-            director.state = next_state;
-            color_cycles.clear();
-            gi.Com_PrintFmt("[raid] Event '{}:{}': '{}' -> '{}'\n", source->targetname, signal, previous, director.state);
-            RaidDirector_ExecuteEnter(director.state, activator);
+        const Json::Value &events = director.document["events"];
+        if (!events.isArray())
+            continue;
+
+        for (const Json::Value &event : events)
+        {
+            if (event.get("source", "").asString() != queued.source || event.get("signal", "activate").asString() != queued.signal)
+                continue;
+
+            const std::string from_state = event.get("from_state", "").asString();
+            if (!from_state.empty() && from_state != director.state)
+                continue;
+
+            const std::string next_state = event.get("set_state", "").asString();
+            RaidDirector_ExecuteOperations(event["do"], fmt::format("event '{}:{}'", queued.source, queued.signal), event_activator);
+            if (!next_state.empty())
+            {
+                if (!director.document["states"].isMember(next_state))
+                {
+                    gi.Com_PrintFmt("[raid] Event from '{}' references unknown state '{}'\n", queued.source, next_state);
+                    continue;
+                }
+
+                const std::string previous = director.state;
+                RaidDirector_ExecuteOperations(director.document["states"][previous]["exit"], fmt::format("state '{}' exit", previous), event_activator);
+                director.state = next_state;
+                color_cycles.clear();
+                gi.Com_PrintFmt("[raid] Event '{}:{}': '{}' -> '{}'\n", queued.source, queued.signal, previous, director.state);
+                RaidDirector_ExecuteEnter(director.state, event_activator);
+            }
         }
     }
+    if (!queued_events.empty())
+    {
+        gi.Com_PrintFmt("[raid] Event budget exhausted; discarded {} recursively generated events\n", queued_events.size());
+        queued_events.clear();
+    }
+    dispatching_events = false;
 }
 
 bool RaidDirector_Load(const char *path)
