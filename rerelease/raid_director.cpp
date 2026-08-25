@@ -827,6 +827,7 @@ void RaidDirector_Shutdown()
 void RaidDirector_ResetForMap(const char *mapname)
 {
     RaidDirector_ClearDocument();
+    RaidMonsters_ClearMap();
     entity_snapshots.clear();
     director.mapname = mapname ? mapname : "";
 }

@@ -2,8 +2,6 @@
 #include "raid_director.h"
 #include "raid_monsters.h"
 
-void monster_triggered_start(edict_t *self);
-
 namespace
 {
 struct entity_ref_t
@@ -21,27 +19,59 @@ struct leash_state_t
 
 struct roster_entry_t
 {
-    entity_ref_t monster;
+    std::string classname;
+    std::string targetname;
+    std::string target;
+    std::string pathtarget;
+    std::string deathtarget;
+    std::string healthtarget;
+    std::string itemtarget;
+    std::string combattarget;
+    std::string message;
+    std::string model;
+    std::string item;
     vec3_t origin;
     vec3_t angles;
+    spawnflags_t spawnflags;
+    float speed = 0.0f;
+    float accel = 0.0f;
+    float decel = 0.0f;
+    float wait = 0.0f;
+    float delay = 0.0f;
+    float random = 0.0f;
+    int style = 0;
+    int count = 0;
+    int health = 0;
+    int sounds = 0;
+    int dmg = 0;
+    int mass = 0;
 };
 
 struct door_runtime_t
 {
     entity_ref_t controller;
     bool active = false;
-    bool prepare_requested = false;
     bool prepared = false;
     bool deployed_any = false;
     int release_remaining = 0;
     gtime_t next_release;
     gtime_t replenish_at;
-    gtime_t prepare_at;
     std::vector<leash_state_t> leashes;
     std::vector<roster_entry_t> roster;
 };
 
 std::vector<door_runtime_t> door_runtimes;
+std::vector<roster_entry_t> roster_templates;
+
+std::string CopyKey(const char *value)
+{
+    return value ? value : "";
+}
+
+const char *RestoreKey(const std::string &value)
+{
+    return value.empty() ? nullptr : G_CopyString(value.c_str(), TAG_LEVEL);
+}
 
 entity_ref_t Ref(edict_t *entity)
 {
@@ -108,42 +138,99 @@ void CaptureRoster(edict_t *controller, door_runtime_t &runtime)
         edict_t *monster = &g_edicts[i];
         if (!IsRosterMember(controller, monster) || monster->health <= 0)
             continue;
-        runtime.roster.push_back({ Ref(monster), monster->s.origin, monster->s.angles });
-        monster->spawnflags |= SPAWNFLAG_MONSTER_TRIGGER_SPAWN;
+        runtime.roster.push_back({});
+        roster_entry_t &entry = runtime.roster.back();
+        entry.classname = CopyKey(monster->classname);
+        entry.targetname = CopyKey(monster->targetname);
+        entry.target = CopyKey(monster->target);
+        entry.pathtarget = CopyKey(monster->pathtarget);
+        entry.deathtarget = CopyKey(monster->deathtarget);
+        entry.healthtarget = CopyKey(monster->healthtarget);
+        entry.itemtarget = CopyKey(monster->itemtarget);
+        entry.combattarget = CopyKey(monster->combattarget);
+        entry.message = CopyKey(monster->message);
+        entry.model = CopyKey(monster->model);
+        entry.item = monster->item ? CopyKey(monster->item->classname) : "";
+        entry.origin = monster->s.origin;
+        entry.angles = monster->s.angles;
+        entry.spawnflags = monster->spawnflags | SPAWNFLAG_MONSTER_TRIGGER_SPAWN;
+        entry.speed = monster->speed;
+        entry.accel = monster->accel;
+        entry.decel = monster->decel;
+        entry.wait = monster->wait;
+        entry.delay = monster->delay;
+        entry.random = monster->random;
+        entry.style = monster->style;
+        entry.count = monster->count;
+        entry.health = monster->max_health > 0 ? monster->max_health : monster->health;
+        entry.sounds = monster->sounds;
+        entry.dmg = monster->dmg;
+        entry.mass = monster->mass;
+
+        if (!monster->spawnflags.has(SPAWNFLAG_MONSTER_TRIGGER_SPAWN))
+            gi.Com_PrintFmt("[raid] roster monster '{}' lacked Trigger Spawn; Director will safely reconstruct it dormant\n",
+                monster->targetname ? monster->targetname : monster->classname);
     }
 
-    runtime.prepare_requested = true;
     runtime.prepared = false;
-    runtime.prepare_at = level.time + FRAME_TIME_S + FRAME_TIME_S;
     gi.Com_PrintFmt("[raid] monster door '{}' captured {} roster members for dormancy\n",
         controller->targetname ? controller->targetname : "<unnamed>", runtime.roster.size());
 }
 
-void FinishRosterPreparation(edict_t *controller, door_runtime_t &runtime)
+edict_t *SpawnRosterMember(const roster_entry_t &entry)
 {
-    for (const roster_entry_t &entry : runtime.roster)
-    {
-        edict_t *monster = Resolve(entry.monster);
-        if (!monster || monster->health <= 0)
-            continue;
+    edict_t *monster = G_Spawn();
+    monster->classname = RestoreKey(entry.classname);
+    monster->targetname = RestoreKey(entry.targetname);
+    monster->target = RestoreKey(entry.target);
+    monster->pathtarget = RestoreKey(entry.pathtarget);
+    monster->deathtarget = RestoreKey(entry.deathtarget);
+    monster->healthtarget = RestoreKey(entry.healthtarget);
+    monster->itemtarget = RestoreKey(entry.itemtarget);
+    monster->combattarget = RestoreKey(entry.combattarget);
+    monster->message = RestoreKey(entry.message);
+    monster->model = RestoreKey(entry.model);
+    monster->s.origin = entry.origin;
+    monster->s.angles = entry.angles;
+    monster->spawnflags = entry.spawnflags | SPAWNFLAG_MONSTER_TRIGGER_SPAWN;
+    monster->speed = entry.speed;
+    monster->accel = entry.accel;
+    monster->decel = entry.decel;
+    monster->wait = entry.wait;
+    monster->delay = entry.delay;
+    monster->random = entry.random;
+    monster->style = entry.style;
+    monster->count = entry.count;
+    monster->health = entry.health;
+    monster->sounds = entry.sounds;
+    monster->dmg = entry.dmg;
+    monster->mass = entry.mass;
 
-        monster->s.origin = entry.origin;
-        monster->s.angles = entry.angles;
-        monster->velocity = {};
-        monster->avelocity = {};
-        monster->enemy = monster->oldenemy = nullptr;
-        monster->goalentity = monster->movetarget = nullptr;
-        monster->spawnflags |= SPAWNFLAG_MONSTER_TRIGGER_SPAWN;
-        if (!(monster->svflags & SVF_NOCLIENT))
-            monster_triggered_start(monster);
-        gi.linkentity(monster);
+    st = {};
+    st.item = RestoreKey(entry.item);
+    ED_CallSpawn(monster);
+    return monster->inuse ? monster : nullptr;
+}
+
+void RebuildRosters()
+{
+    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+    {
+        edict_t *monster = &g_edicts[i];
+        if (!monster->inuse || !monster->classname || strncmp(monster->classname, "monster_", 8) || !monster->targetname)
+            continue;
+        const bool roster_member = std::any_of(roster_templates.begin(), roster_templates.end(), [monster](const roster_entry_t &entry) {
+            return !Q_strcasecmp(entry.targetname.c_str(), monster->targetname);
+        });
+        if (roster_member)
+            G_FreeEdict(monster);
     }
 
-    runtime.prepare_requested = false;
-    runtime.prepared = true;
-    if (runtime.active)
-        QueueInitialRelease(controller, runtime);
-    RaidDirector_NotifyEntityEvent(controller, "roster_ready", nullptr);
+    int restored = 0;
+    for (const roster_entry_t &entry : roster_templates)
+        if (SpawnRosterMember(entry))
+            ++restored;
+    gi.Com_PrintFmt("[raid] restored {} roster monsters to mapper deployment positions\n", restored);
 }
 
 edict_t *NearestPlayer(const vec3_t &origin)
@@ -264,7 +351,7 @@ USE(raid_monster_door_use) (edict_t *self, edict_t *, edict_t *) -> void
     runtime.replenish_at = 0_ms;
     if (runtime.active)
     {
-        if (!runtime.prepared && !runtime.prepare_requested)
+        if (!runtime.prepared)
             CaptureRoster(self, runtime);
         if (runtime.prepared)
             QueueInitialRelease(self, runtime);
@@ -280,8 +367,27 @@ USE(raid_monster_door_use) (edict_t *self, edict_t *, edict_t *) -> void
 THINK(raid_monster_door_think) (edict_t *self) -> void
 {
     door_runtime_t &runtime = Runtime(self);
-    if (runtime.prepare_requested && level.time >= runtime.prepare_at)
-        FinishRosterPreparation(self, runtime);
+    if (!runtime.prepared)
+    {
+        int total = 0;
+        int hidden = 0;
+        for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+        {
+            edict_t *monster = &g_edicts[i];
+            if (!IsRosterMember(self, monster) || monster->health <= 0)
+                continue;
+            ++total;
+            if (monster->svflags & SVF_NOCLIENT)
+                ++hidden;
+        }
+        if (total == 0 || hidden == total)
+        {
+            runtime.prepared = true;
+            if (runtime.active)
+                QueueInitialRelease(self, runtime);
+            RaidDirector_NotifyEntityEvent(self, "roster_ready", nullptr);
+        }
+    }
     const float interval = self->wait > 0.0f ? self->wait : 0.5f;
     const int max_active = self->health > 0 ? self->health : std::numeric_limits<int>::max();
     int active = CountRoster(self, false);
@@ -347,6 +453,21 @@ void SP_raid_monster_door(edict_t *ent)
 
 void RaidMonsters_PrepareRosters()
 {
+    if (roster_templates.empty())
+    {
+        for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+        {
+            edict_t *controller = &g_edicts[i];
+            if (!controller->inuse || !controller->classname || Q_strcasecmp(controller->classname, "raid_monster_door"))
+                continue;
+            door_runtime_t temporary;
+            CaptureRoster(controller, temporary);
+            roster_templates.insert(roster_templates.end(), temporary.roster.begin(), temporary.roster.end());
+        }
+    }
+
+    RebuildRosters();
+    door_runtimes.clear();
     for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
     {
         edict_t *controller = &g_edicts[i];
@@ -358,5 +479,13 @@ void RaidMonsters_PrepareRosters()
 
 void RaidMonsters_Reset()
 {
+    if (!roster_templates.empty())
+        RebuildRosters();
     door_runtimes.clear();
+}
+
+void RaidMonsters_ClearMap()
+{
+    door_runtimes.clear();
+    roster_templates.clear();
 }
