@@ -101,7 +101,7 @@ void RaidThirdPerson_Update(edict_t *player)
     vec3_t forward;
     AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
     const vec3_t eye = player->s.origin + vec3_t{ 0, 0, static_cast<float>(player->viewheight) };
-    const vec3_t desired = eye - (forward * 72.0f) + vec3_t{ 0, 0, 18.0f };
+    const vec3_t desired = eye - (forward * 88.0f) + vec3_t{ 0, 0, 18.0f };
     const trace_t trace = gi.traceline(eye, desired, player, MASK_SOLID);
     player->client->ps.viewoffset = trace.endpos - player->s.origin;
     player->client->ps.gunindex = 0;
@@ -117,4 +117,3 @@ void RaidThirdPerson_Disconnect(edict_t *player)
     DestroyAvatar(player);
     state = {};
 }
-
