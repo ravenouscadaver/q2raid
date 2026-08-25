@@ -30,7 +30,7 @@ TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool) ->
     self->movetype = MOVETYPE_NONE;
     self->svflags |= SVF_NOCLIENT;
     gi.unlinkentity(self);
-    RaidThirdPerson_SetCarry(other, true);
+    RaidThirdPerson_SetCarry(other, true, self->model, self->s.scale);
     RaidDirector_NotifyEntityEvent(self, "pickup", other);
     gi.LocClient_Print(other, PRINT_HIGH, "POWER CORE ACQUIRED\n");
 }
@@ -81,7 +81,7 @@ TOUCH(raid_deposit_touch) (edict_t *self, edict_t *other, const trace_t &, bool)
 void SP_raid_item(edict_t *ent)
 {
     if (!ent->message) ent->message = "power_core";
-    if (!ent->model) ent->model = "models/items/n64/power_core/tris.md2";
+    if (!ent->model) ent->model = "models/items/keys/power/tris.md2";
     gi.setmodel(ent, ent->model);
     ent->mins = { -16, -16, -16 };
     ent->maxs = { 16, 16, 16 };

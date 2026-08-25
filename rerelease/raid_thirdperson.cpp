@@ -9,6 +9,8 @@ struct raid_thirdperson_state_t
     bool carrying = false;
     edict_t *avatar = nullptr;
     edict_t *held_model = nullptr;
+    const char *held_model_name = nullptr;
+    float held_model_scale = 0.0f;
     uint8_t saved_instance_bits = 0;
 };
 
@@ -81,8 +83,9 @@ void UpdateHeldModel(edict_t *player)
         state.held_model->owner = player;
         state.held_model->solid = SOLID_NOT;
         state.held_model->movetype = MOVETYPE_NONE;
-        gi.setmodel(state.held_model, "models/items/n64/power_core/tris.md2");
+        gi.setmodel(state.held_model, state.held_model_name);
         state.held_model->s.renderfx = RF_GLOW | RF_NO_LOD;
+        state.held_model->s.scale = state.held_model_scale;
     }
 
     vec3_t forward;
@@ -93,7 +96,7 @@ void UpdateHeldModel(edict_t *player)
 }
 }
 
-void RaidThirdPerson_SetCarry(edict_t *player, bool carrying)
+void RaidThirdPerson_SetCarry(edict_t *player, bool carrying, const char *model, float scale)
 {
     if (!player || !player->client || player->s.number < 1 || player->s.number > MAX_CLIENTS)
         return;
@@ -101,6 +104,8 @@ void RaidThirdPerson_SetCarry(edict_t *player, bool carrying)
     state.carrying = carrying;
     if (carrying)
     {
+        state.held_model_name = model;
+        state.held_model_scale = scale;
         if (!state.enabled) state.saved_instance_bits = player->s.instance_bits;
         state.enabled = true;
     }
@@ -110,6 +115,10 @@ void RaidThirdPerson_SetCarry(edict_t *player, bool carrying)
         player->s.instance_bits = state.saved_instance_bits;
         DestroyAvatar(player);
         DestroyHeldModel(player);
+        state.held_model_name = nullptr;
+        state.held_model_scale = 0.0f;
+        if (player->client->pers.weapon && player->client->pers.weapon->view_model)
+            player->client->ps.gunindex = gi.modelindex(player->client->pers.weapon->view_model);
     }
 }
 

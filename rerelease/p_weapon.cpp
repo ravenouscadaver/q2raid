@@ -4,6 +4,7 @@
 
 #include "g_local.h"
 #include "m_player.h"
+#include "raid_items.h"
 
 bool is_quad;
 // RAFAEL
@@ -491,6 +492,13 @@ void Think_Weapon(edict_t *ent)
 {
 	if (ent->client->resp.spectator)
 		return;
+	if (RaidCarry_IsCarrying(ent))
+	{
+		ent->client->weapon_fire_buffered = false;
+		ent->client->weapon_thunk = false;
+		ent->client->ps.gunindex = 0;
+		return;
+	}
 
 	// if just died, put the weapon away
 	if (ent->health < 1)

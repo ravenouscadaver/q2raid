@@ -1892,7 +1892,8 @@ monster_gekk : "Gekk"
     [
         "power_core" : "Power Core"
     ]
-    model(studio) : "World model" : "models/items/n64/power_core/tris.md2"
+    model(studio) : "World/carried/deposited model" : "models/items/keys/power/tris.md2"
+    scale(float) : "Model scale" : 1
 ]
 
 @PointClass base(EditorFlags, Targetable, Angleable) color(255 160 32) size(-8 -8 -8, 8 8 8) = raid_gadget : "Reusable raid gadget anchor"

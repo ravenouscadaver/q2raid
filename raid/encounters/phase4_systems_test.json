@@ -63,6 +63,45 @@
         { "op": "clear_status", "status": "doomsday" },
         { "op": "post_message", "text": "DOOMSDAY CLEARED" }
       ]
+    },
+    {
+      "source": "power_core_1",
+      "signal": "pickup",
+      "do": [
+        { "op": "post_message", "text": "CORE COLLECTED" },
+        { "op": "play_sound", "sound": "misc/power1.wav" }
+      ]
+    },
+    {
+      "source": "power_core_1",
+      "signal": "drop",
+      "do": [
+        { "op": "post_message", "text": "CORE DROPPED" }
+      ]
+    },
+    {
+      "source": "regulator_socket_1",
+      "signal": "deposit",
+      "do": [
+        { "op": "post_message", "text": "CORE DEPOSITED" },
+        { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" }
+      ]
+    },
+    {
+      "source": "regulator_socket_2",
+      "signal": "deposit",
+      "do": [
+        { "op": "post_message", "text": "CORE DEPOSITED" },
+        { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" }
+      ]
+    },
+    {
+      "source": "regulator_socket_3",
+      "signal": "deposit",
+      "do": [
+        { "op": "post_message", "text": "CORE DEPOSITED" },
+        { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" }
+      ]
     }
   ],
   "states": {
