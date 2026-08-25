@@ -32,7 +32,7 @@ struct roster_entry_t
     std::string item;
     vec3_t origin;
     vec3_t angles;
-    spawnflags_t spawnflags;
+    spawnflags_t spawnflags = SPAWNFLAG_NONE;
     float speed = 0.0f;
     float accel = 0.0f;
     float decel = 0.0f;
