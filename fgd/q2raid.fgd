@@ -1886,6 +1886,31 @@ monster_gekk : "Gekk"
     skyautorotate(integer) : "Disable to set sky rotation manually" : 1
 ]
 
+@PointClass base(EditorFlags, Targetable, Angleable) color(64 192 255) size(-16 -16 -16, 16 16 16) = raid_item : "Carryable raid item"
+[
+    item_type(choices) : "Item type" : "power_core" =
+    [
+        "power_core" : "Power Core"
+    ]
+    model(studio) : "World model" : "models/items/n64/power_core/tris.md2"
+]
+
+@PointClass base(EditorFlags, Targetable, Angleable) color(255 160 32) size(-8 -8 -8, 8 8 8) = raid_gadget : "Reusable raid gadget anchor"
+[
+    gadget_type(choices) : "Gadget type" : "core_socket" =
+    [
+        "core_socket" : "Core Socket"
+    ]
+    accepts(string) : "Accepted item type" : "power_core"
+    order(integer) : "Socket order" : 1
+    team(string) : "Socket group"
+]
+
+@SolidClass base(EditorFlags, Targetable) color(255 128 32) = trigger_raid_deposit : "Deposit carried raid item"
+[
+    target(target_destination) : "Socket group (matches raid_gadget team)"
+]
+
 @PointClass base(EditorFlags, Targetable) color(255 128 255) size(-16 -16 -24, 16 16 32) = misc_player_mannequin : "Player Mannequin"
 [
   distance(integer) : "Gesture To Use When Triggered. 0 = FlipOff, 1 = Salute, 2 = Taunt, 3 = Wave, 4 = Point" : 1 

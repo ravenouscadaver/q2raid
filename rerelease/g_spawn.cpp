@@ -2,6 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 
 #include "g_local.h"
+#include "raid_items.h"
 #include "raid_director.h"
 
 struct spawn_t
@@ -292,6 +293,9 @@ static const std::initializer_list<spawn_t> spawns = {
 	{ "target_sky", SP_target_sky }, // [Paril-KEX]
 	{ "target_achievement", SP_target_achievement }, // [Paril-KEX]
 	{ "target_story", SP_target_story }, // [Paril-KEX]
+	{ "raid_item", SP_raid_item },
+	{ "raid_gadget", SP_raid_gadget },
+	{ "trigger_raid_deposit", SP_trigger_raid_deposit },
 
 	{ "worldspawn", SP_worldspawn },
 
@@ -687,6 +691,10 @@ static const std::initializer_list<field_t> entity_fields = {
 	FIELD_AUTO(killtarget),
 	FIELD_AUTO(combattarget),
 	FIELD_AUTO(message),
+	FIELD_AUTO_NAMED("item_type", message),
+	FIELD_AUTO_NAMED("gadget_type", message),
+	FIELD_AUTO_NAMED("accepts", target),
+	FIELD_AUTO_NAMED("order", count),
 	FIELD_AUTO(team),
 	FIELD_AUTO(wait),
 	FIELD_AUTO(delay),

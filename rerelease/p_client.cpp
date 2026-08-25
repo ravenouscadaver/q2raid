@@ -4,6 +4,7 @@
 #include "m_player.h"
 #include "bots/bot_includes.h"
 #include "raid_thirdperson.h"
+#include "raid_items.h"
 
 void SP_misc_teleporter_dest(edict_t *ent);
 
@@ -3377,6 +3378,8 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 				other->touch(other, ent, tr, true);
 		}
 	}
+
+	RaidCarry_Update(ent);
 
 	// fire weapon from final position if needed
 	if (client->latched_buttons & BUTTON_ATTACK)
