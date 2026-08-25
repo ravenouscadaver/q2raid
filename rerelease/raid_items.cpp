@@ -308,6 +308,20 @@ void RaidCarry_Update(edict_t *player)
 {
     if (!RaidCarry_IsCarrying(player)) return;
     if (player->deadflag || player->health <= 0) { RaidCarry_Drop(player); return; }
+    edict_t *item = CarriedItem(CarryState(player));
+    if (IsWeaponRelic(item))
+    {
+        gitem_t *weapon = RelicWeapon(item);
+        // Quake's empty-ammo fallback can stow the relic without going through
+        // Use_Weapon. Treat either a pending or completed automatic switch as
+        // an ordinary atomic relic ejection.
+        if (!weapon || (player->client->newweapon && player->client->newweapon != weapon) ||
+            (player->client->pers.weapon && player->client->pers.weapon != weapon))
+        {
+            RaidCarry_Drop(player);
+            return;
+        }
+    }
     if (RaidCarry_BlocksWeapons(player))
     {
         player->client->weapon_fire_buffered = false;

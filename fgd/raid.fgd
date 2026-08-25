@@ -74,20 +74,20 @@
 
 @PointClass base(Appearflags, Targetname, Target) color(255 80 80) size(-12 -12 -12, 12 12 12) = raid_monster_door : "Director-controlled deployment group"
 [
-    target(target_destination) : "Monster roster: shared targetname on editor-placed Trigger Spawn monster_* entities"
+    target(target_destination) : "Population archetype group: shared targetname on editor-placed monster_* templates"
     pathtarget(target_destination) : "Optional first path_corner or point_combat after deployment"
 
     deploy_interval(float) : "Seconds between releasing roster members" : 0.5
-    initial_count(integer) : "Number released when activated; 0 uses max_active or the full roster" : 0
+    initial_count(integer) : "Number created when activated; 0 uses min_active, then max_active, then 1" : 0
     min_active(integer) : "Population floor used by Maintain mode" : 0
     max_active(integer) : "Maximum simultaneously active monsters; 0 is unlimited" : 0
-    wave_size(integer) : "Members released per replenishment wave; 0 uses available capacity" : 0
+    wave_size(integer) : "Fresh monsters created per replacement wave; 0 uses max_active, then 1" : 0
     replenish_delay(float) : "Delay before replenishment" : 3
     replenish_mode(choices) : "Population behaviour" : 0 =
     [
-        0 : "None: deploy once"
-        1 : "Maintain minimum population"
-        2 : "Replacement wave after deployed group is killed"
+        0 : "None: create initial deployment once"
+        1 : "Maintain min_active with fresh monsters"
+        2 : "Create replacement wave after active population is killed"
     ]
 
     leash_radius(float) : "Maximum pursuit distance from this controller; 0 disables leash" : 0

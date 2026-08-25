@@ -16,7 +16,9 @@ void RaidDirector_ResetForMap(const char *mapname);
 void RaidDirector_OnMapReady();
 void RaidDirector_RunFrame();
 void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t *activator);
-void RaidDirector_OnPartyWipe();
+// Returns true when the Director owns the wipe/reset lifecycle and the stock
+// cooperative map restart must be suppressed.
+bool RaidDirector_OnPartyWipe();
 void RaidDirector_ApplyStatus(edict_t *player, const char *status, float duration, const char *stack_policy);
 void RaidDirector_ClearStatus(edict_t *player, const char *status);
 float RaidDirector_StatusDuration(const char *status, float fallback);

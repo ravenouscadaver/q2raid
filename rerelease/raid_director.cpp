@@ -28,6 +28,8 @@ struct raid_director_runtime_t
     std::string encounter_name;
     std::string state;
     Json::Value document;
+    bool        wipe_pending = false;
+    gtime_t     wipe_reset_at;
 };
 
 struct raid_color_cycle_t
@@ -94,6 +96,7 @@ std::vector<raid_entity_snapshot_t> entity_snapshots;
 cvar_t *raid_script = nullptr;
 cvar_t *raid_script_root = nullptr;
 cvar_t *raid_autoload = nullptr;
+cvar_t *raid_game_dir = nullptr;
 gtime_t raid_message_expires;
 int raid_message_priority = 0;
 
@@ -232,6 +235,8 @@ void RaidDirector_ClearTransientState()
     player_statuses.clear();
     queued_events.clear();
     dispatching_events = false;
+    director.wipe_pending = false;
+    director.wipe_reset_at = 0_ms;
     raid_message_expires = 0_ms;
     raid_message_priority = 0;
     if (director.initialized)
@@ -798,21 +803,30 @@ bool RaidDirector_Validate(const Json::Value &root, std::string &error)
 std::filesystem::path RaidDirector_ResolvePath(const char *path)
 {
     std::filesystem::path requested(path ? path : "");
-    if (requested.is_absolute() || !raid_script_root || !*raid_script_root->string)
+    if (requested.is_absolute())
         return requested;
-
-    return std::filesystem::path(raid_script_root->string) / requested;
+    if (raid_script_root && *raid_script_root->string)
+        return std::filesystem::path(raid_script_root->string) / requested;
+    if (raid_game_dir && *raid_game_dir->string)
+        return std::filesystem::path(raid_game_dir->string) / requested;
+    return requested;
 }
 }
 
-void RaidDirector_OnPartyWipe()
+bool RaidDirector_OnPartyWipe()
 {
     if (!director.loaded)
-        return;
+        return false;
+    if (director.wipe_pending)
+        return true;
+
+    director.wipe_pending = true;
+    director.wipe_reset_at = level.time + 2500_ms;
     if (director.document["states"].isMember("wipe"))
         RaidDirector_SetState("wipe");
     else
         gi.Com_PrintFmt("[raid] Party wipe detected in encounter '{}'\n", director.encounter_name);
+    return true;
 }
 
 void RaidDirector_ApplyStatus(edict_t *player, const char *status, float duration, const char *stack_policy)
@@ -833,8 +847,9 @@ float RaidDirector_StatusDuration(const char *status, float fallback)
 void RaidDirector_Init()
 {
     raid_script = gi.cvar("raid_script", "", CVAR_NOFLAGS);
-    raid_script_root = gi.cvar("raid_script_root", ".", CVAR_NOFLAGS);
+    raid_script_root = gi.cvar("raid_script_root", "", CVAR_NOFLAGS);
     raid_autoload = gi.cvar("raid_autoload", "1", CVAR_NOFLAGS);
+    raid_game_dir = gi.cvar("game", "", CVAR_NOFLAGS);
 
     director = {};
     director.initialized = true;
@@ -878,6 +893,11 @@ void RaidDirector_OnMapReady()
 void RaidDirector_RunFrame()
 {
     RaidHover_RunFrame();
+    if (director.wipe_pending && level.time >= director.wipe_reset_at)
+    {
+        gi.Com_PrintFmt("[raid] Completing in-place wipe reset for encounter '{}'\n", director.encounter_name);
+        RaidDirector_ResetEncounter();
+    }
     if (raid_message_expires && raid_message_expires <= level.time)
     {
         gi.configstring(CONFIG_RAID_MESSAGE, "");

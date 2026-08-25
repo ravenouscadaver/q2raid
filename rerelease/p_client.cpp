@@ -740,11 +740,12 @@ DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 
 			if (allPlayersDead) // allow respawns for telefrags and weird shit
 			{
-				RaidDirector_OnPartyWipe();
-				level.coop_level_restart_time = level.time + 5_sec;
-
-				for (auto player : active_players())
-					gi.LocCenter_Print(player, "$g_coop_lose");
+				if (!RaidDirector_OnPartyWipe())
+				{
+					level.coop_level_restart_time = level.time + 5_sec;
+					for (auto player : active_players())
+						gi.LocCenter_Print(player, "$g_coop_lose");
+				}
 			}
 		
 			// in 3 seconds, attempt a respawn or put us into

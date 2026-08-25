@@ -395,20 +395,22 @@ void SV_CalcViewOffset(edict_t *ent)
 			angles[ROLL] += delta;
 		}
 
-		// add earthquake angles
-		if (ent->client->quake_time > level.time)
-		{
-			float factor = ent->client->raid_shake_intensity > 0.0f
-				? ent->client->raid_shake_intensity
-				: min(1.0f, (ent->client->quake_time.seconds() / level.time.seconds()) * 0.25f);
-
-			angles.x += crandom_open() * factor;
-			angles.z += crandom_open() * factor;
-			angles.y += crandom_open() * factor;
-		}
-		else
-			ent->client->raid_shake_intensity = 0.0f;
 	}
+
+	// Apply quake after the alive/dead camera branches. Status consequences can
+	// kill a player in the same frame that they request a shake, and the stock
+	// dead-camera branch otherwise clears the effect before it is ever visible.
+	if (ent->client->quake_time > level.time)
+	{
+		float factor = ent->client->raid_shake_intensity > 0.0f
+			? ent->client->raid_shake_intensity
+			: 1.0f;
+		angles.x += crandom_open() * factor;
+		angles.z += crandom_open() * factor;
+		angles.y += crandom_open() * factor;
+	}
+	else
+		ent->client->raid_shake_intensity = 0.0f;
 
 	// [Paril-KEX] clamp angles
 	for (int i = 0; i < 3; i++)
