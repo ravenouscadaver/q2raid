@@ -3,6 +3,8 @@
 #include "raid_items.h"
 #include "raid_thirdperson.h"
 
+void InitTrigger(edict_t *self);
+
 namespace
 {
 struct raid_carry_state_t { edict_t *item = nullptr; };
@@ -17,7 +19,7 @@ void FinishCarry(edict_t *player)
     RaidThirdPerson_SetCarry(player, false);
 }
 
-TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool)
+TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool) -> void
 {
     if (!other->client || other->deadflag || level.time < self->touch_debounce_time ||
         RaidCarry_IsCarrying(other) || !IsPowerCore(self))
@@ -53,7 +55,7 @@ edict_t *FindSocket(edict_t *trigger, edict_t *item)
     return best;
 }
 
-TOUCH(raid_deposit_touch) (edict_t *self, edict_t *other, const trace_t &, bool)
+TOUCH(raid_deposit_touch) (edict_t *self, edict_t *other, const trace_t &, bool) -> void
 {
     if (!other->client || !RaidCarry_IsCarrying(other))
         return;
