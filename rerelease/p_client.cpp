@@ -535,6 +535,7 @@ player_die
 */
 DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t &point, const mod_t &mod) -> void
 {
+	RaidCarry_OnPlayerDeath(self);
 	PlayerTrail_Destroy(self);
 
 	self->avelocity = {};

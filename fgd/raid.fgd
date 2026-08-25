@@ -21,7 +21,7 @@
     model(studio) : "World, carried and deposited model" : "models/items/keys/power/tris.md2"
     scale(float) : "Model scale" : 1
 
-    carry_status(string) : "Status conferred to carrier (blank for none)" : ""
+    carry_status(string) : "Status conferred to carrier (power cores default to volatile; use none to disable)" : ""
     status_duration(float) : "Conferred status duration; 0 uses JSON/default duration" : 0
     status_policy(choices) : "Status reapplication policy" : "refresh" =
     [

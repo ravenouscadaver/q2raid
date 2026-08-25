@@ -2,6 +2,8 @@
 #include "raid_director.h"
 #include "raid_monsters.h"
 
+void monster_triggered_start(edict_t *self);
+
 namespace
 {
 struct entity_ref_t
@@ -17,15 +19,26 @@ struct leash_state_t
     bool returning = false;
 };
 
+struct roster_entry_t
+{
+    entity_ref_t monster;
+    vec3_t origin;
+    vec3_t angles;
+};
+
 struct door_runtime_t
 {
     entity_ref_t controller;
     bool active = false;
+    bool prepare_requested = false;
+    bool prepared = false;
     bool deployed_any = false;
     int release_remaining = 0;
     gtime_t next_release;
     gtime_t replenish_at;
+    gtime_t prepare_at;
     std::vector<leash_state_t> leashes;
+    std::vector<roster_entry_t> roster;
 };
 
 std::vector<door_runtime_t> door_runtimes;
@@ -72,6 +85,65 @@ int CountRoster(edict_t *controller, bool hidden)
             ++count;
     }
     return count;
+}
+
+void QueueInitialRelease(edict_t *controller, door_runtime_t &runtime)
+{
+    const int hidden = CountRoster(controller, true);
+    const int requested = controller->count > 0 ? controller->count : (controller->health > 0 ? controller->health : hidden);
+    runtime.release_remaining = std::min(hidden, requested);
+    runtime.next_release = level.time;
+}
+
+void CaptureRoster(edict_t *controller, door_runtime_t &runtime)
+{
+    runtime.roster.clear();
+    runtime.leashes.clear();
+    runtime.deployed_any = false;
+    runtime.release_remaining = 0;
+    runtime.replenish_at = 0_ms;
+
+    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+    {
+        edict_t *monster = &g_edicts[i];
+        if (!IsRosterMember(controller, monster) || monster->health <= 0)
+            continue;
+        runtime.roster.push_back({ Ref(monster), monster->s.origin, monster->s.angles });
+        monster->spawnflags |= SPAWNFLAG_MONSTER_TRIGGER_SPAWN;
+    }
+
+    runtime.prepare_requested = true;
+    runtime.prepared = false;
+    runtime.prepare_at = level.time + FRAME_TIME_S + FRAME_TIME_S;
+    gi.Com_PrintFmt("[raid] monster door '{}' captured {} roster members for dormancy\n",
+        controller->targetname ? controller->targetname : "<unnamed>", runtime.roster.size());
+}
+
+void FinishRosterPreparation(edict_t *controller, door_runtime_t &runtime)
+{
+    for (const roster_entry_t &entry : runtime.roster)
+    {
+        edict_t *monster = Resolve(entry.monster);
+        if (!monster || monster->health <= 0)
+            continue;
+
+        monster->s.origin = entry.origin;
+        monster->s.angles = entry.angles;
+        monster->velocity = {};
+        monster->avelocity = {};
+        monster->enemy = monster->oldenemy = nullptr;
+        monster->goalentity = monster->movetarget = nullptr;
+        monster->spawnflags |= SPAWNFLAG_MONSTER_TRIGGER_SPAWN;
+        if (!(monster->svflags & SVF_NOCLIENT))
+            monster_triggered_start(monster);
+        gi.linkentity(monster);
+    }
+
+    runtime.prepare_requested = false;
+    runtime.prepared = true;
+    if (runtime.active)
+        QueueInitialRelease(controller, runtime);
+    RaidDirector_NotifyEntityEvent(controller, "roster_ready", nullptr);
 }
 
 edict_t *NearestPlayer(const vec3_t &origin)
@@ -192,10 +264,10 @@ USE(raid_monster_door_use) (edict_t *self, edict_t *, edict_t *) -> void
     runtime.replenish_at = 0_ms;
     if (runtime.active)
     {
-        const int hidden = CountRoster(self, true);
-        const int requested = self->count > 0 ? self->count : (self->health > 0 ? self->health : hidden);
-        runtime.release_remaining = std::min(hidden, requested);
-        runtime.next_release = level.time;
+        if (!runtime.prepared && !runtime.prepare_requested)
+            CaptureRoster(self, runtime);
+        if (runtime.prepared)
+            QueueInitialRelease(self, runtime);
         RaidDirector_NotifyEntityEvent(self, "activated", nullptr);
     }
     else
@@ -208,6 +280,8 @@ USE(raid_monster_door_use) (edict_t *self, edict_t *, edict_t *) -> void
 THINK(raid_monster_door_think) (edict_t *self) -> void
 {
     door_runtime_t &runtime = Runtime(self);
+    if (runtime.prepare_requested && level.time >= runtime.prepare_at)
+        FinishRosterPreparation(self, runtime);
     const float interval = self->wait > 0.0f ? self->wait : 0.5f;
     const int max_active = self->health > 0 ? self->health : std::numeric_limits<int>::max();
     int active = CountRoster(self, false);
@@ -269,6 +343,17 @@ void SP_raid_monster_door(edict_t *ent)
     ent->think = raid_monster_door_think;
     ent->nextthink = level.time + 100_ms;
     gi.linkentity(ent);
+}
+
+void RaidMonsters_PrepareRosters()
+{
+    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+    {
+        edict_t *controller = &g_edicts[i];
+        if (!controller->inuse || !controller->classname || Q_strcasecmp(controller->classname, "raid_monster_door"))
+            continue;
+        CaptureRoster(controller, Runtime(controller));
+    }
 }
 
 void RaidMonsters_Reset()

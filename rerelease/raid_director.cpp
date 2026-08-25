@@ -1005,6 +1005,7 @@ bool RaidDirector_Load(const char *path)
     director.state = director.document["initial_state"].asString();
     director.loaded = true;
 
+    RaidMonsters_PrepareRosters();
     RaidDirector_ExecuteEnter(director.state, nullptr);
 
     gi.Com_PrintFmt("[raid] Loaded encounter '{}' from '{}' (initial state '{}', {} states)\n",

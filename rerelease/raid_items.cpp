@@ -76,6 +76,14 @@ void RestoreRaidItem(edict_t *item)
     gi.linkentity(item);
 }
 
+void ReturnRaidItemToOrigin(edict_t *player, edict_t *item, const char *signal)
+{
+    FinishCarry(player);
+    item->timestamp = 0_ms;
+    RestoreRaidItem(item);
+    RaidDirector_NotifyEntityEvent(item, signal, player);
+}
+
 TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool) -> void
 {
     if (!other->client || other->deadflag || level.time < self->touch_debounce_time ||
@@ -167,8 +175,12 @@ TOUCH(raid_deposit_touch) (edict_t *self, edict_t *other, const trace_t &, bool)
 void SP_raid_item(edict_t *ent)
 {
     if (!ent->message) ent->message = "power_core";
-    if (!ent->model) ent->model = IsWeaponRelic(ent) ? "models/weapons/g_bfg/tris.md2" : "models/items/keys/power/tris.md2";
+    if (!ent->model || !*ent->model) ent->model = "models/items/keys/power/tris.md2";
     if (!ent->speed) ent->speed = 0.45f;
+    if (ent->deathtarget && !Q_strcasecmp(ent->deathtarget, "none"))
+        ent->deathtarget = nullptr;
+    else if ((!ent->deathtarget || !*ent->deathtarget) && !Q_strcasecmp(ent->message, "power_core"))
+        ent->deathtarget = "volatile";
     if (!ent->healthtarget) ent->healthtarget = "refresh";
     if (!st.was_key_specified("clear_status_on_drop")) ent->sounds = 1;
     ent->timestamp = 0_ms;
@@ -250,6 +262,17 @@ bool RaidCarry_Drop(edict_t *player)
     FinishCarry(player);
     RaidDirector_NotifyEntityEvent(item, "drop", player);
     return true;
+}
+
+void RaidCarry_OnPlayerDeath(edict_t *player)
+{
+    if (!RaidCarry_IsCarrying(player))
+        return;
+    edict_t *item = CarryState(player).item;
+    if (item->deathtarget && item->timestamp && item->timestamp <= level.time)
+        ReturnRaidItemToOrigin(player, item, "respawn");
+    else
+        RaidCarry_Drop(player);
 }
 
 void RaidCarry_Update(edict_t *player)

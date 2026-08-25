@@ -121,11 +121,21 @@
       ]
     },
     {
+      "source": "power_core_1",
+      "signal": "respawn",
+      "do": [
+        { "op": "post_message", "text": "CORE DESTABILIZED - RETURNED TO ORIGIN" },
+        { "op": "play_sound", "sound": "items/respawn1.wav", "scope": "all" }
+      ]
+    },
+    {
       "source": "regulator_socket_1",
       "signal": "deposit",
       "do": [
         { "op": "post_message", "text": "CORE DEPOSITED" },
-        { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" }
+        { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" },
+        { "op": "fire_target", "target": "monster_door_2" },
+        { "op": "post_encounter_message", "text": "SECOND DEPLOYMENT WAVE ACTIVE", "duration": 4, "priority": 6 }
       ]
     },
     {
@@ -170,7 +180,10 @@
   ],
   "states": {
     "idle": {
-      "enter": []
+      "enter": [
+        { "op": "fire_target", "target": "monster_door_1" },
+        { "op": "post_encounter_message", "text": "FIRST DEPLOYMENT WAVE ACTIVE", "duration": 4, "priority": 4 }
+      ]
     },
     "party": {
       "enter": [

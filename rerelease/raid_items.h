@@ -11,6 +11,7 @@ bool RaidCarry_BlocksWeapons(edict_t *player);
 bool RaidCarry_IsWeaponRelic(edict_t *player);
 float RaidCarry_MovementScale(edict_t *player);
 bool RaidCarry_Drop(edict_t *player);
+void RaidCarry_OnPlayerDeath(edict_t *player);
 void RaidCarry_Update(edict_t *player);
 void RaidCarry_ResetAll();
 void RaidHover_RunFrame();
