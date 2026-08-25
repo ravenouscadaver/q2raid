@@ -1908,6 +1908,21 @@ monster_gekk : "Gekk"
     encumber_scale(float) : "Movement scale while carried" : 0.45
     model(studio) : "World/carried/deposited model" : "models/items/keys/power/tris.md2"
     scale(float) : "Model scale" : 1
+    carry_status(string) : "Status conferred to carrier (blank for none)" : ""
+    status_duration(float) : "Conferred status duration; 0 uses JSON/default duration" : 0
+    status_policy(choices) : "Status reapplication policy" : "refresh" =
+    [
+        "refresh" : "Refresh"
+        "replace" : "Replace"
+        "extend" : "Extend"
+        "stack" : "Stack"
+        "ignore" : "Ignore if already present"
+    ]
+    clear_status_on_drop(choices) : "Remove conferred status when relinquished" : 1 =
+    [
+        0 : "No"
+        1 : "Yes"
+    ]
 ]
 
 @PointClass base(EditorFlags, Targetable, Angleable) color(255 160 32) size(-8 -8 -8, 8 8 8) = raid_gadget : "Reusable raid gadget anchor"
@@ -1924,6 +1939,45 @@ monster_gekk : "Gekk"
 @SolidClass base(EditorFlags, Targetable) color(255 128 32) = trigger_raid_deposit : "Deposit carried raid item"
 [
     target(target_destination) : "Socket group (matches raid_gadget team)"
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(80 255 180) size(-6 -6 -6, 6 6 6) = raid_hovertext : "Crosshair hover message/event marker"
+[
+    text(string) : "Hover text (optional; leave empty for JSON-only events)"
+    hover_radius(float) : "Aim detection radius" : 24
+    hover_distance(float) : "Maximum view distance" : 256
+    require_los(choices) : "Require unobstructed world line of sight" : 1 =
+    [
+        0 : "No"
+        1 : "Yes"
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(255 80 80) size(-12 -12 -12, 12 12 12) = raid_monster_door : "Director-controlled deployment group"
+[
+    target(target_destination) : "Monster roster: shared targetname on editor-placed Trigger Spawn monster_* entities"
+    pathtarget(target_destination) : "Optional first path_corner or point_combat after deployment"
+    deploy_interval(float) : "Seconds between releasing roster members" : 0.5
+    initial_count(integer) : "Number released when activated; 0 uses max_active or full roster" : 0
+    min_active(integer) : "Population floor used by Maintain mode" : 0
+    max_active(integer) : "Maximum simultaneously active monsters; 0 is unlimited" : 0
+    wave_size(integer) : "Members released per replenishment wave" : 0
+    replenish_delay(float) : "Delay before replenishment" : 3
+    replenish_mode(choices) : "Population behaviour" : 0 =
+    [
+        0 : "None: deploy once"
+        1 : "Maintain minimum population"
+        2 : "Replacement wave after deployed group is killed"
+    ]
+    leash_radius(float) : "Maximum pursuit distance; 0 disables leash" : 0
+    leash_return_radius(float) : "Distance considered returned" : 64
+    leash_grace(float) : "Seconds outside leash before return" : 1
+    wake_mode(choices) : "Released monster behaviour" : 1 =
+    [
+        0 : "Preserve mapper-authored wake behaviour"
+        1 : "Wake and seek nearest player"
+        2 : "Follow pathtarget before normal combat"
+    ]
 ]
 
 @PointClass base(EditorFlags, Targetable) color(255 128 255) size(-16 -16 -24, 16 16 32) = misc_player_mannequin : "Player Mannequin"

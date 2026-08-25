@@ -1,0 +1,101 @@
+// q2raid mapper entities
+// Include this file from quake2.fgd. Do not add it separately in JACK.
+// Requires the parent FGD to define Appearflags, Targetname and Target.
+
+@PointClass base(Appearflags, Targetname) flags(Angle) color(64 192 255) size(-16 -16 -16, 16 16 16) = raid_item : "Carryable raid item"
+[
+    item_type(choices) : "Item type" : "power_core" =
+    [
+        "power_core" : "Power Core"
+        "bfg_relic" : "BFG10K Weapon Relic"
+        "custom" : "Custom JSON-defined item"
+    ]
+    carry_mode(choices) : "Carry behaviour" : 0 =
+    [
+        0 : "Automatic from item type"
+        1 : "Heavy object: third person and weapons blocked"
+        2 : "Weapon relic: first person and configured weapon equipped"
+    ]
+    weapon(string) : "Weapon classname for weapon relic" : "weapon_bfg"
+    encumber_scale(float) : "Movement multiplier while carried" : 0.45
+    model(studio) : "World, carried and deposited model" : "models/items/keys/power/tris.md2"
+    scale(float) : "Model scale" : 1
+
+    carry_status(string) : "Status conferred to carrier (blank for none)" : ""
+    status_duration(float) : "Conferred status duration; 0 uses JSON/default duration" : 0
+    status_policy(choices) : "Status reapplication policy" : "refresh" =
+    [
+        "refresh" : "Refresh"
+        "replace" : "Replace"
+        "extend" : "Extend"
+        "stack" : "Stack"
+        "ignore" : "Ignore if already present"
+    ]
+    clear_status_on_drop(choices) : "Remove conferred status when relinquished" : 1 =
+    [
+        0 : "No"
+        1 : "Yes"
+    ]
+]
+
+@PointClass base(Appearflags, Targetname) flags(Angle) color(255 160 32) size(-8 -8 -8, 8 8 8) = raid_gadget : "Reusable raid gadget anchor"
+[
+    gadget_type(choices) : "Gadget role" : "core_socket" =
+    [
+        "core_socket" : "Core Socket"
+        "relic_socket" : "Relic Socket"
+        "anchor" : "Generic JSON-controlled anchor"
+    ]
+    accepts(string) : "Accepted raid_item item_type" : "power_core"
+    order(integer) : "Selection order within socket group" : 1
+    team(string) : "Socket group name"
+    model(studio) : "Optional occupied presentation model" : ""
+    scale(float) : "Optional model scale" : 1
+]
+
+@SolidClass base(Appearflags, Targetname, Target) color(255 128 32) = trigger_raid_deposit : "Deposit the player's carried raid item"
+[
+    target(target_destination) : "Socket group (matches raid_gadget team)"
+]
+
+@PointClass base(Appearflags, Targetname, Target) color(80 255 180) size(-6 -6 -6, 6 6 6) = raid_hovertext : "Crosshair hover message and JSON-event marker"
+[
+    text(string) : "Hover text; leave blank for JSON-only delivery" : ""
+    hover_radius(float) : "Aim radius around marker, in world units" : 24
+    hover_distance(float) : "Absolute maximum activation distance" : 256
+    require_los(choices) : "Require unobstructed world line of sight" : 1 =
+    [
+        0 : "No"
+        1 : "Yes"
+    ]
+    target(target_destination) : "Optional entity to follow or describe"
+]
+
+@PointClass base(Appearflags, Targetname, Target) color(255 80 80) size(-12 -12 -12, 12 12 12) = raid_monster_door : "Director-controlled deployment group"
+[
+    target(target_destination) : "Monster roster: shared targetname on editor-placed Trigger Spawn monster_* entities"
+    pathtarget(target_destination) : "Optional first path_corner or point_combat after deployment"
+
+    deploy_interval(float) : "Seconds between releasing roster members" : 0.5
+    initial_count(integer) : "Number released when activated; 0 uses max_active or the full roster" : 0
+    min_active(integer) : "Population floor used by Maintain mode" : 0
+    max_active(integer) : "Maximum simultaneously active monsters; 0 is unlimited" : 0
+    wave_size(integer) : "Members released per replenishment wave; 0 uses available capacity" : 0
+    replenish_delay(float) : "Delay before replenishment" : 3
+    replenish_mode(choices) : "Population behaviour" : 0 =
+    [
+        0 : "None: deploy once"
+        1 : "Maintain minimum population"
+        2 : "Replacement wave after deployed group is killed"
+    ]
+
+    leash_radius(float) : "Maximum pursuit distance from this controller; 0 disables leash" : 0
+    leash_return_radius(float) : "Distance from controller considered returned" : 64
+    leash_grace(float) : "Seconds outside leash before forced return" : 1
+    wake_mode(choices) : "How released monsters acquire players" : 1 =
+    [
+        0 : "Preserve mapper-authored wake behaviour"
+        1 : "Wake and seek nearest player"
+        2 : "Follow pathtarget before normal combat"
+    ]
+]

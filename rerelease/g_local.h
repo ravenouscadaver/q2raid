@@ -2872,6 +2872,7 @@ struct gclient_t
 		gtime_t	time, total;
 	} kick;
 	gtime_t		  quake_time;
+	float             raid_shake_intensity;
 	vec3_t		  kick_origin;
 	float		  v_dmg_roll, v_dmg_pitch;
 	gtime_t		  v_dmg_time; // damage kicks

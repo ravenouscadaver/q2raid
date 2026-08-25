@@ -4,6 +4,7 @@
 #include "g_local.h"
 #include "raid_director.h"
 #include "raid_items.h"
+#include "raid_monsters.h"
 
 #include "json/json.h"
 
@@ -56,7 +57,33 @@ struct raid_entity_snapshot_t
     save_use_t use;
     float wait = 0.0f;
     float moveinfo_wait = 0.0f;
+    move_state_t moveinfo_state = STATE_BOTTOM;
+    bool moveinfo_reversing = false;
+    vec3_t moveinfo_dir, moveinfo_dest;
+    float moveinfo_current_speed = 0.0f;
+    float moveinfo_move_speed = 0.0f;
+    float moveinfo_next_speed = 0.0f;
+    float moveinfo_remaining_distance = 0.0f;
+    float moveinfo_decel_distance = 0.0f;
+    save_moveinfo_endfunc_t moveinfo_endfunc;
     int32_t skinnum = 0;
+    int32_t frame = 0;
+    int32_t modelindex = 0;
+    float alpha = 1.0f;
+    vec3_t origin, angles, velocity, avelocity;
+    vec3_t mins, maxs;
+    svflags_t svflags;
+    contents_t clipmask;
+    movetype_t movetype = MOVETYPE_NONE;
+    ent_flags_t flags;
+    spawnflags_t spawnflags;
+    gtime_t nextthink;
+    save_think_t think;
+    int32_t health = 0, max_health = 0, count = 0;
+    bool deadflag = false, takedamage = false;
+    effects_t effects;
+    renderfx_t renderfx;
+    int32_t sound = 0;
 };
 
 raid_director_runtime_t director;
@@ -78,8 +105,59 @@ void RaidDirector_SnapshotEntity(edict_t *entity)
         return snapshot.entity_number == entity->s.number && snapshot.spawn_count == entity->spawn_count;
     }))
         return;
-    entity_snapshots.push_back({ entity->s.number, entity->spawn_count, entity->solid, entity->touch, entity->use,
-        entity->wait, entity->moveinfo.wait, entity->s.skinnum });
+    raid_entity_snapshot_t snapshot;
+    snapshot.entity_number = entity->s.number;
+    snapshot.spawn_count = entity->spawn_count;
+    snapshot.solid = entity->solid;
+    snapshot.touch = entity->touch;
+    snapshot.use = entity->use;
+    snapshot.wait = entity->wait;
+    snapshot.moveinfo_wait = entity->moveinfo.wait;
+    snapshot.moveinfo_state = entity->moveinfo.state;
+    snapshot.moveinfo_reversing = entity->moveinfo.reversing;
+    snapshot.moveinfo_dir = entity->moveinfo.dir;
+    snapshot.moveinfo_dest = entity->moveinfo.dest;
+    snapshot.moveinfo_current_speed = entity->moveinfo.current_speed;
+    snapshot.moveinfo_move_speed = entity->moveinfo.move_speed;
+    snapshot.moveinfo_next_speed = entity->moveinfo.next_speed;
+    snapshot.moveinfo_remaining_distance = entity->moveinfo.remaining_distance;
+    snapshot.moveinfo_decel_distance = entity->moveinfo.decel_distance;
+    snapshot.moveinfo_endfunc = entity->moveinfo.endfunc;
+    snapshot.skinnum = entity->s.skinnum;
+    snapshot.frame = entity->s.frame;
+    snapshot.modelindex = entity->s.modelindex;
+    snapshot.alpha = entity->s.alpha;
+    snapshot.origin = entity->s.origin;
+    snapshot.angles = entity->s.angles;
+    snapshot.velocity = entity->velocity;
+    snapshot.avelocity = entity->avelocity;
+    snapshot.mins = entity->mins;
+    snapshot.maxs = entity->maxs;
+    snapshot.svflags = entity->svflags;
+    snapshot.clipmask = entity->clipmask;
+    snapshot.movetype = entity->movetype;
+    snapshot.flags = entity->flags;
+    snapshot.spawnflags = entity->spawnflags;
+    snapshot.nextthink = entity->nextthink;
+    snapshot.think = entity->think;
+    snapshot.health = entity->health;
+    snapshot.max_health = entity->max_health;
+    snapshot.count = entity->count;
+    snapshot.deadflag = entity->deadflag;
+    snapshot.takedamage = entity->takedamage;
+    snapshot.effects = entity->s.effects;
+    snapshot.renderfx = entity->s.renderfx;
+    snapshot.sound = entity->s.sound;
+    entity_snapshots.push_back(std::move(snapshot));
+}
+
+void RaidDirector_CaptureEntityBaseline()
+{
+    entity_snapshots.clear();
+    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+        if (g_edicts[i].inuse)
+            RaidDirector_SnapshotEntity(&g_edicts[i]);
+    gi.Com_PrintFmt("[raid] Captured reset baseline for {} map entities\n", entity_snapshots.size());
 }
 
 void RaidDirector_RestoreEntitySnapshots()
@@ -96,10 +174,43 @@ void RaidDirector_RestoreEntitySnapshots()
         entity->use = snapshot.use;
         entity->wait = snapshot.wait;
         entity->moveinfo.wait = snapshot.moveinfo_wait;
+        entity->moveinfo.state = snapshot.moveinfo_state;
+        entity->moveinfo.reversing = snapshot.moveinfo_reversing;
+        entity->moveinfo.dir = snapshot.moveinfo_dir;
+        entity->moveinfo.dest = snapshot.moveinfo_dest;
+        entity->moveinfo.current_speed = snapshot.moveinfo_current_speed;
+        entity->moveinfo.move_speed = snapshot.moveinfo_move_speed;
+        entity->moveinfo.next_speed = snapshot.moveinfo_next_speed;
+        entity->moveinfo.remaining_distance = snapshot.moveinfo_remaining_distance;
+        entity->moveinfo.decel_distance = snapshot.moveinfo_decel_distance;
+        entity->moveinfo.endfunc = snapshot.moveinfo_endfunc;
         entity->s.skinnum = snapshot.skinnum;
+        entity->s.frame = snapshot.frame;
+        entity->s.modelindex = snapshot.modelindex;
+        entity->s.alpha = snapshot.alpha;
+        entity->s.origin = snapshot.origin;
+        entity->s.angles = snapshot.angles;
+        entity->velocity = snapshot.velocity;
+        entity->avelocity = snapshot.avelocity;
+        entity->mins = snapshot.mins;
+        entity->maxs = snapshot.maxs;
+        entity->svflags = snapshot.svflags;
+        entity->clipmask = snapshot.clipmask;
+        entity->movetype = snapshot.movetype;
+        entity->flags = snapshot.flags;
+        entity->spawnflags = snapshot.spawnflags;
+        entity->nextthink = snapshot.nextthink;
+        entity->think = snapshot.think;
+        entity->health = snapshot.health;
+        entity->max_health = snapshot.max_health;
+        entity->count = snapshot.count;
+        entity->deadflag = snapshot.deadflag;
+        entity->takedamage = snapshot.takedamage;
+        entity->s.effects = snapshot.effects;
+        entity->s.renderfx = snapshot.renderfx;
+        entity->s.sound = snapshot.sound;
         gi.linkentity(entity);
     }
-    entity_snapshots.clear();
 }
 
 void RaidDirector_ClearTransientState()
@@ -139,6 +250,8 @@ void RaidDirector_ClearDocument()
 
     RaidDirector_RestoreEntitySnapshots();
     RaidCarry_ResetAll();
+    RaidHover_Reset();
+    RaidMonsters_Reset();
     RaidDirector_ClearTransientState();
 
     director.loaded = false;
@@ -235,6 +348,30 @@ void RaidDirector_ApplyPlayerStatus(edict_t *player, const Json::Value &operatio
         level.time + gtime_t::from_sec(duration), operation.get("expire_message", "").asString(), operation["on_expire"] });
 }
 
+void ApplyStatusFromDefinition(edict_t *player, const char *status, float duration, const char *stack_policy)
+{
+    Json::Value operation = status && director.document["statuses"][status].isObject()
+        ? director.document["statuses"][status]
+        : Json::Value(Json::objectValue);
+    operation["status"] = status ? status : "";
+    if (duration > 0.0f)
+        operation["duration"] = duration;
+    operation["stack_policy"] = stack_policy && *stack_policy ? stack_policy : "refresh";
+    RaidDirector_ApplyPlayerStatus(player, operation);
+}
+
+void ClearStatusByName(edict_t *player, const char *status)
+{
+    RaidDirector_ClearPlayerStatus(player, status ? status : "");
+}
+
+float StatusDurationFromDefinition(const char *status, float fallback)
+{
+    if (status && director.document["statuses"][status]["duration"].isNumeric())
+        return std::max(0.1f, director.document["statuses"][status]["duration"].asFloat());
+    return std::max(0.1f, fallback);
+}
+
 int32_t RaidDirector_PackColor(const rgba_t &color)
 {
     return color.a | (color.b << 8) | (color.g << 16) | (color.r << 24);
@@ -321,6 +458,21 @@ void RaidDirector_SetField(const std::string &targetname, const std::string &fie
             entity->moveinfo.wait = entity->wait;
             ++matches;
         }
+        else if (field == "hover_distance" && value.isNumeric() && entity->classname && !Q_strcasecmp(entity->classname, "raid_hovertext"))
+        {
+            entity->speed = std::max(1.0f, value.asFloat());
+            ++matches;
+        }
+        else if (field == "hover_radius" && value.isNumeric() && entity->classname && !Q_strcasecmp(entity->classname, "raid_hovertext"))
+        {
+            entity->dmg_radius = std::max(1.0f, value.asFloat());
+            ++matches;
+        }
+        else if (field == "require_los" && value.isBool() && entity->classname && !Q_strcasecmp(entity->classname, "raid_hovertext"))
+        {
+            entity->sounds = value.asBool() ? 1 : 0;
+            ++matches;
+        }
         else
         {
             gi.Com_PrintFmt("[raid] unsupported field write '{}.{}'\n", targetname, field);
@@ -386,10 +538,14 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
         else if (op == "screen_shake")
         {
             const float duration = std::max(0.0f, operation.get("duration", 1.0f).asFloat());
+            const float intensity = std::clamp(operation.get("intensity", 2.5f).asFloat(), 0.0f, 12.0f);
             const bool all = operation.get("scope", "activator").asString() == "all";
             for (edict_t *player : active_players())
                 if (all || player == activator)
+                {
                     player->client->quake_time = std::max(player->client->quake_time, level.time + gtime_t::from_sec(duration));
+                    player->client->raid_shake_intensity = std::max(player->client->raid_shake_intensity, intensity);
+                }
         }
         else if (op == "play_sound")
         {
@@ -530,6 +686,29 @@ bool RaidDirector_Validate(const Json::Value &root, std::string &error)
     if (root.isMember("reset") && !RaidDirector_ValidateOperations(root["reset"], "reset", error))
         return false;
 
+    if (root.isMember("statuses") && !root["statuses"].isObject())
+    {
+        error = "statuses must be an object";
+        return false;
+    }
+    for (const std::string &name : root["statuses"].getMemberNames())
+    {
+        const Json::Value &status = root["statuses"][name];
+        if (!status.isObject())
+        {
+            error = fmt::format("status '{}' must be an object", name);
+            return false;
+        }
+        if (status.isMember("duration") && !status["duration"].isNumeric())
+        {
+            error = fmt::format("status '{}'.duration must be numeric", name);
+            return false;
+        }
+        if (status.isMember("on_expire") &&
+            !RaidDirector_ValidateOperations(status["on_expire"], fmt::format("status '{}'.on_expire", name), error))
+            return false;
+    }
+
     const std::string initial_state = root["initial_state"].asString();
     if (!root["states"].isMember(initial_state))
     {
@@ -613,6 +792,21 @@ std::filesystem::path RaidDirector_ResolvePath(const char *path)
 }
 }
 
+void RaidDirector_ApplyStatus(edict_t *player, const char *status, float duration, const char *stack_policy)
+{
+    ApplyStatusFromDefinition(player, status, duration, stack_policy);
+}
+
+void RaidDirector_ClearStatus(edict_t *player, const char *status)
+{
+    ClearStatusByName(player, status);
+}
+
+float RaidDirector_StatusDuration(const char *status, float fallback)
+{
+    return StatusDurationFromDefinition(status, fallback);
+}
+
 void RaidDirector_Init()
 {
     raid_script = gi.cvar("raid_script", "", CVAR_NOFLAGS);
@@ -633,11 +827,13 @@ void RaidDirector_Shutdown()
 void RaidDirector_ResetForMap(const char *mapname)
 {
     RaidDirector_ClearDocument();
+    entity_snapshots.clear();
     director.mapname = mapname ? mapname : "";
 }
 
 void RaidDirector_OnMapReady()
 {
+    RaidDirector_CaptureEntityBaseline();
     if (!director.initialized || !raid_autoload || !raid_autoload->integer || !raid_script || !*raid_script->string)
         return;
 
@@ -646,6 +842,7 @@ void RaidDirector_OnMapReady()
 
 void RaidDirector_RunFrame()
 {
+    RaidHover_RunFrame();
     if (raid_message_expires && raid_message_expires <= level.time)
     {
         gi.configstring(CONFIG_RAID_MESSAGE, "");
@@ -847,6 +1044,8 @@ bool RaidDirector_ResetEncounter()
 
     RaidDirector_RestoreEntitySnapshots();
     RaidCarry_ResetAll();
+    RaidHover_Reset();
+    RaidMonsters_Reset();
     RaidDirector_ClearTransientState();
     director.state = director.document["initial_state"].asString();
     RaidDirector_ExecuteOperations(director.document["reset"], "encounter reset", nullptr);

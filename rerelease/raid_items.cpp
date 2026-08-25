@@ -17,6 +17,14 @@ struct raid_carry_state_t
 };
 raid_carry_state_t carry_states[MAX_CLIENTS];
 
+struct raid_hover_state_t
+{
+    uint32_t entity_number = 0;
+    int32_t spawn_count = 0;
+    gtime_t next_pulse;
+};
+raid_hover_state_t hover_states[MAX_CLIENTS];
+
 raid_carry_state_t &CarryState(edict_t *player) { return carry_states[player->s.number - 1]; }
 bool IsSupportedRaidItem(edict_t *item)
 {
@@ -39,6 +47,8 @@ gitem_t *RelicWeapon(edict_t *item)
 void FinishCarry(edict_t *player)
 {
     auto &state = CarryState(player);
+    if (state.item && state.item->deathtarget && state.item->sounds)
+        RaidDirector_ClearStatus(player, state.item->deathtarget);
     if (IsWeaponRelic(state.item))
     {
         gitem_t *weapon = RelicWeapon(state.item);
@@ -97,6 +107,16 @@ TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool) ->
     }
     else
         RaidThirdPerson_SetCarry(other, true, self->model, self->s.scale);
+    if (self->deathtarget && *self->deathtarget)
+    {
+        const float configured_duration = self->delay > 0.0f
+            ? self->delay
+            : RaidDirector_StatusDuration(self->deathtarget, 15.0f);
+        if (!self->timestamp || self->timestamp <= level.time)
+            self->timestamp = level.time + gtime_t::from_sec(configured_duration);
+        const float remaining = std::max(0.1f, (self->timestamp - level.time).seconds());
+        RaidDirector_ApplyStatus(other, self->deathtarget, remaining, self->healthtarget);
+    }
     RaidDirector_NotifyEntityEvent(self, "pickup", other);
     gi.LocClient_Print(other, PRINT_HIGH, IsWeaponRelic(self) ? "BFG RELIC ACQUIRED\n" : "POWER CORE ACQUIRED\n");
 }
@@ -149,6 +169,9 @@ void SP_raid_item(edict_t *ent)
     if (!ent->message) ent->message = "power_core";
     if (!ent->model) ent->model = IsWeaponRelic(ent) ? "models/weapons/g_bfg/tris.md2" : "models/items/keys/power/tris.md2";
     if (!ent->speed) ent->speed = 0.45f;
+    if (!ent->healthtarget) ent->healthtarget = "refresh";
+    if (!st.was_key_specified("clear_status_on_drop")) ent->sounds = 1;
+    ent->timestamp = 0_ms;
     ent->move_origin = ent->s.origin;
     ent->move_angles = ent->s.angles;
     gi.setmodel(ent, ent->model);
@@ -175,6 +198,17 @@ void SP_trigger_raid_deposit(edict_t *ent)
 {
     InitTrigger(ent);
     ent->touch = raid_deposit_touch;
+    gi.linkentity(ent);
+}
+
+void SP_raid_hovertext(edict_t *ent)
+{
+    if (ent->dmg_radius <= 0.0f) ent->dmg_radius = 24.0f;
+    if (ent->speed <= 0.0f) ent->speed = 256.0f;
+    if (!st.was_key_specified("require_los")) ent->sounds = 1;
+    ent->solid = SOLID_NOT;
+    ent->movetype = MOVETYPE_NONE;
+    ent->svflags |= SVF_NOCLIENT;
     gi.linkentity(ent);
 }
 
@@ -241,8 +275,90 @@ void RaidCarry_ResetAll()
         if (!entity->inuse || !entity->classname)
             continue;
         if (!Q_strcasecmp(entity->classname, "raid_item"))
+        {
+            entity->timestamp = 0_ms;
             RestoreRaidItem(entity);
+        }
         else if (!Q_strcasecmp(entity->classname, "raid_gadget"))
             entity->health = 0;
+    }
+}
+
+void RaidHover_Reset()
+{
+    for (raid_hover_state_t &state : hover_states)
+        state = {};
+}
+
+void RaidHover_RunFrame()
+{
+    for (edict_t *player : active_players())
+    {
+        if (!player->client || player->deadflag || player->client->resp.spectator)
+            continue;
+
+        const vec3_t eye = player->s.origin + vec3_t{ 0, 0, static_cast<float>(player->viewheight) };
+        vec3_t forward;
+        AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
+        edict_t *best = nullptr;
+        float best_perpendicular = std::numeric_limits<float>::max();
+
+        for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+        {
+            edict_t *marker = &g_edicts[i];
+            if (!marker->inuse || !marker->classname || Q_strcasecmp(marker->classname, "raid_hovertext"))
+                continue;
+
+            vec3_t marker_origin = marker->s.origin;
+            if (marker->target)
+            {
+                edict_t *follow = G_FindByString<&edict_t::targetname>(nullptr, marker->target);
+                if (follow) marker_origin = follow->s.origin;
+            }
+
+            const vec3_t delta = marker_origin - eye;
+            if (delta.length() > marker->speed)
+                continue;
+            const float along = delta.dot(forward);
+            if (along <= 0.0f || along > marker->speed)
+                continue;
+            const float perpendicular = (delta - (forward * along)).length();
+            if (perpendicular > marker->dmg_radius || perpendicular >= best_perpendicular)
+                continue;
+            if (marker->sounds)
+            {
+                const trace_t sight = gi.traceline(eye, marker_origin, player, MASK_SOLID);
+                if (sight.fraction < 1.0f)
+                    continue;
+            }
+            best = marker;
+            best_perpendicular = perpendicular;
+        }
+
+        raid_hover_state_t &state = hover_states[player->s.number - 1];
+        edict_t *previous = state.entity_number && state.entity_number < globals.num_edicts ? &g_edicts[state.entity_number] : nullptr;
+        if (previous && (!previous->inuse || previous->spawn_count != state.spawn_count))
+            previous = nullptr;
+
+        if (best != previous)
+        {
+            if (previous)
+                RaidDirector_NotifyEntityEvent(previous, "hover_exit", player);
+            state = {};
+            if (best)
+            {
+                state.entity_number = best->s.number;
+                state.spawn_count = best->spawn_count;
+                state.next_pulse = level.time + 1_sec;
+                if (best->message && *best->message)
+                    gi.LocCenter_Print(player, "{}", best->message);
+                RaidDirector_NotifyEntityEvent(best, "hover_enter", player);
+            }
+        }
+        else if (best && level.time >= state.next_pulse)
+        {
+            state.next_pulse = level.time + 1_sec;
+            RaidDirector_NotifyEntityEvent(best, "hover", player);
+        }
     }
 }

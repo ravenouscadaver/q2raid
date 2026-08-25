@@ -857,6 +857,7 @@ SAVE_STRUCT_START
 	FIELD_AUTO(kick.total),
 	FIELD_AUTO(kick.time),
 	FIELD_AUTO(quake_time),
+	FIELD_AUTO(raid_shake_intensity),
 	FIELD_AUTO(v_dmg_roll),
 	FIELD_AUTO(v_dmg_pitch),
 	FIELD_AUTO(v_dmg_time),

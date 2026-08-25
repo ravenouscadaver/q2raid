@@ -38,6 +38,7 @@
     <ClInclude Include="raid_director.h" />
     <ClInclude Include="raid_thirdperson.h" />
     <ClInclude Include="raid_items.h" />
+    <ClInclude Include="raid_monsters.h" />
     <ClInclude Include="bots\bot_debug.h">
       <Filter>bots</Filter>
     </ClInclude>
@@ -139,6 +140,7 @@
     <ClCompile Include="raid_director.cpp" />
     <ClCompile Include="raid_thirdperson.cpp" />
     <ClCompile Include="raid_items.cpp" />
+    <ClCompile Include="raid_monsters.cpp" />
     <ClCompile Include="bots\bot_debug.cpp">
       <Filter>bots</Filter>
     </ClCompile>
