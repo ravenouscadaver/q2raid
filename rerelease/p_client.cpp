@@ -3,6 +3,7 @@
 #include "g_local.h"
 #include "m_player.h"
 #include "bots/bot_includes.h"
+#include "raid_thirdperson.h"
 
 void SP_misc_teleporter_dest(edict_t *ent);
 
@@ -2931,6 +2932,8 @@ void ClientDisconnect(edict_t *ent)
 {
 	if (!ent->client)
 		return;
+
+	RaidThirdPerson_Disconnect(ent);
 
 	// ZOID
 	CTFDeadDropFlag(ent);

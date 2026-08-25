@@ -36,6 +36,7 @@
     <ClInclude Include="q_std.h" />
     <ClInclude Include="q_vec3.h" />
     <ClInclude Include="raid_director.h" />
+    <ClInclude Include="raid_thirdperson.h" />
     <ClInclude Include="bots\bot_debug.h">
       <Filter>bots</Filter>
     </ClInclude>
@@ -135,6 +136,7 @@
     <ClCompile Include="p_weapon.cpp" />
     <ClCompile Include="q_std.cpp" />
     <ClCompile Include="raid_director.cpp" />
+    <ClCompile Include="raid_thirdperson.cpp" />
     <ClCompile Include="bots\bot_debug.cpp">
       <Filter>bots</Filter>
     </ClCompile>

@@ -143,6 +143,7 @@
     <ClInclude Include="q_std.h" />
     <ClInclude Include="q_vec3.h" />
     <ClInclude Include="raid_director.h" />
+    <ClInclude Include="raid_thirdperson.h" />
     <ClInclude Include="rogue\m_rogue_carrier.h" />
     <ClInclude Include="rogue\m_rogue_stalker.h" />
     <ClInclude Include="rogue\m_rogue_turret.h" />
@@ -212,6 +213,7 @@
     <ClCompile Include="p_view.cpp" />
     <ClCompile Include="p_weapon.cpp" />
     <ClCompile Include="raid_director.cpp" />
+    <ClCompile Include="raid_thirdperson.cpp" />
     <ClCompile Include="q_std.cpp" />
     <ClCompile Include="rogue\g_rogue_combat.cpp" />
     <ClCompile Include="rogue\g_rogue_func.cpp" />
