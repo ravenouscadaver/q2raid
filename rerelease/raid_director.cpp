@@ -5,6 +5,7 @@
 #include "raid_director.h"
 #include "raid_items.h"
 #include "raid_monsters.h"
+#include "raid_hats.h"
 
 #include "json/json.h"
 
@@ -270,6 +271,7 @@ void RaidDirector_ClearDocument()
     RaidCarry_ResetAll();
     RaidHover_Reset();
     RaidMonsters_Reset();
+    RaidHats_Reset();
     RaidDirector_ClearTransientState();
 
     director.loaded = false;
@@ -866,6 +868,7 @@ void RaidDirector_ResetForMap(const char *mapname)
 {
     RaidDirector_ClearDocument();
     RaidMonsters_ClearMap();
+    RaidHats_ClearMap();
     entity_snapshots.clear();
     director.mapname = mapname ? mapname : "";
 }
@@ -1128,6 +1131,7 @@ bool RaidDirector_ResetEncounter()
     RaidCarry_ResetAll();
     RaidHover_Reset();
     RaidMonsters_Reset();
+    RaidHats_Reset();
     RaidDirector_ClearTransientState();
     director.state = director.document["initial_state"].asString();
     RaidDirector_ExecuteOperations(director.document["reset"], "encounter reset", nullptr);

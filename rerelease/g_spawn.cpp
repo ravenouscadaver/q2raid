@@ -4,6 +4,7 @@
 #include "g_local.h"
 #include "raid_items.h"
 #include "raid_monsters.h"
+#include "raid_hats.h"
 #include "raid_director.h"
 
 struct spawn_t
@@ -299,6 +300,7 @@ static const std::initializer_list<spawn_t> spawns = {
 	{ "trigger_raid_deposit", SP_trigger_raid_deposit },
 	{ "raid_hovertext", SP_raid_hovertext },
 	{ "raid_monster_door", SP_raid_monster_door },
+	{ "raid_hat", SP_raid_hat },
 
 	{ "worldspawn", SP_worldspawn },
 
@@ -719,6 +721,12 @@ static const std::initializer_list<field_t> entity_fields = {
 	FIELD_AUTO_NAMED("leash_return_radius", accel),
 	FIELD_AUTO_NAMED("leash_grace", speed),
 	FIELD_AUTO_NAMED("wake_mode", mass),
+	FIELD_AUTO_NAMED("raid_health_multiplier", speed),
+	FIELD_AUTO_NAMED("raid_monster_scale", accel),
+	FIELD_AUTO_NAMED("raid_ai_mode", mass),
+	FIELD_AUTO_NAMED("rank", style),
+	FIELD_AUTO_NAMED("attachment_offset", move_origin),
+	FIELD_AUTO_NAMED("attachment_angles", move_angles),
 	FIELD_AUTO_NAMED("accepts", target),
 	FIELD_AUTO_NAMED("order", count),
 	FIELD_AUTO(team),

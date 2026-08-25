@@ -1,6 +1,7 @@
 #include "g_local.h"
 #include "raid_director.h"
 #include "raid_monsters.h"
+#include "raid_hats.h"
 
 #include <deque>
 
@@ -207,6 +208,8 @@ edict_t *SpawnRosterMember(const roster_entry_t &entry, edict_t *controller)
     st = {};
     st.item = RestoreKey(entry.item);
     ED_CallSpawn(monster);
+    if (monster->inuse)
+        RaidHats_ApplyMonster(monster);
     return monster->inuse ? monster : nullptr;
 }
 

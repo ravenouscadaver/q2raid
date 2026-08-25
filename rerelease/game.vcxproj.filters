@@ -141,6 +141,7 @@
     <ClCompile Include="raid_thirdperson.cpp" />
     <ClCompile Include="raid_items.cpp" />
     <ClCompile Include="raid_monsters.cpp" />
+    <ClCompile Include="raid_hats.cpp" />
     <ClCompile Include="bots\bot_debug.cpp">
       <Filter>bots</Filter>
     </ClCompile>

@@ -100,3 +100,29 @@
         2 : "Follow pathtarget before normal combat"
     ]
 ]
+
+@PointClass base(Appearflags, Targetname, Target) color(255 180 40) size(-12 -12 -12, 12 12 12) = raid_hat : "Reusable raid metadata wrapper for named monster groups"
+[
+    target(target_destination) : "Monster group: targetname shared by ordinary monster_* entities"
+    message(string) : "Display name (reserved for hover labels and health bars)"
+    rank(choices) : "Raid rank / test shell" : 0 =
+    [
+        0 : "Normal"
+        1 : "Elite (red shell)"
+        2 : "Ultra (blue shell)"
+        3 : "Boss (purple shell)"
+    ]
+    health(integer) : "Absolute health override; 0 preserves base health" : 0
+    raid_health_multiplier(float) : "Base-health multiplier when no absolute override is set" : 1
+    raid_monster_scale(float) : "Physical/model scale; 0 or 1 preserves base scale" : 1
+    raid_ai_mode(choices) : "Temporary AI test mode" : 0 =
+    [
+        0 : "Normal"
+        1 : "Dunce: awake but non-hostile"
+        2 : "Dumb hat: frozen and non-hostile"
+    ]
+    model(studio) : "Optional attached hat/head/test model"
+    attachment_offset(string) : "Model offset: forward right up" : "0 0 32"
+    attachment_angles(string) : "Model angle offset: pitch yaw roll" : "0 0 0"
+    scale(float) : "Attached model scale" : 1
+]
