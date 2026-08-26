@@ -6,6 +6,7 @@
 #include "raid_items.h"
 #include "raid_monsters.h"
 #include "raid_hats.h"
+#include "raid_downed.h"
 
 #include "json/json.h"
 
@@ -272,6 +273,7 @@ void RaidDirector_ClearDocument()
     RaidHover_Reset();
     RaidMonsters_Reset();
     RaidHats_Reset();
+    RaidDowned_ResetAll();
     RaidDirector_ClearTransientState();
 
     director.loaded = false;
@@ -524,6 +526,12 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
         {
             RaidDirector_SetField(operation.get("target", "").asString(), operation.get("field", "").asString(), operation["value"]);
         }
+        else if (op == "set_monster_door")
+        {
+            const std::string target = operation.get("target", "").asString();
+            if (!RaidMonsters_SetEnabled(target.c_str(), operation.get("enabled", true).asBool()))
+                gi.Com_PrintFmt("[raid] monster door target '{}' not found\n", target);
+        }
         else if (op == "post_message")
         {
             RaidDirector_PostMessage(activator, operation.get("text", "").asString(), operation.get("scope", "activator").asString() == "all");
@@ -626,7 +634,7 @@ bool RaidDirector_ValidateOperations(const Json::Value &operations, const std::s
     static const std::vector<std::string> known_ops = {
         "fire_target", "disable_entity", "set_field", "post_message", "post_encounter_message",
         "apply_status", "clear_status", "damage_player", "kill_player", "screen_shake",
-        "play_sound", "color_cycle"
+        "play_sound", "color_cycle", "set_monster_door"
     };
 
     for (Json::ArrayIndex i = 0; i < operations.size(); ++i)
@@ -645,10 +653,15 @@ bool RaidDirector_ValidateOperations(const Json::Value &operations, const std::s
             return false;
         }
 
-        if ((op == "fire_target" || op == "disable_entity" || op == "set_field") &&
+        if ((op == "fire_target" || op == "disable_entity" || op == "set_field" || op == "set_monster_door") &&
             (!operation["target"].isString() || operation["target"].asString().empty()))
         {
             error = fmt::format("{}[{}] op '{}' requires target", context, i, op);
+            return false;
+        }
+        if (op == "set_monster_door" && operation.isMember("enabled") && !operation["enabled"].isBool())
+        {
+            error = fmt::format("{}[{}] set_monster_door enabled must be boolean", context, i);
             return false;
         }
         if ((op == "post_message" || op == "post_encounter_message") && !operation["text"].isString())
@@ -1132,6 +1145,7 @@ bool RaidDirector_ResetEncounter()
     RaidHover_Reset();
     RaidMonsters_Reset();
     RaidHats_Reset();
+    RaidDowned_ResetAll();
     RaidDirector_ClearTransientState();
     director.state = director.document["initial_state"].asString();
     RaidDirector_ExecuteOperations(director.document["reset"], "encounter reset", nullptr);

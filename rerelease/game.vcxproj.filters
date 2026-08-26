@@ -142,6 +142,7 @@
     <ClCompile Include="raid_items.cpp" />
     <ClCompile Include="raid_monsters.cpp" />
     <ClCompile Include="raid_hats.cpp" />
+    <ClCompile Include="raid_downed.cpp" />
     <ClCompile Include="bots\bot_debug.cpp">
       <Filter>bots</Filter>
     </ClCompile>

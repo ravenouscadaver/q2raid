@@ -134,7 +134,7 @@
       "do": [
         { "op": "post_message", "text": "CORE DEPOSITED" },
         { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" },
-        { "op": "fire_target", "target": "monster_door_2" },
+        { "op": "set_monster_door", "target": "monster_door_2", "enabled": true },
         { "op": "post_encounter_message", "text": "SECOND DEPLOYMENT WAVE ACTIVE", "duration": 4, "priority": 6 }
       ]
     },
@@ -165,7 +165,7 @@
       "source": "trigger_monster_door",
       "signal": "activate",
       "do": [
-        { "op": "fire_target", "target": "monster_door_1" },
+        { "op": "set_monster_door", "target": "monster_door_1", "enabled": true },
         { "op": "post_encounter_message", "text": "HOSTILE DEPLOYMENT DETECTED", "duration": 4, "priority": 6 },
         { "op": "play_sound", "sound": "world/x_alarm.wav", "scope": "all" }
       ]
@@ -181,7 +181,7 @@
   "states": {
     "idle": {
       "enter": [
-        { "op": "fire_target", "target": "monster_door_1" },
+        { "op": "set_monster_door", "target": "monster_door_1", "enabled": true },
         { "op": "post_encounter_message", "text": "FIRST DEPLOYMENT WAVE ACTIVE", "duration": 4, "priority": 4 }
       ]
     },

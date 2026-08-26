@@ -16,6 +16,10 @@ struct raid_thirdperson_state_t
     uint8_t saved_instance_bits = 0;
     vec3_t previous_camera;
     bool previous_camera_valid = false;
+    bool presentation = false;
+    bool presentation_restore_enabled = false;
+    std::string presentation_model;
+    int presentation_frame = 0;
 };
 
 raid_thirdperson_state_t states[MAX_CLIENTS];
@@ -70,7 +74,14 @@ void UpdateAvatar(edict_t *player, edict_t *avatar)
     const uint32_t avatar_number = avatar->s.number;
     avatar->s = player->s;
     avatar->s.number = avatar_number;
-    avatar->s.modelindex = MODELINDEX_PLAYER;
+    if (StateFor(player).presentation && !StateFor(player).presentation_model.empty())
+    {
+        avatar->s.modelindex = gi.modelindex(StateFor(player).presentation_model.c_str());
+        avatar->s.frame = StateFor(player).presentation_frame;
+        avatar->s.modelindex2 = 0;
+    }
+    else
+        avatar->s.modelindex = MODELINDEX_PLAYER;
 
     if (StateFor(player).carrying)
     {
@@ -84,6 +95,41 @@ void UpdateAvatar(edict_t *player, edict_t *avatar)
     avatar->s.instance_bits = static_cast<uint8_t>(~ClientBit(player));
     avatar->svflags &= ~SVF_NOCLIENT;
     gi.linkentity(avatar);
+}
+
+void SetPresentationInternal(edict_t *player, bool enabled, const char *model, int frame)
+{
+    if (!player || !player->client || player->s.number < 1 || player->s.number > MAX_CLIENTS)
+        return;
+    auto &state = StateFor(player);
+    if (enabled)
+    {
+        if (!state.presentation)
+        {
+            state.presentation_restore_enabled = state.enabled;
+            if (!state.enabled)
+                state.saved_instance_bits = player->s.instance_bits;
+        }
+        state.presentation = true;
+        state.enabled = true;
+        state.presentation_model = model ? model : "";
+        state.presentation_frame = frame;
+    }
+    else if (state.presentation)
+    {
+        state.presentation = false;
+        state.presentation_model.clear();
+        state.presentation_frame = 0;
+        if (!state.presentation_restore_enabled && !state.carrying)
+        {
+            state.enabled = false;
+            player->s.instance_bits = state.saved_instance_bits;
+            DestroyAvatar(player);
+            state.previous_camera_valid = false;
+            if (player->client->pers.weapon && player->client->pers.weapon->view_model)
+                player->client->ps.gunindex = gi.modelindex(player->client->pers.weapon->view_model);
+        }
+    }
 }
 
 void UpdateHeldModel(edict_t *player)
@@ -112,6 +158,11 @@ void UpdateHeldModel(edict_t *player)
 }
 }
 
+void RaidThirdPerson_SetPresentation(edict_t *player, bool enabled, const char *model, int frame)
+{
+    SetPresentationInternal(player, enabled, model, frame);
+}
+
 void RaidThirdPerson_SetCarry(edict_t *player, bool carrying, const char *model, float scale)
 {
     if (!player || !player->client || player->s.number < 1 || player->s.number > MAX_CLIENTS)
@@ -127,9 +178,12 @@ void RaidThirdPerson_SetCarry(edict_t *player, bool carrying, const char *model,
     }
     else
     {
-        state.enabled = false;
-        player->s.instance_bits = state.saved_instance_bits;
-        DestroyAvatar(player);
+        state.enabled = state.presentation;
+        if (!state.presentation)
+        {
+            player->s.instance_bits = state.saved_instance_bits;
+            DestroyAvatar(player);
+        }
         DestroyHeldModel(player);
         state.held_model_name.clear();
         state.held_model_scale = 0.0f;
@@ -145,6 +199,11 @@ void RaidThirdPerson_Toggle(edict_t *player)
         return;
 
     auto &state = StateFor(player);
+    if (state.presentation)
+    {
+        gi.LocClient_Print(player, PRINT_HIGH, "Third person is locked by the current presentation\n");
+        return;
+    }
     if (state.carrying)
     {
         gi.LocClient_Print(player, PRINT_HIGH, "Third person is locked while carrying a raid item\n");

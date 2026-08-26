@@ -44,7 +44,8 @@ bool SameRef(const entity_ref_t &ref, edict_t *entity)
 bool Matches(edict_t *hat, edict_t *monster)
 {
     return hat && monster && monster->inuse && (monster->svflags & SVF_MONSTER) && monster->health > 0 &&
-        hat->target && monster->targetname && !Q_strcasecmp(hat->target, monster->targetname);
+        hat->target && ((monster->map && !Q_strcasecmp(hat->target, monster->map)) ||
+            (monster->targetname && !Q_strcasecmp(hat->target, monster->targetname)));
 }
 
 THINK(raid_hat_attachment_think) (edict_t *self) -> void

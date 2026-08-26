@@ -6,6 +6,7 @@
 #include "raid_director.h"
 #include "raid_thirdperson.h"
 #include "raid_items.h"
+#include "raid_downed.h"
 
 void SP_misc_teleporter_dest(edict_t *ent);
 
@@ -536,6 +537,7 @@ player_die
 */
 DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t &point, const mod_t &mod) -> void
 {
+	RaidDowned_OnDeath(self);
 	RaidCarry_OnPlayerDeath(self);
 	PlayerTrail_Destroy(self);
 
@@ -2935,6 +2937,7 @@ Will not be called between levels.
 */
 void ClientDisconnect(edict_t *ent)
 {
+	RaidDowned_Disconnect(ent);
 	if (!ent->client)
 		return;
 
@@ -3261,6 +3264,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 			pm.snapinitial = true;
 
 		pm.cmd = *ucmd;
+		RaidDowned_FilterCommand(ent, pm.cmd);
 		const float raid_move_scale = RaidCarry_MovementScale(ent);
 		pm.cmd.forwardmove *= raid_move_scale;
 		pm.cmd.sidemove *= raid_move_scale;
@@ -3805,7 +3809,7 @@ void ClientBeginServerFrame(edict_t *ent)
 	}
 
 	// run weapon animations if it hasn't been done by a ucmd_t
-	if (!client->weapon_thunk && !client->resp.spectator)
+	if (!client->weapon_thunk && !client->resp.spectator && !RaidDowned_IsDown(ent))
 		Think_Weapon(ent);
 	else
 		client->weapon_thunk = false;

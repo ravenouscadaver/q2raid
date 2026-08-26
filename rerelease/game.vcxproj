@@ -219,6 +219,7 @@
     <ClCompile Include="raid_items.cpp" />
     <ClCompile Include="raid_monsters.cpp" />
     <ClCompile Include="raid_hats.cpp" />
+    <ClCompile Include="raid_downed.cpp" />
     <ClCompile Include="q_std.cpp" />
     <ClCompile Include="rogue\g_rogue_combat.cpp" />
     <ClCompile Include="rogue\g_rogue_func.cpp" />

@@ -5,6 +5,7 @@
 #include "m_player.h"
 #include "bots/bot_includes.h"
 #include "raid_thirdperson.h"
+#include "raid_downed.h"
 
 static edict_t   *current_player;
 static gclient_t *current_client;
@@ -1530,6 +1531,7 @@ void ClientEndServerFrame(edict_t *ent)
 	}
 
 	P_AssignClientSkinnum(ent);
+	RaidDowned_Update(ent);
 	RaidThirdPerson_Update(ent);
 
 	if (deathmatch->integer)

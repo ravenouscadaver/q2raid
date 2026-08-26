@@ -4,6 +4,7 @@
 #include "m_player.h"
 #include "raid_thirdperson.h"
 #include "raid_items.h"
+#include "raid_downed.h"
 
 void SelectNextItem(edict_t *ent, item_flags_t itflags, bool menu = true)
 {
@@ -1729,6 +1730,8 @@ void ClientCommand(edict_t *ent)
 		Cmd_PlayerList_f(ent);
 	else if (Q_strcasecmp(cmd, "raid_thirdperson") == 0)
 		RaidThirdPerson_Toggle(ent);
+	else if (Q_strcasecmp(cmd, "raid_downed_test") == 0)
+		RaidDowned_ToggleTest(ent);
 	// ZOID
 	else if (Q_strcasecmp(cmd, "team") == 0)
 		CTFTeam_f(ent);

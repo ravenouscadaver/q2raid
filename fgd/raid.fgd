@@ -74,7 +74,7 @@
 
 @PointClass base(Appearflags, Targetname, Target) color(255 80 80) size(-12 -12 -12, 12 12 12) = raid_monster_door : "Director-controlled deployment group"
 [
-    target(target_destination) : "Population archetype group: shared targetname on editor-placed monster_* templates"
+    target(string) : "Accepted roster slots: comma-separated targetnames on editor-placed monster_* templates"
     pathtarget(target_destination) : "Optional first path_corner or point_combat after deployment"
 
     deploy_interval(float) : "Seconds between releasing roster members" : 0.5
@@ -103,7 +103,7 @@
 
 @PointClass base(Appearflags, Targetname, Target) color(255 180 40) size(-12 -12 -12, 12 12 12) = raid_hat : "Reusable raid metadata wrapper for named monster groups"
 [
-    target(target_destination) : "Monster group: targetname shared by ordinary monster_* entities"
+    target(target_destination) : "Monster selector: matches a monster raid_hat key, or targetname for whole-group wrapping"
     message(string) : "Display name (reserved for hover labels and health bars)"
     rank(choices) : "Raid rank / test shell" : 0 =
     [
