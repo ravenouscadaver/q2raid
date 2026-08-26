@@ -137,9 +137,9 @@ void ApplyModifiers(edict_t *hat, edict_t *monster)
         monster->monsterinfo.aiflags |= AI_GOOD_GUY;
     if (hat->mass == 2)
         monster->monsterinfo.aiflags |= AI_STAND_GROUND | AI_HOLD_FRAME;
-    if (hat->mass >= 2 && monster->monsterinfo.currentmove)
-        monster->s.frame = std::clamp(monster->monsterinfo.currentmove->firstframe + std::max(0, hat->dmg),
-            monster->monsterinfo.currentmove->firstframe, monster->monsterinfo.currentmove->lastframe);
+    if (hat->mass >= 2 && monster->monsterinfo.active_move)
+        monster->s.frame = std::clamp(monster->monsterinfo.active_move->firstframe + std::max(0, hat->dmg),
+            monster->monsterinfo.active_move->firstframe, monster->monsterinfo.active_move->lastframe);
 }
 
 void ApplyHat(edict_t *hat, edict_t *monster)
@@ -179,7 +179,7 @@ void UpdateObserverLock(edict_t *hat, applied_hat_t &applied)
     edict_t *monster = Resolve(applied.monster);
     if (!monster || monster->health <= 0)
         return;
-    const float range = hat->radius > 0.0f ? hat->radius : 2048.0f;
+    const float range = hat->dmg_radius > 0.0f ? hat->dmg_radius : 2048.0f;
     bool watched = false;
     for (edict_t *player : active_players())
         if (PlayerWatches(player, monster, range)) { watched = true; break; }
@@ -207,10 +207,10 @@ void UpdateObserverLock(edict_t *hat, applied_hat_t &applied)
     if (hat->random > 0.0f && (!applied.next_twitch || level.time >= applied.next_twitch))
     {
         applied.next_twitch = level.time + 1_sec;
-        if (frandom() < hat->random && monster->monsterinfo.currentmove)
+        if (frandom() < hat->random && monster->monsterinfo.active_move)
         {
-            monster->s.frame = monster->s.frame >= monster->monsterinfo.currentmove->lastframe ?
-                monster->monsterinfo.currentmove->firstframe : monster->s.frame + 1;
+            monster->s.frame = monster->s.frame >= monster->monsterinfo.active_move->lastframe ?
+                monster->monsterinfo.active_move->firstframe : monster->s.frame + 1;
             RaidDirector_NotifyEntityEvent(hat, "twitch", monster);
         }
     }
@@ -312,7 +312,7 @@ void RaidHats_UpdateHUD(edict_t *player)
         const vec3_t center = monster->s.origin + (monster->mins + monster->maxs) * 0.5f;
         const vec3_t delta = center - eye;
         const float distance = delta.length();
-        const float display_distance = hat->radius > 0.0f ? hat->radius : 1024.0f;
+        const float display_distance = hat->dmg_radius > 0.0f ? hat->dmg_radius : 1024.0f;
         if (distance > display_distance)
             continue;
         const float along = delta.dot(forward);

@@ -724,7 +724,7 @@ static const std::initializer_list<field_t> entity_fields = {
 	FIELD_AUTO_NAMED("raid_health_multiplier", speed),
 	FIELD_AUTO_NAMED("raid_monster_scale", accel),
 	FIELD_AUTO_NAMED("raid_ai_mode", mass),
-	FIELD_AUTO_NAMED("display_distance", radius),
+	FIELD_AUTO_NAMED("display_distance", dmg_radius),
 	FIELD_AUTO_NAMED("start_pose", dmg),
 	FIELD_AUTO_NAMED("freeze_delay", delay),
 	FIELD_AUTO_NAMED("twitch_chance", random),

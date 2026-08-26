@@ -3177,7 +3177,7 @@ void RaidMovement_FilterJump(edict_t *ent, pmove_t &pm)
     static cvar_t *coyote_window = gi.cvar("raid_coyote_window", "0.08", CVAR_NOFLAGS);
     raid_jump_state_t &state = raid_jump_states[ent->s.number - 1];
     const bool grounded = ent->groundentity != nullptr;
-    const bool jump_down = pm.cmd.upmove >= 10.0f;
+    const bool jump_down = !!(pm.cmd.buttons & BUTTON_JUMP);
     const bool jump_pressed = jump_down && !state.jump_held;
 
     if (grounded)
