@@ -18,10 +18,14 @@ struct applied_hat_t
     entity_ref_t hat;
     entity_ref_t monster;
     entity_ref_t attachment;
+    bool watched = false;
+    gtime_t freeze_at;
+    gtime_t next_twitch;
 };
 
 std::vector<entity_ref_t> hats;
 std::vector<applied_hat_t> applied_hats;
+constexpr spawnflags_t RAID_HAT_START_DISABLED = 1_spawnflag;
 
 entity_ref_t Ref(edict_t *entity)
 {
@@ -129,10 +133,13 @@ void ApplyModifiers(edict_t *hat, edict_t *monster)
         monster->s.renderfx |= RF_SHELL_RED | RF_SHELL_BLUE;
     }
 
-    if (hat->mass >= 1)
+    if (hat->mass >= 1 && hat->mass != 3)
         monster->monsterinfo.aiflags |= AI_GOOD_GUY;
-    if (hat->mass >= 2)
+    if (hat->mass == 2)
         monster->monsterinfo.aiflags |= AI_STAND_GROUND | AI_HOLD_FRAME;
+    if (hat->mass >= 2 && monster->monsterinfo.currentmove)
+        monster->s.frame = std::clamp(monster->monsterinfo.currentmove->firstframe + std::max(0, hat->dmg),
+            monster->monsterinfo.currentmove->firstframe, monster->monsterinfo.currentmove->lastframe);
 }
 
 void ApplyHat(edict_t *hat, edict_t *monster)
@@ -147,16 +154,90 @@ void ApplyHat(edict_t *hat, edict_t *monster)
     RaidDirector_NotifyEntityEvent(hat, "applied", monster);
 }
 
+bool PlayerWatches(edict_t *player, edict_t *monster, float range)
+{
+    if (!player || !player->client || player->deadflag || player->client->resp.spectator)
+        return false;
+    const vec3_t eye = player->s.origin + vec3_t{ 0, 0, static_cast<float>(player->viewheight) };
+    const vec3_t center = monster->s.origin + (monster->mins + monster->maxs) * 0.5f;
+    const vec3_t delta = center - eye;
+    const float distance = delta.length();
+    if (distance <= 0.0f || distance > range)
+        return false;
+    vec3_t forward;
+    AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
+    if (forward.dot(delta / distance) < 0.72f)
+        return false;
+    const trace_t sight = gi.traceline(eye, center, player, MASK_SHOT);
+    return sight.fraction == 1.0f || sight.ent == monster;
+}
+
+void UpdateObserverLock(edict_t *hat, applied_hat_t &applied)
+{
+    if (!hat || hat->mass != 3)
+        return;
+    edict_t *monster = Resolve(applied.monster);
+    if (!monster || monster->health <= 0)
+        return;
+    const float range = hat->radius > 0.0f ? hat->radius : 2048.0f;
+    bool watched = false;
+    for (edict_t *player : active_players())
+        if (PlayerWatches(player, monster, range)) { watched = true; break; }
+
+    if (watched != applied.watched)
+    {
+        applied.watched = watched;
+        if (watched)
+            applied.freeze_at = level.time + gtime_t::from_sec(std::max(0.0f, hat->delay));
+        else
+        {
+            applied.freeze_at = 0_ms;
+            monster->monsterinfo.aiflags &= ~(AI_HOLD_FRAME | AI_STAND_GROUND);
+            monster->nextthink = level.time + FRAME_TIME_S;
+        }
+        RaidDirector_NotifyEntityEvent(hat, watched ? "watched" : "unwatched", monster);
+    }
+    if (!watched || level.time < applied.freeze_at)
+        return;
+
+    monster->velocity = {};
+    monster->avelocity = {};
+    monster->monsterinfo.aiflags |= AI_HOLD_FRAME | AI_STAND_GROUND;
+    monster->nextthink = level.time + 200_ms;
+    if (hat->random > 0.0f && (!applied.next_twitch || level.time >= applied.next_twitch))
+    {
+        applied.next_twitch = level.time + 1_sec;
+        if (frandom() < hat->random && monster->monsterinfo.currentmove)
+        {
+            monster->s.frame = monster->s.frame >= monster->monsterinfo.currentmove->lastframe ?
+                monster->monsterinfo.currentmove->firstframe : monster->s.frame + 1;
+            RaidDirector_NotifyEntityEvent(hat, "twitch", monster);
+        }
+    }
+}
+
 THINK(raid_hat_think) (edict_t *self) -> void
 {
-    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
-        if (Matches(self, &g_edicts[i]))
-            ApplyHat(self, &g_edicts[i]);
+    if (self->count)
+        for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+            if (Matches(self, &g_edicts[i]))
+                ApplyHat(self, &g_edicts[i]);
 
     applied_hats.erase(std::remove_if(applied_hats.begin(), applied_hats.end(), [](const applied_hat_t &applied) {
         return !Resolve(applied.hat) || !Resolve(applied.monster);
     }), applied_hats.end());
-    self->nextthink = level.time + 500_ms;
+    for (applied_hat_t &applied : applied_hats)
+        if (SameRef(applied.hat, self))
+            UpdateObserverLock(self, applied);
+    self->nextthink = level.time + (self->mass == 3 ? 50_ms : 500_ms);
+}
+
+USE(raid_hat_use) (edict_t *self, edict_t *, edict_t *activator) -> void
+{
+    if (self->count)
+        return;
+    self->count = 1;
+    RaidDirector_NotifyEntityEvent(self, "activated", activator);
 }
 }
 
@@ -168,9 +249,20 @@ void SP_raid_hat(edict_t *ent)
     ent->solid = SOLID_NOT;
     ent->movetype = MOVETYPE_NONE;
     ent->svflags |= SVF_NOCLIENT;
+    ent->count = !ent->spawnflags.has(RAID_HAT_START_DISABLED);
+    ent->use = raid_hat_use;
     ent->think = raid_hat_think;
     ent->nextthink = level.time + 200_ms;
-    hats.push_back(Ref(ent));
+    if (hats.size() < 32)
+    {
+        ent->noise_index = static_cast<int>(hats.size());
+        gi.configstring(CONFIG_RAID_HAT_NAME + ent->noise_index,
+            ent->message && *ent->message ? ent->message : "RAID TARGET");
+        hats.push_back(Ref(ent));
+    }
+    else
+        gi.Com_PrintFmt("[raid] raid_hat '{}' exceeds the 32 presentation-name limit\n",
+            ent->targetname ? ent->targetname : "<unnamed>");
     gi.linkentity(ent);
 }
 
@@ -192,6 +284,58 @@ void RaidHats_OnMonsterKilled(edict_t *monster, edict_t *attacker)
         if (edict_t *attachment = Resolve(applied.attachment))
             G_FreeEdict(attachment);
     }
+}
+
+void RaidHats_UpdateHUD(edict_t *player)
+{
+    if (!player || !player->client)
+        return;
+    player->client->ps.stats[STAT_RAID_HAT_NAME] = 0;
+    player->client->ps.stats[STAT_RAID_HAT_HEALTH] = 0;
+    player->client->ps.stats[STAT_RAID_HAT_RANK] = 0;
+    if (player->deadflag || player->client->resp.spectator)
+        return;
+
+    const vec3_t eye = player->s.origin + vec3_t{ 0, 0, static_cast<float>(player->viewheight) };
+    vec3_t forward;
+    AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
+    edict_t *best_hat = nullptr;
+    edict_t *best_monster = nullptr;
+    float best_perpendicular = std::numeric_limits<float>::max();
+
+    for (const applied_hat_t &applied : applied_hats)
+    {
+        edict_t *hat = Resolve(applied.hat);
+        edict_t *monster = Resolve(applied.monster);
+        if (!hat || !monster || monster->health <= 0 || monster->deadflag)
+            continue;
+        const vec3_t center = monster->s.origin + (monster->mins + monster->maxs) * 0.5f;
+        const vec3_t delta = center - eye;
+        const float distance = delta.length();
+        const float display_distance = hat->radius > 0.0f ? hat->radius : 1024.0f;
+        if (distance > display_distance)
+            continue;
+        const float along = delta.dot(forward);
+        if (along <= 0.0f)
+            continue;
+        const float perpendicular = (delta - forward * along).length();
+        const float aim_radius = std::max(24.0f, (monster->maxs - monster->mins).length() * 0.35f);
+        if (perpendicular > aim_radius || perpendicular >= best_perpendicular)
+            continue;
+        const trace_t sight = gi.traceline(eye, center, player, MASK_SHOT);
+        if (sight.fraction < 1.0f && sight.ent != monster)
+            continue;
+        best_hat = hat;
+        best_monster = monster;
+        best_perpendicular = perpendicular;
+    }
+
+    if (!best_hat || !best_monster)
+        return;
+    player->client->ps.stats[STAT_RAID_HAT_NAME] = static_cast<int16_t>(best_hat->noise_index + 1);
+    player->client->ps.stats[STAT_RAID_HAT_HEALTH] = static_cast<int16_t>(std::clamp(
+        best_monster->health * 1000 / std::max(1, best_monster->max_health), 0, 1000));
+    player->client->ps.stats[STAT_RAID_HAT_RANK] = static_cast<int16_t>(std::clamp(best_hat->style, 0, 3));
 }
 
 void RaidHats_Reset()

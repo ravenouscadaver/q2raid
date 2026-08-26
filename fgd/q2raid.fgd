@@ -1984,8 +1984,13 @@ monster_gekk : "Gekk"
 
 @PointClass base(EditorFlags, Targetable, Target) color(255 180 40) size(-12 -12 -12, 12 12 12) = raid_hat : "Reusable raid metadata wrapper for named monster groups"
 [
+    spawnflags(flags) =
+    [
+        1 : "START_DISABLED" : 0
+    ]
     target(target_destination) : "Monster selector: matches a monster raid_hat key, or targetname for whole-group wrapping"
-    message(string) : "Display name (reserved for hover labels and health bars)"
+    message(string) : "Display name shown while aiming at the monster" : "RAID TARGET"
+    display_distance(float) : "Maximum name/health presentation distance" : 1024
     rank(choices) : "Raid rank / test shell" : 0 =
     [
         0 : "Normal"
@@ -2001,7 +2006,11 @@ monster_gekk : "Gekk"
         0 : "Normal"
         1 : "Dunce: awake but non-hostile"
         2 : "Dumb hat: frozen and non-hostile"
+        3 : "Observer locked: active only while unseen"
     ]
+    start_pose(integer) : "Safe offset within the monster's standing animation" : 0
+    freeze_delay(float) : "Observer-lock delay before fully freezing" : 0.12
+    twitch_chance(float) : "Chance per watched second to advance one frame (0-1)" : 0.02
     model(studio) : "Optional attached hat/head/test model"
     attachment_offset(string) : "Model offset: forward right up" : "0 0 32"
     attachment_angles(string) : "Model angle offset: pitch yaw roll" : "0 0 0"

@@ -57,6 +57,16 @@ struct raid_entity_snapshot_t
 {
     uint32_t entity_number = 0;
     int32_t spawn_count = 0;
+    entity_state_t state = {};
+    std::string classname;
+    std::string model;
+    std::string target;
+    std::string targetname;
+    std::string team;
+    std::string message;
+    item_id_t item_id = IT_NULL;
+    bool map_pickup = false;
+    std::bitset<MAX_CLIENTS> item_picked_up_by;
     solid_t solid = SOLID_NOT;
     save_touch_t touch;
     save_use_t use;
@@ -124,6 +134,17 @@ void RaidDirector_SnapshotEntity(edict_t *entity)
     raid_entity_snapshot_t snapshot;
     snapshot.entity_number = entity->s.number;
     snapshot.spawn_count = entity->spawn_count;
+    snapshot.state = entity->s;
+    snapshot.classname = entity->classname ? entity->classname : "";
+    snapshot.model = entity->model ? entity->model : "";
+    snapshot.target = entity->target ? entity->target : "";
+    snapshot.targetname = entity->targetname ? entity->targetname : "";
+    snapshot.team = entity->team ? entity->team : "";
+    snapshot.message = entity->message ? entity->message : "";
+    snapshot.item_id = entity->item ? entity->item->id : IT_NULL;
+    snapshot.map_pickup = entity->item &&
+        !entity->spawnflags.has(SPAWNFLAG_ITEM_DROPPED | SPAWNFLAG_ITEM_DROPPED_PLAYER);
+    snapshot.item_picked_up_by = entity->item_picked_up_by;
     snapshot.solid = entity->solid;
     snapshot.touch = entity->touch;
     snapshot.use = entity->use;
@@ -170,7 +191,10 @@ void RaidDirector_SnapshotEntity(edict_t *entity)
 void RaidDirector_CaptureEntityBaseline()
 {
     entity_snapshots.clear();
-    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+    // Player corpses live in Quake II's fixed body queue. Leave that queue out
+    // of encounter restoration so failed fireteams can remain as world history;
+    // the engine naturally cycles the oldest corpse after BODY_QUEUE_SIZE deaths.
+    for (uint32_t i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; ++i)
         if (g_edicts[i].inuse)
             RaidDirector_SnapshotEntity(&g_edicts[i]);
     gi.Com_PrintFmt("[raid] Captured reset baseline for {} map entities\n", entity_snapshots.size());
@@ -178,13 +202,50 @@ void RaidDirector_CaptureEntityBaseline()
 
 void RaidDirector_RestoreEntitySnapshots()
 {
-    for (const raid_entity_snapshot_t &snapshot : entity_snapshots)
+    // Anything created after the map baseline is encounter debris, not map state.
+    // Remove combat gibs and dropped pickups before restoring mapper entities.
+    for (uint32_t i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; ++i)
     {
-        if (!snapshot.entity_number || snapshot.entity_number >= globals.num_edicts)
+        edict_t *entity = &g_edicts[i];
+        if (!entity->inuse)
             continue;
-        edict_t *entity = &g_edicts[snapshot.entity_number];
-        if (!entity->inuse || entity->spawn_count != snapshot.spawn_count)
+        const bool gib = entity->classname && !strcmp(entity->classname, "gib");
+        const bool dropped_item = entity->item &&
+            entity->spawnflags.has(SPAWNFLAG_ITEM_DROPPED | SPAWNFLAG_ITEM_DROPPED_PLAYER);
+        if (gib || dropped_item)
+            G_FreeEdict(entity);
+    }
+
+    for (raid_entity_snapshot_t &snapshot : entity_snapshots)
+    {
+        edict_t *entity = snapshot.entity_number < globals.num_edicts ? &g_edicts[snapshot.entity_number] : nullptr;
+        if (!entity || !entity->inuse || entity->spawn_count != snapshot.spawn_count)
+        {
+            // Normal Quake pickup handling frees many mapper items permanently.
+            // Recreate those baseline pickups so an in-place raid reset behaves
+            // like a fresh map without respawning every arbitrary map entity.
+            if (!snapshot.map_pickup || snapshot.item_id <= IT_NULL || snapshot.item_id >= IT_TOTAL)
+                continue;
+            entity = G_Spawn();
+            entity->classname = GetItemByIndex(snapshot.item_id)->classname;
+            entity->model = snapshot.model.empty() ? nullptr : G_CopyString(snapshot.model.c_str(), TAG_LEVEL);
+            entity->target = snapshot.target.empty() ? nullptr : G_CopyString(snapshot.target.c_str(), TAG_LEVEL);
+            entity->targetname = snapshot.targetname.empty() ? nullptr : G_CopyString(snapshot.targetname.c_str(), TAG_LEVEL);
+            entity->team = snapshot.team.empty() ? nullptr : G_CopyString(snapshot.team.c_str(), TAG_LEVEL);
+            entity->message = snapshot.message.empty() ? nullptr : G_CopyString(snapshot.message.c_str(), TAG_LEVEL);
+            entity->s.origin = snapshot.state.origin;
+            entity->s.angles = snapshot.state.angles;
+            entity->spawnflags = snapshot.spawnflags;
+            entity->count = snapshot.count;
+            entity->item_picked_up_by = snapshot.item_picked_up_by;
+            SpawnItem(entity, GetItemByIndex(snapshot.item_id));
+            snapshot.entity_number = entity->s.number;
+            snapshot.spawn_count = entity->spawn_count;
             continue;
+        }
+        const int32_t entity_number = entity->s.number;
+        entity->s = snapshot.state;
+        entity->s.number = entity_number;
         entity->solid = snapshot.solid;
         entity->touch = snapshot.touch;
         entity->use = snapshot.use;
@@ -200,12 +261,6 @@ void RaidDirector_RestoreEntitySnapshots()
         entity->moveinfo.remaining_distance = snapshot.moveinfo_remaining_distance;
         entity->moveinfo.decel_distance = snapshot.moveinfo_decel_distance;
         entity->moveinfo.endfunc = snapshot.moveinfo_endfunc;
-        entity->s.skinnum = snapshot.skinnum;
-        entity->s.frame = snapshot.frame;
-        entity->s.modelindex = snapshot.modelindex;
-        entity->s.alpha = snapshot.alpha;
-        entity->s.origin = snapshot.origin;
-        entity->s.angles = snapshot.angles;
         entity->velocity = snapshot.velocity;
         entity->avelocity = snapshot.avelocity;
         entity->mins = snapshot.mins;
@@ -220,11 +275,9 @@ void RaidDirector_RestoreEntitySnapshots()
         entity->health = snapshot.health;
         entity->max_health = snapshot.max_health;
         entity->count = snapshot.count;
+        entity->item_picked_up_by = snapshot.item_picked_up_by;
         entity->deadflag = snapshot.deadflag;
         entity->takedamage = snapshot.takedamage;
-        entity->s.effects = snapshot.effects;
-        entity->s.renderfx = snapshot.renderfx;
-        entity->s.sound = snapshot.sound;
         gi.linkentity(entity);
     }
 }

@@ -8,6 +8,17 @@
 - JSON disables the laser field and advances the encounter presentation.
 - Purpose: prove the missing enemy-owned immunity/shield-gate component needed for the opening encounter emulation.
 
+## Held-open circuit bypass
+
+- Present a malfunctioning powered door with its access panel visibly torn away and broken wiring exposed.
+- Implement the interaction with a small invisible hold volume at normal use distance; the mapper-facing fiction is repairing the circuit, not standing on a floor plate.
+- While a player maintains the interaction, force the existing third-person unarmed presentation and suppress weapon use. Releasing, displacement, downing, death, or wipe must immediately end the interaction and restore normal presentation.
+- Fire intermittent sparks from the exposed panel and show a development message such as `DOOR CIRCUIT TEMPORARILY REPAIRED` as immediate feedback. Final presentation should communicate the same state without relying on debug text.
+- Keep the door open only while the interaction remains valid, creating a committed operator role while teammates transport an objective through it.
+- Pair it with a Volatile power core whose socket cannot normally be reached within its 15-second carry window. Holding the bypass opens the shorter viable route.
+- Combine the transport pressure with Shield Drones, laser fields, Volatile consequences, and monster-door population so the opening encounter demands coordination rather than becoming an uncontested carry exercise.
+- Generalize the logic as a JSON-controlled hold interaction so it can later represent jammed shutters, exposed relays, coolant valves, manual pumps, or other sustained repairs.
+
 ## Power-core dunk presentation
 
 - Preserve the current satisfying deposit sound as the baseline.

@@ -78,7 +78,16 @@ void UpdateAvatar(edict_t *player, edict_t *avatar)
     {
         avatar->s.modelindex = gi.modelindex(StateFor(player).presentation_model.c_str());
         avatar->s.frame = StateFor(player).presentation_frame;
+        // old_frame was copied from the player model and may not exist in the
+        // replacement MD2. KEX renders/interpolates both and asserts on an
+        // out-of-range frame, so replacement presentations own the pair.
+        avatar->s.old_frame = avatar->s.frame;
         avatar->s.modelindex2 = 0;
+        avatar->s.modelindex3 = 0;
+        avatar->s.modelindex4 = 0;
+        // Player skinnum also packs client/vwep data and is not a valid skin
+        // index for an arbitrary replacement model.
+        avatar->s.skinnum = 0;
     }
     else
         avatar->s.modelindex = MODELINDEX_PLAYER;
@@ -231,8 +240,16 @@ void RaidThirdPerson_Update(edict_t *player)
         return;
 
     auto &state = StateFor(player);
-    if (!state.enabled || player->deadflag || player->client->resp.spectator)
+    if (!state.enabled)
         return;
+    if (player->deadflag || player->client->resp.spectator)
+    {
+        player->s.instance_bits = state.saved_instance_bits;
+        DestroyAvatar(player);
+        DestroyHeldModel(player);
+        state.previous_camera_valid = false;
+        return;
+    }
 
     edict_t *avatar = Resolve(state.avatar_number, state.avatar_spawn_count);
     if (!avatar)

@@ -1042,21 +1042,6 @@ void monster_start_go(edict_t *self);
 
 THINK(monster_triggered_spawn) (edict_t *self) -> void
 {
-	// Raid population instances must wait for a genuinely clear deployment
-	// volume. The stock Trigger Spawn path uses KillBox, which lets rapid
-	// replenishment telefrag the previous monster in the doorway.
-	if (self->owner && self->owner->inuse && self->owner->classname &&
-		!Q_strcasecmp(self->owner->classname, "raid_monster_door"))
-	{
-		const trace_t occupancy = gi.trace(self->s.origin, self->mins, self->maxs,
-			self->s.origin, self, MASK_MONSTERSOLID);
-		if (occupancy.startsolid || occupancy.allsolid)
-		{
-			self->nextthink = level.time + 100_ms;
-			return;
-		}
-	}
-
 	self->s.origin[2] += 1;
 
 	self->solid = SOLID_BBOX;

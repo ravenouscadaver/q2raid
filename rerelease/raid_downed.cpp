@@ -11,6 +11,7 @@ struct downed_state_t
     int saved_health = 1;
     int frame = FRAME_crawl1;
     gtime_t next_frame;
+    gtime_t damage_grace_until;
 };
 
 downed_state_t states[MAX_CLIENTS];
@@ -34,6 +35,9 @@ void EnterDowned(edict_t *player)
     state.saved_health = std::max(1, player->max_health / 4);
     state.frame = FRAME_crawl1;
     state.next_frame = level.time + 100_ms;
+    // Shotguns and similar attacks arrive as several T_Damage calls. Keep the
+    // rest of the attack that caused the down from instantly finishing it.
+    state.damage_grace_until = level.time + FRAME_TIME_S;
     player->health = 1;
     player->client->buttons &= ~BUTTON_ATTACK;
     player->client->latched_buttons &= ~BUTTON_ATTACK;
@@ -62,8 +66,17 @@ bool RaidDowned_IsDown(edict_t *player)
 
 bool RaidDowned_InterceptFatalDamage(edict_t *player)
 {
-    if (!coop->integer || !ValidPlayer(player) || State(player).downed || player->deadflag)
+    if (!coop->integer || !ValidPlayer(player) || player->deadflag)
         return false;
+    if (State(player).downed)
+    {
+        if (level.time < State(player).damage_grace_until)
+        {
+            player->health = 1;
+            return true;
+        }
+        return false;
+    }
     if (player->health <= -25)
         return false;
     EnterDowned(player);
@@ -90,7 +103,6 @@ void RaidDowned_FilterCommand(edict_t *player, usercmd_t &cmd)
     cmd.forwardmove *= 0.2f;
     cmd.sidemove *= 0.2f;
     cmd.buttons &= ~BUTTON_ATTACK;
-    cmd.buttons |= BUTTON_CROUCH;
 }
 
 void RaidDowned_Update(edict_t *player)

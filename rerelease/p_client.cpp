@@ -3156,6 +3156,57 @@ This will be called once for each client frame, which will
 usually be a couple times for each server frame.
 ==============
 */
+namespace
+{
+struct raid_jump_state_t
+{
+    bool jump_held = false;
+    bool double_used = false;
+    bool coyote_used = false;
+    bool departed_by_jump = false;
+    gtime_t last_grounded;
+};
+
+raid_jump_state_t raid_jump_states[MAX_CLIENTS];
+
+void RaidMovement_FilterJump(edict_t *ent, pmove_t &pm)
+{
+    static cvar_t *double_jump = gi.cvar("raid_double_jump", "0", CVAR_NOFLAGS);
+    static cvar_t *double_velocity = gi.cvar("raid_double_jump_velocity", "300", CVAR_NOFLAGS);
+    static cvar_t *coyote_time = gi.cvar("raid_coyote_time", "0", CVAR_NOFLAGS);
+    static cvar_t *coyote_window = gi.cvar("raid_coyote_window", "0.08", CVAR_NOFLAGS);
+    raid_jump_state_t &state = raid_jump_states[ent->s.number - 1];
+    const bool grounded = ent->groundentity != nullptr;
+    const bool jump_down = pm.cmd.upmove >= 10.0f;
+    const bool jump_pressed = jump_down && !state.jump_held;
+
+    if (grounded)
+    {
+        state.last_grounded = level.time;
+        state.double_used = false;
+        state.coyote_used = false;
+        state.departed_by_jump = jump_pressed;
+    }
+    else if (jump_pressed && pm.s.pm_type == PM_NORMAL)
+    {
+        const bool can_coyote = coyote_time->integer && !state.departed_by_jump && !state.coyote_used &&
+            level.time <= state.last_grounded + gtime_t::from_sec(std::clamp(coyote_window->value, 0.0f, 0.25f));
+        if (can_coyote)
+        {
+            pm.s.velocity[2] = std::max(pm.s.velocity[2], 270.0f);
+            state.coyote_used = true;
+            state.departed_by_jump = true;
+        }
+        else if (double_jump->integer && !state.double_used)
+        {
+            pm.s.velocity[2] = std::max(pm.s.velocity[2], std::clamp(double_velocity->value, 1.0f, 1000.0f));
+            state.double_used = true;
+        }
+    }
+    state.jump_held = jump_down;
+}
+}
+
 void ClientThink(edict_t *ent, usercmd_t *ucmd)
 {
 	gclient_t *client;
@@ -3265,6 +3316,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
 		pm.cmd = *ucmd;
 		RaidDowned_FilterCommand(ent, pm.cmd);
+		RaidMovement_FilterJump(ent, pm);
 		const float raid_move_scale = RaidCarry_MovementScale(ent);
 		pm.cmd.forwardmove *= raid_move_scale;
 		pm.cmd.sidemove *= raid_move_scale;

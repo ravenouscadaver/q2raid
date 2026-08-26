@@ -463,7 +463,7 @@ THINK(raid_monster_door_think) (edict_t *self) -> void
                 if (WakeMonster(self, pending))
                 {
                     runtime.pending_woken = true;
-                    runtime.last_status = "waiting for clear deployment volume";
+                    runtime.last_status = "native trigger-spawn requested";
                 }
                 else
                 {
