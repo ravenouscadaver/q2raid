@@ -13,6 +13,8 @@
 
 #include "json/json.h"
 
+#include <array>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
@@ -102,7 +104,9 @@ struct raid_entity_snapshot_t
     effects_t effects;
     renderfx_t renderfx;
     int32_t sound = 0;
-    edict_t baseline = {};
+    std::array<uint8_t, sizeof(edict_t)> baseline = {};
+    gtime_t timestamp;
+    int32_t sounds = 0;
 };
 
 struct raid_player_snapshot_t
@@ -197,7 +201,9 @@ void RaidDirector_SnapshotEntity(edict_t *entity)
     snapshot.effects = entity->s.effects;
     snapshot.renderfx = entity->s.renderfx;
     snapshot.sound = entity->s.sound;
-    snapshot.baseline = *entity;
+    std::memcpy(snapshot.baseline.data(), entity, sizeof(edict_t));
+    snapshot.timestamp = entity->timestamp;
+    snapshot.sounds = entity->sounds;
     entity_snapshots.push_back(std::move(snapshot));
 }
 
@@ -274,13 +280,11 @@ void RaidDirector_RestoreEntitySnapshots()
             entity = G_Spawn();
             const int32_t entity_number = entity->s.number;
             const int32_t spawn_count = entity->spawn_count;
-            *entity = snapshot.baseline;
+            std::memcpy(entity, snapshot.baseline.data(), sizeof(edict_t));
             entity->s.number = entity_number;
             entity->spawn_count = spawn_count;
             snapshot.entity_number = entity->s.number;
             snapshot.spawn_count = entity->spawn_count;
-            snapshot.baseline.s.number = entity->s.number;
-            snapshot.baseline.spawn_count = entity->spawn_count;
             gi.linkentity(entity);
             continue;
         }
@@ -319,8 +323,8 @@ void RaidDirector_RestoreEntitySnapshots()
         entity->item_picked_up_by = snapshot.item_picked_up_by;
         entity->deadflag = snapshot.deadflag;
         entity->takedamage = snapshot.takedamage;
-        entity->timestamp = snapshot.baseline.timestamp;
-        entity->sounds = snapshot.baseline.sounds;
+        entity->timestamp = snapshot.timestamp;
+        entity->sounds = snapshot.sounds;
         gi.linkentity(entity);
     }
 }
