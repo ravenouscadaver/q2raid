@@ -3,6 +3,7 @@
 
 #include "g_local.h"
 #include "raid_director.h"
+#include "raid_monsters.h"
 
 void Svcmd_Test_f()
 {
@@ -306,8 +307,18 @@ void ServerCommand()
 		RaidDirector_ResetEncounter();
 	else if (Q_strcasecmp(cmd, "raid_dump") == 0)
 		RaidDirector_Dump();
+	else if (Q_strcasecmp(cmd, "raid_monster_dump") == 0)
+		RaidMonsters_Dump();
 	else if (Q_strcasecmp(cmd, "raid_set_state") == 0)
 		RaidDirector_SetState(gi.argv(2));
+	else if (Q_strcasecmp(cmd, "raid_bot_add") == 0)
+		gi.AddCommandString("bot_add\n");
+	else if (Q_strcasecmp(cmd, "raid_bot_remove_all") == 0)
+		gi.AddCommandString("bot_removeall\n");
+	else if (Q_strcasecmp(cmd, "raid_test_flash") == 0)
+		RaidDirector_TestFlash(false);
+	else if (Q_strcasecmp(cmd, "raid_test_dark") == 0)
+		RaidDirector_TestFlash(true);
 	else
 		gi.LocClient_Print(nullptr, PRINT_HIGH, "Unknown server command \"{}\"\n", cmd);
 }

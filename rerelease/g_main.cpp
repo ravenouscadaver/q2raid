@@ -4,6 +4,8 @@
 #include "g_local.h"
 #include "bots/bot_includes.h"
 #include "raid_director.h"
+#include "raid_reconstruction.h"
+#include "raid_bots.h"
 
 CHECK_GCLIENT_INTEGRITY;
 CHECK_EDICT_INTEGRITY;
@@ -30,6 +32,7 @@ edict_t *g_edicts;
 
 cvar_t *deathmatch;
 cvar_t *coop;
+static cvar_t *raid_force_coop;
 cvar_t *skill;
 cvar_t *fraglimit;
 cvar_t *timelimit;
@@ -172,7 +175,17 @@ void PreInitGame()
 	maxclients = gi.cvar("maxclients", G_Fmt("{}", MAX_SPLIT_PLAYERS).data(), CVAR_SERVERINFO | CVAR_LATCH);
 	deathmatch = gi.cvar("deathmatch", "0", CVAR_LATCH);
 	coop = gi.cvar("coop", "0", CVAR_LATCH);
+	raid_force_coop = gi.cvar("raid_force_coop", "1", CVAR_NOFLAGS);
 	teamplay = gi.cvar("teamplay", "0", CVAR_LATCH);
+
+	if (raid_force_coop->integer)
+	{
+		if (deathmatch->integer)
+			gi.cvar_forceset("deathmatch", "0");
+		if (!coop->integer)
+			gi.cvar_forceset("coop", "1");
+		gi.Com_Print("[raid] Cooperative mode forced for raid play\n");
+	}
 
 	// ZOID
 	CTFInit();
@@ -833,6 +846,8 @@ inline void G_RunFrame_(bool main_loop)
 
 	level.time += FRAME_TIME_MS;
 	RaidDirector_RunFrame();
+	RaidReconstruction_RunFrame();
+	RaidBots_RunFrame();
 
 	if (level.intermission_fading)
 	{

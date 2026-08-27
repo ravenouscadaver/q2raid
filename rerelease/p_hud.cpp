@@ -1,6 +1,8 @@
 // Copyright (c) ZeniMax Media Inc.
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
+#include "raid_downed.h"
+#include "raid_hats.h"
 #include "g_statusbar.h"
 
 /*
@@ -743,6 +745,8 @@ void G_SetStats(edict_t *ent)
 	else
 		ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
 	ent->client->ps.stats[STAT_HEALTH] = ent->health;
+	if (RaidDowned_IsDown(ent))
+		ent->client->ps.stats[STAT_HEALTH] = 0;
 
 	//
 	// weapons
@@ -1026,6 +1030,7 @@ void G_SetStats(edict_t *ent)
 		ent->client->ps.stats[STAT_HELPICON] = 0;
 
 	ent->client->ps.stats[STAT_SPECTATOR] = 0;
+	RaidHats_UpdateHUD(ent);
 
 	// set & run the health bar stuff
 	for (size_t i = 0; i < MAX_HEALTH_BARS; i++)

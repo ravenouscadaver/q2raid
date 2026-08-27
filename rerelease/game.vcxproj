@@ -145,6 +145,10 @@
     <ClInclude Include="raid_director.h" />
     <ClInclude Include="raid_thirdperson.h" />
     <ClInclude Include="raid_items.h" />
+    <ClInclude Include="raid_monsters.h" />
+    <ClInclude Include="raid_reconstruction.h" />
+    <ClInclude Include="raid_bots.h" />
+    <ClInclude Include="raid_terminal.h" />
     <ClInclude Include="rogue\m_rogue_carrier.h" />
     <ClInclude Include="rogue\m_rogue_stalker.h" />
     <ClInclude Include="rogue\m_rogue_turret.h" />
@@ -216,6 +220,12 @@
     <ClCompile Include="raid_director.cpp" />
     <ClCompile Include="raid_thirdperson.cpp" />
     <ClCompile Include="raid_items.cpp" />
+    <ClCompile Include="raid_monsters.cpp" />
+    <ClCompile Include="raid_reconstruction.cpp" />
+    <ClCompile Include="raid_bots.cpp" />
+    <ClCompile Include="raid_terminal.cpp" />
+    <ClCompile Include="raid_hats.cpp" />
+    <ClCompile Include="raid_downed.cpp" />
     <ClCompile Include="q_std.cpp" />
     <ClCompile Include="rogue\g_rogue_combat.cpp" />
     <ClCompile Include="rogue\g_rogue_func.cpp" />

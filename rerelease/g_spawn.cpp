@@ -3,7 +3,11 @@
 
 #include "g_local.h"
 #include "raid_items.h"
+#include "raid_monsters.h"
+#include "raid_hats.h"
 #include "raid_director.h"
+#include "raid_bots.h"
+#include "raid_terminal.h"
 
 struct spawn_t
 {
@@ -296,6 +300,12 @@ static const std::initializer_list<spawn_t> spawns = {
 	{ "raid_item", SP_raid_item },
 	{ "raid_gadget", SP_raid_gadget },
 	{ "trigger_raid_deposit", SP_trigger_raid_deposit },
+	{ "trigger_raid_item", SP_trigger_raid_item },
+	{ "raid_hovertext", SP_raid_hovertext },
+	{ "raid_bot_goal", SP_raid_bot_goal },
+	{ "trigger_raid_terminal", SP_trigger_raid_terminal },
+	{ "raid_monster_door", SP_raid_monster_door },
+	{ "raid_hat", SP_raid_hat },
 
 	{ "worldspawn", SP_worldspawn },
 
@@ -691,12 +701,52 @@ static const std::initializer_list<field_t> entity_fields = {
 	FIELD_AUTO(killtarget),
 	FIELD_AUTO(combattarget),
 	FIELD_AUTO(message),
+	FIELD_AUTO_NAMED("text", message),
 	FIELD_AUTO_NAMED("item_type", message),
 	FIELD_AUTO_NAMED("gadget_type", message),
 	FIELD_AUTO_NAMED("carry_mode", style),
 	FIELD_AUTO_NAMED("weapon", pathtarget),
 	FIELD_AUTO_NAMED("encumber_scale", speed),
+	FIELD_AUTO_NAMED("carry_status", deathtarget),
+	FIELD_AUTO_NAMED("held_model", combattarget),
+	FIELD_AUTO_NAMED("status_duration", delay),
+	FIELD_AUTO_NAMED("status_policy", healthtarget),
+	FIELD_AUTO_NAMED("clear_status_on_drop", sounds),
+	FIELD_AUTO_NAMED("hover_radius", dmg_radius),
+	FIELD_AUTO_NAMED("hover_distance", speed),
+	FIELD_AUTO_NAMED("require_los", sounds),
+	FIELD_AUTO_NAMED("deploy_interval", wait),
+	FIELD_AUTO_NAMED("initial_count", count),
+	FIELD_AUTO_NAMED("min_active", radius_dmg),
+	FIELD_AUTO_NAMED("max_active", health),
+	FIELD_AUTO_NAMED("wave_size", dmg),
+	FIELD_AUTO_NAMED("replenish_delay", delay),
+	FIELD_AUTO_NAMED("replenish_mode", style),
+	FIELD_AUTO_NAMED("leash_radius", dmg_radius),
+	FIELD_AUTO_NAMED("leash_return_radius", accel),
+	FIELD_AUTO_NAMED("leash_grace", speed),
+	FIELD_AUTO_NAMED("wake_mode", mass),
+	FIELD_AUTO_NAMED("raid_health_multiplier", speed),
+	FIELD_AUTO_NAMED("raid_monster_scale", accel),
+	FIELD_AUTO_NAMED("raid_ai_mode", mass),
+	FIELD_AUTO_NAMED("display_distance", dmg_radius),
+	FIELD_AUTO_NAMED("start_pose", dmg),
+	FIELD_AUTO_NAMED("freeze_delay", delay),
+	FIELD_AUTO_NAMED("release_delay", wait),
+	FIELD_AUTO_NAMED("minimum_move_time", decel),
+	FIELD_AUTO_NAMED("observer_inverted", sounds),
+	FIELD_AUTO_NAMED("twitch_chance", random),
+	FIELD_AUTO_NAMED("raid_hat", map),
+	FIELD_AUTO_NAMED("rank", style),
+	FIELD_AUTO_NAMED("attachment_offset", move_origin),
+	FIELD_AUTO_NAMED("attachment_angles", move_angles),
 	FIELD_AUTO_NAMED("accepts", target),
+	FIELD_AUTO_NAMED("required_state", pathtarget),
+	FIELD_AUTO_NAMED("set_state", combattarget),
+	FIELD_AUTO_NAMED("charge_time", delay),
+	FIELD_AUTO_NAMED("charged_vfx", itemtarget),
+	FIELD_AUTO_NAMED("reconstruct_spawn", deathtarget),
+	FIELD_AUTO_NAMED("spectator_camera", combattarget),
 	FIELD_AUTO_NAMED("order", count),
 	FIELD_AUTO(team),
 	FIELD_AUTO(wait),
