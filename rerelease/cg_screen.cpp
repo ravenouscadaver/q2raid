@@ -1767,7 +1767,7 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
             cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height,
                 "/raid/ui/terminal_grunge/terminal_screen.png");
             cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height,
-                "/raid/ui/terminal_grunge/terminal_controls_puzzle_v2.png");
+                "/raid/ui/terminal_grunge/terminal_controls.png");
 
             const float button_x = (hud_vrect.x + hud_vrect.width * 0.38f) * scale;
             const float button_y = (hud_vrect.y + hud_vrect.height * 0.38f) * scale;
@@ -1799,10 +1799,16 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
                 rgba_t{ 80, 180, 255, 255 }, rgba_t{ 210, 96, 255, 255 }
             };
             const char *name = cgi.get_configstring(CONFIG_RAID_HAT_NAME + hat_name_slot);
+            const char *display_name = name && *name ? name : "RAID TARGET";
             const float center_x = (hud_vrect.x + hud_vrect.width * 0.5f) * scale;
             const float name_y = (hud_vrect.y + hud_vrect.height * 0.5f + 42.0f) * scale;
-            cgi.SCR_DrawFontString(name && *name ? name : "RAID TARGET", center_x, name_y,
-                scale, rank_colors[rank], true, text_align_t::CENTER);
+            // Raid targets deliberately use the original bitmap alphabet. It
+            // reads as Quake-world instrumentation rather than a generic KEX
+            // menu label, and makes this presentation iteration testable at a
+            // glance regardless of scr_usekfont.
+            const int name_x = static_cast<int>(center_x -
+                (strlen(display_name) * CONCHAR_WIDTH * scale) * 0.5f);
+            CG_DrawString(name_x, static_cast<int>(name_y), scale, display_name, rank != 0, true);
 
             const float width = 144.0f * scale;
             const float height = 5.0f * scale;
@@ -1818,14 +1824,18 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
             if (has_shield)
             {
                 constexpr int segments = 12;
-                const float shield_y = y - 4.0f * scale;
+                const float shield_height = 4.0f * scale;
+                const float shield_y = y - 7.0f * scale;
                 const float gap = 1.0f * scale;
                 const float segment_width = (width - gap * (segments - 1)) / segments;
                 const int active_segments = static_cast<int>(std::ceil(shield * segments));
+                cgi.SCR_DrawColorPic(x - scale, shield_y - scale,
+                    width + 2.0f * scale, shield_height + 2.0f * scale,
+                    "_white", rgba_t{ 0, 0, 0, 220 });
                 for (int segment = 0; segment < segments; ++segment)
                     cgi.SCR_DrawColorPic(x + segment * (segment_width + gap), shield_y,
-                        segment_width, 2.0f * scale, "_white",
-                        segment < active_segments ? rgba_t{ 96, 208, 255, 235 } : rgba_t{ 25, 48, 60, 190 });
+                        segment_width, shield_height, "_white",
+                        segment < active_segments ? rgba_t{ 96, 208, 255, 255 } : rgba_t{ 25, 48, 60, 220 });
             }
         }
 

@@ -116,6 +116,11 @@ void SP_trigger_raid_terminal(edict_t *ent)
     gi.linkentity(ent);
 }
 
+bool RaidTerminal_IsActive(edict_t *player)
+{
+    return player && player->client && State(player).active;
+}
+
 bool RaidTerminal_HandleInput(edict_t *player, usercmd_t *cmd)
 {
     if (!player || !player->client)

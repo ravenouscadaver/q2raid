@@ -3,6 +3,7 @@
 #include "g_local.h"
 #include "raid_downed.h"
 #include "raid_hats.h"
+#include "raid_terminal.h"
 #include "g_statusbar.h"
 
 /*
@@ -1030,7 +1031,8 @@ void G_SetStats(edict_t *ent)
 		ent->client->ps.stats[STAT_HELPICON] = 0;
 
 	ent->client->ps.stats[STAT_SPECTATOR] = 0;
-	RaidHats_UpdateHUD(ent);
+	if (!RaidTerminal_IsActive(ent))
+		RaidHats_UpdateHUD(ent);
 
 	// set & run the health bar stuff
 	for (size_t i = 0; i < MAX_HEALTH_BARS; i++)

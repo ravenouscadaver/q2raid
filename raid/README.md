@@ -1,4 +1,9 @@
-# Raid Director scaffold
+# Raid Director
+
+Architecture and current maturity are documented in:
+
+- `DIRECTOR_FIRST_DOCTRINE.md` — canonical ownership and authoring rules.
+- `PHASE9_SANITY_AUDIT.md` — evidence-based defects, risks, and next gates.
 
 The raid Director is a single server-authoritative runtime. Encounter JSON is
 loaded only by the game DLL; clients receive ordinary replicated gameplay
@@ -30,6 +35,7 @@ Example dedicated-server configuration:
 +set raid_script "raid/encounters/director_bridge_test.json"
 ```
 
-The first scaffold validates the document and changes Director state. It does
-not execute the operations in a state's `enter` array yet.
-
+The Director validates encounter documents, changes state, executes supported
+state-entry operations, receives gameplay events, and manages encounter reset.
+That is an implemented integration proof, not a claim of feature completeness;
+consult the Phase 9 audit for known gaps and unverified paths.

@@ -60,6 +60,16 @@ void DestroyHeldModel(edict_t *player)
     state.held_model_spawn_count = 0;
 }
 
+void RestoreFirstPersonWeapon(edict_t *player)
+{
+    if (!player || !player->client)
+        return;
+    player->client->ps.gunindex = player->client->pers.weapon && player->client->pers.weapon->view_model
+        ? gi.modelindex(player->client->pers.weapon->view_model)
+        : 0;
+    player->client->ps.gunskin = 0;
+}
+
 edict_t *CreateAvatar(edict_t *player)
 {
     edict_t *avatar = G_Spawn();
@@ -136,8 +146,7 @@ void SetPresentationInternal(edict_t *player, bool enabled, const char *model, i
             player->s.instance_bits = state.saved_instance_bits;
             DestroyAvatar(player);
             state.previous_camera_valid = false;
-            if (player->client->pers.weapon && player->client->pers.weapon->view_model)
-                player->client->ps.gunindex = gi.modelindex(player->client->pers.weapon->view_model);
+            RestoreFirstPersonWeapon(player);
         }
     }
 }
@@ -196,8 +205,7 @@ void RaidThirdPerson_SetCarry(edict_t *player, bool carrying, const char *model,
         state.held_model_name.clear();
         state.held_model_scale = 0.0f;
         state.previous_camera_valid = false;
-        if (player->client->pers.weapon && player->client->pers.weapon->view_model)
-            player->client->ps.gunindex = gi.modelindex(player->client->pers.weapon->view_model);
+        RestoreFirstPersonWeapon(player);
     }
 }
 
@@ -229,6 +237,7 @@ void RaidThirdPerson_Toggle(edict_t *player)
         player->s.instance_bits = state.saved_instance_bits;
         DestroyAvatar(player);
         state.previous_camera_valid = false;
+        RestoreFirstPersonWeapon(player);
         gi.LocClient_Print(player, PRINT_HIGH, "Raid third-person carry test OFF\n");
     }
 }

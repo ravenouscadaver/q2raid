@@ -3,6 +3,8 @@
 #include "raid_downed.h"
 #include "raid_thirdperson.h"
 
+#include <array>
+
 namespace
 {
 struct downed_state_t
@@ -133,9 +135,12 @@ void RaidDowned_Update(edict_t *player)
     downed_state_t &state = State(player);
     if (level.time >= state.bleedout_at)
     {
-        state.downed = false;
+        // Let the normal death callback leave the downed presentation so the
+        // replacement model/camera cannot survive into respawn.  A small
+        // lethal hit produces an ordinary corpse instead of gibbing the player.
+        state.damage_buffer = 0;
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
-            100000, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
+            2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
         return;
     }
     const bool moving = std::abs(player->client->cmd.forwardmove) > 1.0f ||
@@ -152,7 +157,16 @@ void RaidDowned_Update(edict_t *player)
     }
     if (level.time >= state.next_pain_sound)
     {
-        gi.sound(player, CHAN_VOICE, gi.soundindex("insane/insane7.wav"), 0.8f, ATTN_NORM, 0.0f);
+        static constexpr std::array<const char *, 5> downed_sounds = {
+            "insane/insane7.wav",
+            "player/male/pain25_1.wav",
+            "player/male/pain50_1.wav",
+            "player/male/pain75_1.wav",
+            "player/male/pain100_1.wav"
+        };
+        gi.sound(player, CHAN_VOICE,
+            gi.soundindex(downed_sounds[irandom(0, static_cast<int>(downed_sounds.size() - 1))]),
+            0.8f, ATTN_NORM, 0.0f);
         state.next_pain_sound = level.time + gtime_t::from_sec(frandom(3.5f, 6.5f));
     }
     player->client->buttons &= ~BUTTON_ATTACK;
