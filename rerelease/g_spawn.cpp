@@ -6,6 +6,7 @@
 #include "raid_monsters.h"
 #include "raid_hats.h"
 #include "raid_director.h"
+#include "raid_bots.h"
 
 struct spawn_t
 {
@@ -298,7 +299,9 @@ static const std::initializer_list<spawn_t> spawns = {
 	{ "raid_item", SP_raid_item },
 	{ "raid_gadget", SP_raid_gadget },
 	{ "trigger_raid_deposit", SP_trigger_raid_deposit },
+	{ "trigger_raid_item", SP_trigger_raid_item },
 	{ "raid_hovertext", SP_raid_hovertext },
+	{ "raid_bot_goal", SP_raid_bot_goal },
 	{ "raid_monster_door", SP_raid_monster_door },
 	{ "raid_hat", SP_raid_hat },
 
@@ -727,12 +730,20 @@ static const std::initializer_list<field_t> entity_fields = {
 	FIELD_AUTO_NAMED("display_distance", dmg_radius),
 	FIELD_AUTO_NAMED("start_pose", dmg),
 	FIELD_AUTO_NAMED("freeze_delay", delay),
+	FIELD_AUTO_NAMED("release_delay", wait),
+	FIELD_AUTO_NAMED("minimum_move_time", decel),
+	FIELD_AUTO_NAMED("observer_inverted", style_on),
 	FIELD_AUTO_NAMED("twitch_chance", random),
 	FIELD_AUTO_NAMED("raid_hat", map),
 	FIELD_AUTO_NAMED("rank", style),
 	FIELD_AUTO_NAMED("attachment_offset", move_origin),
 	FIELD_AUTO_NAMED("attachment_angles", move_angles),
 	FIELD_AUTO_NAMED("accepts", target),
+	FIELD_AUTO_NAMED("required_state", pathtarget),
+	FIELD_AUTO_NAMED("set_state", combattarget),
+	FIELD_AUTO_NAMED("charge_time", delay),
+	FIELD_AUTO_NAMED("reconstruct_spawn", deathtarget),
+	FIELD_AUTO_NAMED("spectator_camera", combattarget),
 	FIELD_AUTO_NAMED("order", count),
 	FIELD_AUTO(team),
 	FIELD_AUTO(wait),

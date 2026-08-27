@@ -1,6 +1,7 @@
 #include "g_local.h"
 #include "raid_director.h"
 #include "raid_items.h"
+#include "raid_reconstruction.h"
 #include "raid_thirdperson.h"
 
 void InitTrigger(edict_t *self);
@@ -15,8 +16,19 @@ struct raid_carry_state_t
     int32_t item_spawn_count = 0;
     gitem_t *previous_weapon = nullptr;
     int previous_relic_inventory = 0;
+    uint32_t charge_trigger_number = 0;
+    int32_t charge_trigger_spawn_count = 0;
+    gtime_t charge_started;
 };
 raid_carry_state_t carry_states[MAX_CLIENTS];
+
+struct raid_item_state_t
+{
+    uint32_t entity_number = 0;
+    int32_t spawn_count = 0;
+    bool charged = false;
+};
+std::vector<raid_item_state_t> item_states;
 
 struct raid_hover_state_t
 {
@@ -33,6 +45,17 @@ struct gadget_state_t
     bool occupied = false;
 };
 std::vector<gadget_state_t> gadget_states;
+constexpr spawnflags_t RAID_ITEM_REQUIRES_CHARGE = 1_spawnflag;
+
+raid_item_state_t &ItemState(edict_t *item)
+{
+    auto found = std::find_if(item_states.begin(), item_states.end(), [item](const raid_item_state_t &state) {
+        return state.entity_number == item->s.number && state.spawn_count == item->spawn_count;
+    });
+    if (found != item_states.end()) return *found;
+    item_states.push_back({ item->s.number, item->spawn_count, false });
+    return item_states.back();
+}
 
 gadget_state_t &GadgetState(edict_t *gadget)
 {
@@ -62,6 +85,24 @@ bool IsWeaponRelic(edict_t *item)
 {
     return item && (item->style == RAID_CARRY_WEAPON ||
         (item->style == RAID_CARRY_AUTO && item->message && !Q_strcasecmp(item->message, "bfg_relic")));
+}
+
+bool RequiresCharge(edict_t *item)
+{
+    return item && item->spawnflags.has(RAID_ITEM_REQUIRES_CHARGE);
+}
+
+void ApplyCarryStatus(edict_t *player, edict_t *item)
+{
+    if (!item->deathtarget || !*item->deathtarget)
+        return;
+    const float configured_duration = item->delay > 0.0f
+        ? item->delay
+        : RaidDirector_StatusDuration(item->deathtarget, 15.0f);
+    if (!item->timestamp || item->timestamp <= level.time)
+        item->timestamp = level.time + gtime_t::from_sec(configured_duration);
+    const float remaining = std::max(0.1f, (item->timestamp - level.time).seconds());
+    RaidDirector_ApplyStatus(player, item->deathtarget, remaining, item->healthtarget);
 }
 
 gitem_t *RelicWeapon(edict_t *item)
@@ -107,6 +148,7 @@ void ReturnRaidItemToOrigin(edict_t *player, edict_t *item, const char *signal)
 {
     FinishCarry(player);
     item->timestamp = 0_ms;
+    ItemState(item).charged = false;
     RestoreRaidItem(item);
     RaidDirector_NotifyEntityEvent(item, signal, player);
 }
@@ -144,16 +186,8 @@ TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool) ->
     else
         RaidThirdPerson_SetCarry(other, true,
             self->combattarget && *self->combattarget ? self->combattarget : self->model, self->s.scale);
-    if (self->deathtarget && *self->deathtarget)
-    {
-        const float configured_duration = self->delay > 0.0f
-            ? self->delay
-            : RaidDirector_StatusDuration(self->deathtarget, 15.0f);
-        if (!self->timestamp || self->timestamp <= level.time)
-            self->timestamp = level.time + gtime_t::from_sec(configured_duration);
-        const float remaining = std::max(0.1f, (self->timestamp - level.time).seconds());
-        RaidDirector_ApplyStatus(other, self->deathtarget, remaining, self->healthtarget);
-    }
+    if (!RequiresCharge(self) || ItemState(self).charged)
+        ApplyCarryStatus(other, self);
     RaidDirector_NotifyEntityEvent(self, "pickup", other);
     gi.LocClient_Print(other, PRINT_HIGH, IsWeaponRelic(self) ? "BFG RELIC ACQUIRED\n" : "POWER CORE ACQUIRED\n");
 }
@@ -166,9 +200,18 @@ edict_t *FindSocket(edict_t *trigger, edict_t *item)
         edict_t *gadget = &g_edicts[i];
         if (!gadget->inuse || !gadget->classname || Q_strcasecmp(gadget->classname, "raid_gadget") || GadgetState(gadget).occupied)
             continue;
-        if (!gadget->message || Q_strcasecmp(gadget->message, "core_socket"))
+        const bool core_socket = gadget->message && !Q_strcasecmp(gadget->message, "core_socket");
+        const bool reconstruction = gadget->message && !Q_strcasecmp(gadget->message, "reconstruction_chamber");
+        if (!core_socket && !reconstruction)
+            continue;
+        if (reconstruction && !RaidReconstruction_CanDeposit(gadget))
             continue;
         if (gadget->target && item->message && Q_strcasecmp(gadget->target, item->message))
+            continue;
+        const char *required_state = gadget->pathtarget && *gadget->pathtarget
+            ? gadget->pathtarget
+            : trigger->pathtarget;
+        if (required_state && !Q_strcasecmp(required_state, "charged") && !ItemState(item).charged)
             continue;
         if (trigger->target && (!gadget->team || Q_strcasecmp(trigger->target, gadget->team)))
             continue;
@@ -176,6 +219,79 @@ edict_t *FindSocket(edict_t *trigger, edict_t *item)
             best = gadget;
     }
     return best;
+}
+
+bool BoxesOverlap(const vec3_t &mins_a, const vec3_t &maxs_a, const vec3_t &mins_b, const vec3_t &maxs_b)
+{
+    return mins_a[0] <= maxs_b[0] && maxs_a[0] >= mins_b[0] &&
+        mins_a[1] <= maxs_b[1] && maxs_a[1] >= mins_b[1] &&
+        mins_a[2] <= maxs_b[2] && maxs_a[2] >= mins_b[2];
+}
+
+edict_t *FindChargingTrigger(edict_t *item, const vec3_t &held_origin)
+{
+    const vec3_t held_mins = held_origin + item->mins;
+    const vec3_t held_maxs = held_origin + item->maxs;
+    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+    {
+        edict_t *trigger = &g_edicts[i];
+        if (!trigger->inuse || trigger->solid != SOLID_TRIGGER || !trigger->classname ||
+            Q_strcasecmp(trigger->classname, "trigger_raid_item"))
+            continue;
+        if (trigger->target && item->message && Q_strcasecmp(trigger->target, item->message))
+            continue;
+        if (trigger->pathtarget && Q_strcasecmp(trigger->pathtarget, "uncharged"))
+            continue;
+        if (BoxesOverlap(held_mins, held_maxs, trigger->absmin, trigger->absmax))
+            return trigger;
+    }
+    return nullptr;
+}
+
+void UpdateCharging(edict_t *player, edict_t *item)
+{
+    raid_carry_state_t &carry = CarryState(player);
+    if (!RequiresCharge(item) || ItemState(item).charged)
+    {
+        carry.charge_trigger_number = 0;
+        carry.charge_trigger_spawn_count = 0;
+        carry.charge_started = 0_ms;
+        return;
+    }
+
+    edict_t *trigger = FindChargingTrigger(item, RaidCarry_HeldOrigin(player));
+    if (!trigger)
+    {
+        if (carry.charge_trigger_number)
+            RaidDirector_NotifyEntityEvent(item, "charge_cancelled", player);
+        carry.charge_trigger_number = 0;
+        carry.charge_trigger_spawn_count = 0;
+        carry.charge_started = 0_ms;
+        return;
+    }
+
+    if (carry.charge_trigger_number != trigger->s.number ||
+        carry.charge_trigger_spawn_count != trigger->spawn_count)
+    {
+        carry.charge_trigger_number = trigger->s.number;
+        carry.charge_trigger_spawn_count = trigger->spawn_count;
+        carry.charge_started = level.time;
+        RaidDirector_NotifyEntityEvent(item, "charge_begin", player);
+        RaidDirector_NotifyEntityEvent(trigger, "charge_begin", player);
+    }
+
+    const float charge_time = trigger->delay > 0.0f ? trigger->delay : 1.0f;
+    if (level.time < carry.charge_started + gtime_t::from_sec(charge_time))
+        return;
+
+    ItemState(item).charged = true;
+    carry.charge_trigger_number = 0;
+    carry.charge_trigger_spawn_count = 0;
+    carry.charge_started = 0_ms;
+    ApplyCarryStatus(player, item);
+    RaidDirector_NotifyEntityEvent(item, "charge_complete", player);
+    RaidDirector_NotifyEntityEvent(trigger, "charge_complete", player);
+    gi.LocClient_Print(player, PRINT_HIGH, "POWER CORE CHARGED\n");
 }
 
 TOUCH(raid_deposit_touch) (edict_t *self, edict_t *other, const trace_t &, bool) -> void
@@ -186,6 +302,26 @@ TOUCH(raid_deposit_touch) (edict_t *self, edict_t *other, const trace_t &, bool)
     edict_t *socket = FindSocket(self, item);
     if (!socket)
         return;
+
+    const bool reconstruction = socket->message && !Q_strcasecmp(socket->message, "reconstruction_chamber");
+    if (reconstruction)
+    {
+        if (!RaidReconstruction_Complete(socket, other))
+            return;
+        item->s.origin = socket->s.origin;
+        item->solid = SOLID_NOT;
+        item->movetype = MOVETYPE_NONE;
+        item->svflags |= SVF_NOCLIENT;
+        item->s.effects = EF_NONE;
+        item->timestamp = 0_ms;
+        ItemState(item).charged = false;
+        gi.unlinkentity(item);
+        FinishCarry(other);
+        GadgetState(socket).occupied = false;
+        RaidDirector_NotifyEntityEvent(socket, "deposit", other);
+        gi.LocClient_Print(other, PRINT_HIGH, "MARINE RECONSTRUCTED\n");
+        return;
+    }
 
     GadgetState(socket).occupied = true;
     item->s.origin = socket->s.origin;
@@ -230,6 +366,8 @@ void SP_raid_gadget(edict_t *ent)
 {
     if (!ent->message) ent->message = "core_socket";
     if (!ent->target) ent->target = "power_core";
+    if (!Q_strcasecmp(ent->message, "reconstruction_chamber") && !ent->pathtarget)
+        ent->pathtarget = "charged";
     ent->solid = SOLID_NOT;
     ent->movetype = MOVETYPE_NONE;
     gi.linkentity(ent);
@@ -239,6 +377,16 @@ void SP_trigger_raid_deposit(edict_t *ent)
 {
     InitTrigger(ent);
     ent->touch = raid_deposit_touch;
+    gi.linkentity(ent);
+}
+
+void SP_trigger_raid_item(edict_t *ent)
+{
+    if (!ent->target) ent->target = "power_core";
+    if (!ent->pathtarget) ent->pathtarget = "uncharged";
+    if (!ent->combattarget) ent->combattarget = "charged";
+    if (ent->delay <= 0.0f) ent->delay = 1.0f;
+    InitTrigger(ent);
     gi.linkentity(ent);
 }
 
@@ -272,6 +420,44 @@ float RaidCarry_MovementScale(edict_t *player)
 {
     if (!RaidCarry_IsCarrying(player)) return 1.0f;
     return std::clamp(CarriedItem(CarryState(player))->speed, 0.1f, 1.0f);
+}
+
+vec3_t RaidCarry_HeldOrigin(edict_t *player)
+{
+    if (!RaidCarry_IsCarrying(player))
+        return player ? player->s.origin : vec3_t{};
+    edict_t *item = CarriedItem(CarryState(player));
+    if (!item || IsWeaponRelic(item))
+        return player->s.origin;
+    vec3_t forward;
+    AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
+    const vec3_t start = player->s.origin + vec3_t{ 0, 0, 20.0f };
+    const vec3_t desired = start + forward * 13.0f;
+    const trace_t trace = gi.trace(start, item->mins, item->maxs, desired, player, MASK_PLAYERSOLID);
+    return trace.endpos;
+}
+
+trace_t RaidCarry_PmoveTrace(gvec3_cref_t start, gvec3_cptr_t mins, gvec3_cptr_t maxs,
+    gvec3_cref_t end, const edict_t *passent, contents_t contentmask)
+{
+    trace_t body = gi.trace(start, mins, maxs, end, passent, contentmask);
+    edict_t *player = const_cast<edict_t *>(passent);
+    if (!RaidCarry_IsCarrying(player))
+        return body;
+    edict_t *item = CarriedItem(CarryState(player));
+    if (!item || IsWeaponRelic(item))
+        return body;
+
+    vec3_t forward;
+    AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
+    const vec3_t offset = forward * 13.0f + vec3_t{ 0, 0, 20.0f };
+    trace_t carried = gi.trace(start + offset, item->mins, item->maxs, end + offset, passent, contentmask);
+    if (carried.fraction < body.fraction || carried.startsolid || carried.allsolid)
+    {
+        carried.endpos = start + (end - start) * carried.fraction;
+        return carried;
+    }
+    return body;
 }
 
 bool RaidCarry_Drop(edict_t *player)
@@ -309,6 +495,8 @@ void RaidCarry_Update(edict_t *player)
     if (!RaidCarry_IsCarrying(player)) return;
     if (player->deadflag || player->health <= 0) { RaidCarry_Drop(player); return; }
     edict_t *item = CarriedItem(CarryState(player));
+    if (!IsWeaponRelic(item))
+        UpdateCharging(player, item);
     if (IsWeaponRelic(item))
     {
         gitem_t *weapon = RelicWeapon(item);
@@ -343,6 +531,7 @@ void RaidCarry_ResetAll()
         if (!Q_strcasecmp(entity->classname, "raid_item"))
         {
             entity->timestamp = 0_ms;
+            ItemState(entity).charged = false;
             RestoreRaidItem(entity);
         }
         else if (!Q_strcasecmp(entity->classname, "raid_gadget"))
@@ -351,6 +540,7 @@ void RaidCarry_ResetAll()
     // Occupancy is derived encounter state. Recreate it lazily so an edict slot
     // reused after a map/reset can never inherit a previous gadget's state.
     gadget_states.clear();
+    item_states.clear();
 }
 
 void RaidHover_Reset()

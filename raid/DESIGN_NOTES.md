@@ -64,3 +64,34 @@
 - Gib/disintegration-class outcomes always cause immediate death regardless of the numerical threshold.
 - Internally, keep a separate `downed` flag and safe engine health value so stock `health <= 0` checks do not prematurely classify the player as dead or trigger a team wipe; the HUD may still present zero health.
 - Make the `25`-damage overkill allowance configurable after the prototype proves reliable.
+
+## Optional crouch long-jump
+
+- Add an opt-in Half-Life-style movement permutation: a deliberate crouch-and-jump input while grounded and already moving launches the player in a long jump.
+- Derive the horizontal launch vector from the player's current planar movement direction, not merely their view angle. Require a configurable minimum input/velocity so it cannot launch from rest.
+- Keep stock Quake II movement unchanged by default. Expose the feature and its forward speed, vertical impulse, and optional cooldown as mapper/server configuration.
+- Require a fresh jump press and a valid grounded/coyote-grounded state; merely holding crouch in the air must never retrigger it.
+- Consume the jump cleanly so it cannot accidentally compound with the optional double jump unless an encounter explicitly permits that combination.
+- Preserve ordinary player collision and knockback during launch and landing. Teammates impatiently crowding a traversal lane can therefore bump one another off course as emergent cooperative chaos.
+- Provide clear launch/landing feedback and deterministic server-authoritative behaviour so clients agree on the arc.
+- Initially allow direct player/server enablement for testing; later present it as **Strogg leg actuators** granted through the general implant/status system.
+
+## Strogg implants as a player-facing mechanic family
+
+- Treat **Strogg Implant** as a reusable lore layer rather than the permanent name of one narrowly defined buff.
+- Individual implants may grant long-jump actuators, safe passage through disintegration fields, movement changes, environmental tolerances, sensory changes, weapon interactions, or other encounter permissions.
+- Let JSON define the implant's mechanical capabilities, duration, acquisition, loss rules, HUD label, and presentation while the DLL supplies reusable hooks.
+- Prefer specific player-facing names where clarity matters, with `Strogg implant` retained as the shared category/source. This avoids making unrelated mechanics feel like arbitrary game permissions without forcing every implant to behave identically.
+
+## Raid Hat HUD presentation status
+
+- Current monster name and red health-bar presentation is accepted as implemented: scale, readability, and targeting behaviour are suitable.
+- Segmented Destiny-style bars and the earlier text-formatted bar remain optional presentation polish, not blockers for the Raid Hat system.
+
+## Observer-Locked Raid Hat controls
+
+- Preserve the proven default relationship: a watched monster freezes and an unobserved monster may move.
+- Add a live targetable/JSON-controlled inversion switch. While inverted, the monster may move while watched and freezes when every player looks away, forcing the fireteam to deliberately play "look away."
+- Expose separate observation timing controls: delay before movement is released after the relevant observation change, delay before freezing resumes, and an optional minimum active movement window.
+- Evaluate observation across all living players: the current rule or its inverse must use the combined fireteam view state, not only the nearest player.
+- Emit a clear event when inversion changes so JSON can synchronize lights, sound, messaging, and encounter state with the rule swap.

@@ -2393,6 +2393,7 @@ constexpr spawnflags_t SPAWNFLAG_CHANGELEVEL_FADE_OUT = 32_spawnflag;
 constexpr spawnflags_t SPAWNFLAG_CHANGELEVEL_IMMEDIATE_LEAVE = 64_spawnflag;
 
 void respawn(edict_t *ent);
+void RaidRespawnAt(edict_t *ent, const vec3_t &origin, const vec3_t &angles);
 void BeginIntermission(edict_t *targ);
 void PutClientInServer(edict_t *ent);
 void InitClientPersistant(edict_t *ent, gclient_t *client);
@@ -2873,6 +2874,10 @@ struct gclient_t
 	} kick;
 	gtime_t		  quake_time;
 	float             raid_shake_intensity;
+	gtime_t           raid_flash_fade_at;
+	gtime_t           raid_flash_end;
+	vec3_t            raid_flash_color;
+	float             raid_flash_alpha;
 	vec3_t		  kick_origin;
 	float		  v_dmg_roll, v_dmg_pitch;
 	gtime_t		  v_dmg_time; // damage kicks

@@ -446,94 +446,94 @@
 @BaseClass base(Item) color(76 255 255) size(-16 -16 -16, 16 16 16) = Items []
 @BaseClass base(Item) color(0 128 204) size(-16 -16 -16, 16 16 16) = Keys []
 
-@PointClass base(Ammo) = ammo_shells : "Shotgun ammo" []
-@PointClass base(Ammo) = ammo_bullets : "Machine/Chain gun ammo" []
-@PointClass base(Ammo) = ammo_cells : "Blaster/BFG ammo" []
-@PointClass base(Ammo) = ammo_grenades : "Grenades" []
-@PointClass base(Ammo) = ammo_rockets : "Rockets" []
-@PointClass base(Ammo) = ammo_slugs : "Rail gun ammo" []
+@PointClass base(Ammo) studio("models/items/ammo/shells/medium/tris.md2") = ammo_shells : "Shotgun ammo" []
+@PointClass base(Ammo) studio("models/items/ammo/bullets/medium/tris.md2") = ammo_bullets : "Machine/Chain gun ammo" []
+@PointClass base(Ammo) studio("models/items/ammo/cells/medium/tris.md2") = ammo_cells : "Blaster/BFG ammo" []
+@PointClass base(Ammo) studio("models/items/ammo/grenades/medium/tris.md2") = ammo_grenades : "Grenades" []
+@PointClass base(Ammo) studio("models/items/ammo/rockets/medium/tris.md2") = ammo_rockets : "Rockets" []
+@PointClass base(Ammo) studio("models/items/ammo/slugs/medium/tris.md2") = ammo_slugs : "Rail gun ammo" []
 
-@PointClass base(Ammo) = ammo_magslug : "Phalanx ammo" []
-@PointClass base(Ammo) = ammo_flechettes : "ETF Rifle ammo" []
-@PointClass base(Ammo) = ammo_nails : "ETF Rifle ammo" []
-@PointClass base(Ammo) = ammo_prox : "Prox Launcher ammo" []
-@PointClass base(Ammo) = ammo_disruptor : "Disruptor ammo" []
-@PointClass base(Ammo) = ammo_trap : "Traps" []
-@PointClass base(Ammo) = ammo_tesla : "Teslas" []
-@PointClass base(Ammo) = ammo_nuke : "A-M Bomb (usable nuke); DM only" []
+@PointClass base(Ammo) size(-16 -16 -16, 16 16 16) = ammo_magslug : "Phalanx ammo" []
+@PointClass base(Ammo) size(-16 -16 -16, 16 16 16) = ammo_flechettes : "ETF Rifle ammo" []
+@PointClass base(Ammo) size(-16 -16 -16, 16 16 16) = ammo_nails : "ETF Rifle ammo" []
+@PointClass base(Ammo) size(-16 -16 -16, 16 16 16) = ammo_prox : "Prox Launcher ammo" []
+@PointClass base(Ammo) size(-16 -16 -16, 16 16 16) = ammo_disruptor : "Disruptor ammo" []
+@PointClass base(Ammo) size(-16 -16 -16, 16 16 16) = ammo_trap : "Traps" []
+@PointClass base(Ammo) size(-16 -16 -16, 16 16 16) = ammo_tesla : "Teslas" []
+@PointClass base(Ammo) size(-16 -16 -16, 16 16 16) = ammo_nuke : "A-M Bomb (usable nuke); DM only" []
 
-@PointClass base(Weapons) = weapon_shotgun : "Shotgun" []
-@PointClass base(Weapons) = weapon_supershotgun : "Super shotgun" []
-@PointClass base(Weapons) = weapon_machinegun : "Machinegun" []
-@PointClass base(Weapons) = weapon_chaingun : "Chain gun" []
-@PointClass base(Weapons) = weapon_grenadelauncher : "Grenade launcher" []
-@PointClass base(Weapons) = weapon_rocketlauncher : "Rocket launcher" []
-@PointClass base(Weapons) = weapon_hyperblaster : "Hyperblaster" []
-@PointClass base(Weapons) = weapon_railgun : "Rail gun" []
-@PointClass base(Weapons) = weapon_bfg : "Big Freakin Gun!" []
+@PointClass base(Weapons) studio("models/weapons/g_shotg/tris.md2") = weapon_shotgun : "Shotgun" []
+@PointClass base(Weapons) studio("models/weapons/g_shotg2/tris.md2") = weapon_supershotgun : "Super shotgun" []
+@PointClass base(Weapons) studio("models/weapons/g_machn/tris.md2") = weapon_machinegun : "Machinegun" []
+@PointClass base(Weapons) studio("models/weapons/g_chain/tris.md2") = weapon_chaingun : "Chain gun" []
+@PointClass base(Weapons) studio("models/weapons/g_launch/tris.md2") = weapon_grenadelauncher : "Grenade launcher" []
+@PointClass base(Weapons) studio("models/weapons/g_rocket/tris.md2") = weapon_rocketlauncher : "Rocket launcher" []
+@PointClass base(Weapons) studio("models/weapons/g_hyperb/tris.md2") = weapon_hyperblaster : "Hyperblaster" []
+@PointClass base(Weapons) studio("models/weapons/g_rail/tris.md2") = weapon_railgun : "Rail gun" []
+@PointClass base(Weapons) studio("models/weapons/g_bfg/tris.md2") = weapon_bfg : "Big Freakin Gun!" []
 
-@PointClass base(Weapons) = weapon_chainfist : "Chainfist" []
-@PointClass base(Weapons) = weapon_etf_rifle : "ETF Rifle" []
-@PointClass base(Weapons) = weapon_nailgun : "ETF Rifle" []
-@PointClass base(Weapons) = weapon_proxlauncher : "Prox Launcher" []
-@PointClass base(Weapons) = weapon_boomer : "Ionripper" []
-@PointClass base(Weapons) = weapon_plasmabeam : "Plasma Beam" []
-@PointClass base(Weapons) = weapon_heatbeam : "Plasma Beam" []
-@PointClass base(Weapons) = weapon_phalanx : "Phalanx" []
-@PointClass base(Weapons) = weapon_disintegrator : "Disruptor" []
+@PointClass base(Weapons) size(-16 -16 -16, 16 16 16) = weapon_chainfist : "Chainfist" []
+@PointClass base(Weapons) size(-16 -16 -16, 16 16 16) = weapon_etf_rifle : "ETF Rifle" []
+@PointClass base(Weapons) size(-16 -16 -16, 16 16 16) = weapon_nailgun : "ETF Rifle" []
+@PointClass base(Weapons) size(-16 -16 -16, 16 16 16) = weapon_proxlauncher : "Prox Launcher" []
+@PointClass base(Weapons) size(-16 -16 -16, 16 16 16) = weapon_boomer : "Ionripper" []
+@PointClass base(Weapons) size(-16 -16 -16, 16 16 16) = weapon_plasmabeam : "Plasma Beam" []
+@PointClass base(Weapons) size(-16 -16 -16, 16 16 16) = weapon_heatbeam : "Plasma Beam" []
+@PointClass base(Weapons) size(-16 -16 -16, 16 16 16) = weapon_phalanx : "Phalanx" []
+@PointClass base(Weapons) size(-16 -16 -16, 16 16 16) = weapon_disintegrator : "Disruptor" []
 
-@PointClass base(Items) = item_adrenaline : "+1 to max health" []
-@PointClass base(Items) = item_ancient_head : "+2 to max health" []
-@PointClass base(Items) = item_armor_body : "Body armor" []
-@PointClass base(Items) = item_armor_combat : "Combat armor" []
-@PointClass base(Items) = item_armor_jacket : "Jacket armor" []
-@PointClass base(Items) = item_armor_shard : "Armor shard" []
-@PointClass base(Items) = item_bandolier : "Equipment belt" []
-@PointClass base(Items) = item_breather : "Underwater breather" []
-@PointClass base(Items) = item_enviro : "Enviro-Suit" []
-@PointClass base(Items) = item_health : "+10 health" []
-@PointClass base(Items) = item_health_small : "+2 health" []
-@PointClass base(Items) = item_health_large : "+25 health" []
-@PointClass base(Items) = item_health_mega : "+100 health" []
-@PointClass base(Items) = item_invulnerability : "Invulnerability" []
-@PointClass base(Items) = item_pack : "Heavy backpack" []
-@PointClass base(Items) = item_power_screen : "Power screen" []
-@PointClass base(Items) = item_power_shield : "Power shield" []
-@PointClass base(Items) = item_quad : "Quad damage" []
-@PointClass base(Items) = item_silencer : "Silencer" []
-@PointClass base(Items) = item_flashlight : "Flashlight" []
+@PointClass base(Items) studio("models/items/adrenal/tris.md2") = item_adrenaline : "+1 to max health" []
+@PointClass base(Items) studio("models/items/c_head/tris.md2") = item_ancient_head : "+2 to max health" []
+@PointClass base(Items) studio("models/items/armor/body/tris.md2") = item_armor_body : "Body armor" []
+@PointClass base(Items) studio("models/items/armor/combat/tris.md2") = item_armor_combat : "Combat armor" []
+@PointClass base(Items) studio("models/items/armor/jacket/tris.md2") = item_armor_jacket : "Jacket armor" []
+@PointClass base(Items) studio("models/items/armor/shard/tris.md2") = item_armor_shard : "Armor shard" []
+@PointClass base(Items) studio("models/items/band/tris.md2") = item_bandolier : "Equipment belt" []
+@PointClass base(Items) studio("models/items/breather/tris.md2") = item_breather : "Underwater breather" []
+@PointClass base(Items) studio("models/items/enviro/tris.md2") = item_enviro : "Enviro-Suit" []
+@PointClass base(Items) studio("models/items/healing/medium/tris.md2") = item_health : "+10 health" []
+@PointClass base(Items) studio("models/items/healing/stimpack/tris.md2") = item_health_small : "+2 health" []
+@PointClass base(Items) studio("models/items/healing/large/tris.md2") = item_health_large : "+25 health" []
+@PointClass base(Items) studio("models/items/mega_h/tris.md2") = item_health_mega : "+100 health" []
+@PointClass base(Items) studio("models/items/invulner/tris.md2") = item_invulnerability : "Invulnerability" []
+@PointClass base(Items) studio("models/items/pack/tris.md2") = item_pack : "Heavy backpack" []
+@PointClass base(Items) studio("models/items/armor/screen/tris.md2") = item_power_screen : "Power screen" []
+@PointClass base(Items) studio("models/items/armor/shield/tris.md2") = item_power_shield : "Power shield" []
+@PointClass base(Items) studio("models/items/quaddama/tris.md2") = item_quad : "Quad damage" []
+@PointClass base(Items) studio("models/items/silencer/tris.md2") = item_silencer : "Silencer" []
+@PointClass base(Items) size(-16 -16 -16, 16 16 16) = item_flashlight : "Flashlight" []
 
-@PointClass base(Items) = item_quadfire : "DualFire Damage" []
-@PointClass base(Items) = item_ir_goggles : "IR Goggles" []
-@PointClass base(Items) = item_double : "Double Damage" []
+@PointClass base(Items) size(-16 -16 -16, 16 16 16) = item_quadfire : "DualFire Damage" []
+@PointClass base(Items) size(-16 -16 -16, 16 16 16) = item_ir_goggles : "IR Goggles" []
+@PointClass base(Items) size(-16 -16 -16, 16 16 16) = item_double : "Double Damage" []
 
-@PointClass base(Items) = item_sphere_vengeance : "vengeance sphere" []
-@PointClass base(Items) = item_sphere_hunter : "hunter sphere" []
-@PointClass base(Items) = item_sphere_defender : "defender sphere" []
-@PointClass base(Items) = item_doppleganger : "Doppleganger" []
+@PointClass base(Items) size(-16 -16 -16, 16 16 16) = item_sphere_vengeance : "vengeance sphere" []
+@PointClass base(Items) size(-16 -16 -16, 16 16 16) = item_sphere_hunter : "hunter sphere" []
+@PointClass base(Items) size(-16 -16 -16, 16 16 16) = item_sphere_defender : "defender sphere" []
+@PointClass base(Items) size(-16 -16 -16, 16 16 16) = item_doppleganger : "Doppleganger" []
 
 
-@PointClass base(Keys) = key_airstrike_target : "Tank commander's head" []
-@PointClass base(Keys) = key_blue_key : "Normal door key - blue" []
-@PointClass base(Keys) = key_commander_head : "Tank commander's head (key)" []
-@PointClass base(Keys) = key_data_cd : "Data CD key for computer centers" []
-@PointClass base(Keys) = key_data_spinner : "Data Spinner key for city computer" []
-@PointClass base(Keys) = key_pass : "Security pass for secret level" []
+@PointClass base(Keys) studio("models/items/keys/target/tris.md2") = key_airstrike_target : "Tank commander's head" []
+@PointClass base(Keys) studio("models/items/keys/key/tris.md2") = key_blue_key : "Normal door key - blue" []
+@PointClass base(Keys) studio("models/monsters/commandr/head/tris.md2") = key_commander_head : "Tank commander's head (key)" []
+@PointClass base(Keys) studio("models/items/keys/data_cd/tris.md2") = key_data_cd : "Data CD key for computer centers" []
+@PointClass base(Keys) studio("models/items/keys/spinner/tris.md2") = key_data_spinner : "Data Spinner key for city computer" []
+@PointClass base(Keys) studio("models/items/keys/pass/tris.md2") = key_pass : "Security pass for secret level" []
 
-@PointClass base(Keys) = key_power_cube : "Warehouse circuits" []
-@PointClass base(Keys) = key_pyramid : "Pyramid Key for entrance to jail3" []
-@PointClass base(Keys) = key_red_key : "normal door key - red" []
+@PointClass base(Keys) studio("models/items/keys/power/tris.md2") = key_power_cube : "Warehouse circuits" []
+@PointClass base(Keys) studio("models/items/keys/pyramid/tris.md2") = key_pyramid : "Pyramid Key for entrance to jail3" []
+@PointClass base(Keys) studio("models/items/keys/red_key/tris.md2") = key_red_key : "normal door key - red" []
 // Expansions
-@PointClass base(Keys) = key_green_key : "normal door key - green" []
-@PointClass base(Keys) = key_nuke_container : "Antimatter Pod (nuke key part 1)" []
-@PointClass base(Keys) = key_nuke : "Antimatter Bomb (nuke key part 2)" []
+@PointClass base(Keys) size(-16 -16 -16, 16 16 16) = key_green_key : "normal door key - green" []
+@PointClass base(Keys) size(-16 -16 -16, 16 16 16) = key_nuke_container : "Antimatter Pod (nuke key part 1)" []
+@PointClass base(Keys) size(-16 -16 -16, 16 16 16) = key_nuke : "Antimatter Bomb (nuke key part 2)" []
 // N64
-@PointClass base(Keys) = key_explosive_charges : "Explosive Charge" []
-@PointClass base(Keys) = key_yellow_key : "Yellow Key" []
-@PointClass base(Keys) = key_power_core : "Power Core" []
+@PointClass base(Keys) size(-16 -16 -16, 16 16 16) = key_explosive_charges : "Explosive Charge" []
+@PointClass base(Keys) size(-16 -16 -16, 16 16 16) = key_yellow_key : "Yellow Key" []
+@PointClass base(Keys) size(-16 -16 -16, 16 16 16) = key_power_core : "Power Core" []
 // CTF
-@PointClass base(Keys) = item_flag_team1 : "CTF Flag (red)" []
-@PointClass base(Keys) = item_flag_team2 : "CTF Flag (blue)" []
+@PointClass base(Keys) size(-16 -16 -16, 16 16 16) = item_flag_team1 : "CTF Flag (red)" []
+@PointClass base(Keys) size(-16 -16 -16, 16 16 16) = item_flag_team2 : "CTF Flag (blue)" []
 
 
 // Keep in mind when using func_areaportal that it must
@@ -792,7 +792,7 @@
 // expansion
 @PointClass base(info_notnull) = info_teleport_destination : "Teleport Destination" []
 
-@PointClass base(EditorFlags, Targetable, Target, EWT_base_PointLight) color(0 255 0) size(-8 -8 -8, 8 8 8) = light : "Light"
+@PointClass base(EditorFlags, Targetable, Target, EWT_base_PointLight) color(0 255 0) size(-8 -8 -8, 8 8 8) iconsprite("sprites/light.spr") = light : "Light"
 [
     spawnflags(Flags) =
     [
@@ -921,7 +921,6 @@ misc_satellite_dish : "Satellite Dish"
 
 @BaseClass base(EditorFlags, Targetable, Target, Scale, Alpha) color(255 128 0) size(-16 -16 -24, 16 16 32) = Monsters
 [
-    raid_hat(string) : "Optional raid_hat selector; preserves targetname for monster-door roster membership"
     spawnflags(Flags) =
     [
         1 : "Ambush" : 0
@@ -948,7 +947,7 @@ misc_satellite_dish : "Satellite Dish"
     ]
 ]
 
-@PointClass base(Monsters) color(255 128 0) size(-16 -16 -24, 16 16 32) = misc_insane : "Insane Soldiers"
+@PointClass base(Monsters) color(255 128 0) size(-16 -16 -24, 16 16 32) studio("models/monsters/insane/tris.md2") offset(0 0 24) = misc_insane : "Insane Soldiers"
 [
     spawnflags(Flags) =
     [
@@ -960,13 +959,13 @@ misc_satellite_dish : "Satellite Dish"
     ]
 ]
 
-@PointClass base(Monsters) = monster_berserk : "Berserker" [
+@PointClass base(Monsters) studio("models/monsters/berserk/tris.md2") = monster_berserk : "Berserker" [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) size(-56 -56 0, 56 56 80) = monster_boss2 : "Hornet"
+@PointClass base(Monsters) size(-56 -56 0, 56 56 80) studio("models/monsters/boss2/tris.md2") offset(0 0 0) = monster_boss2 : "Hornet"
 [
     spawnflags(Flags) =
     [
@@ -977,8 +976,8 @@ misc_satellite_dish : "Satellite Dish"
 // Just fidgets in one spot and teleports away when triggered
 //
 // 0221 - removed Monsters class inheritance
-@PointClass base(EditorFlags, Targetable) size(-32 -32 0, 32 32 80) = monster_boss3_stand : "Stationnary Makron" []
-@PointClass base(Monsters) = monster_brain : "Brains"
+@PointClass base(EditorFlags, Targetable) size(-32 -32 0, 32 32 80) studio("models/monsters/boss3/rider/tris.md2") sequence(414) offset(0 0 0) = monster_boss3_stand : "Stationnary Makron" []
+@PointClass base(Monsters) studio("models/monsters/brain/tris.md2") = monster_brain : "Brains"
 [
 	spawnflags(Flags) =
 	[
@@ -987,10 +986,10 @@ misc_satellite_dish : "Satellite Dish"
 		8 : "no laser eyes" : 0
 	]
 ]
-@PointClass base(Monsters) size(-16 -16 0, 16 16 56) = monster_chick : "Iron Maiden" []
-@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-32 -32 0, 32 32 48) = monster_commander_body : "Tank commander's decapitated body" []
-@PointClass base(Monsters) = monster_flipper : "Barracuda shark" []
-@PointClass base(Monsters) size(-24 -24 -24, 24 24 48) = monster_floater : "Technician"
+@PointClass base(Monsters) size(-16 -16 0, 16 16 56) studio("models/monsters/bitch/tris.md2") offset(0 0 0) = monster_chick : "Iron Maiden" []
+@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-32 -32 0, 32 32 48) studio("models/monsters/commandr/tris.md2") offset(0 0 0) = monster_commander_body : "Tank commander's decapitated body" []
+@PointClass base(Monsters) studio("models/monsters/flipper/tris.md2") offset(0 0 8) = monster_flipper : "Barracuda shark" []
+@PointClass base(Monsters) size(-24 -24 -24, 24 24 48) studio("models/monsters/float/tris.md2") = monster_floater : "Technician"
 [
     spawnflags(Flags) =
     [
@@ -999,51 +998,50 @@ misc_satellite_dish : "Satellite Dish"
         8 : "Disguise as barrel" : 0
     ]
 ]
-@PointClass base(Monsters) = monster_flyer : "Flyer" []
-@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) = monster_gladiator : "Gladiator" []
-@PointClass base(Monsters) = monster_gunner : "Gunner"
+@PointClass base(Monsters) studio("models/monsters/flyer/tris.md2") offset(0 0 12) = monster_flyer : "Flyer" []
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) studio("models/monsters/gladiatr/tris.md2") offset(0 0 24) = monster_gladiator : "Gladiator" []
+@PointClass base(Monsters) studio("models/monsters/gunner/tris.md2") = monster_gunner : "Gunner"
 [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) = monster_guncmdr : "Gunner Commander"
+@PointClass base(Monsters) size(-16 -16 -24, 16 16 32) = monster_guncmdr : "Gunner Commander"
 [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) = monster_hover : "Icarus" []
-@PointClass base(Monsters) = monster_infantry : "Infantry"
+@PointClass base(Monsters) studio("models/monsters/hover/tris.md2") = monster_hover : "Icarus" []
+@PointClass base(Monsters) studio("models/monsters/infantry/tris.md2") = monster_infantry : "Infantry"
 [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) size(-80 -80 0, 90 90 140) = monster_jorg : "Jorg" []
+@PointClass base(Monsters) size(-80 -80 0, 90 90 140) studio("models/monsters/boss3/jorg/tris.md2") offset(0 0 0) = monster_jorg : "Jorg" []
 
 // 0221 - this entity can only spawn once the Jorg dies ... im sure someone will change that tho
-@PointClass base(Monsters) size(-32 -32 0, 32 32 80) = monster_makron : "Makron" []
-@PointClass base(Monsters) = monster_medic : "Medic" []
-@PointClass base(Monsters) size(-32 -32 -24, 32 32 32) =
-monster_mutant : "Mutant"
+@PointClass base(Monsters) size(-32 -32 0, 32 32 80) studio("models/monsters/boss3/rider/tris.md2") offset(0 0 0) = monster_makron : "Makron" []
+@PointClass base(Monsters) studio("models/monsters/medic/tris.md2") = monster_medic : "Medic" []
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 32) studio("models/monsters/mutant/tris.md2") offset(0 0 24) = monster_mutant : "Mutant"
 [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) = monster_parasite : "Parasite"
+@PointClass base(Monsters) studio("models/monsters/parasite/tris.md2") = monster_parasite : "Parasite"
 [
     spawnflags(Flags) =
     [
         8 : "No jumping" : 0
     ]
 ]
-@PointClass base(Monsters) = monster_soldier_light : "Light Soldier"
+@PointClass base(Monsters) studio("models/monsters/soldier/tris.md2") skin(0) = monster_soldier_light : "Light Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1052,7 +1050,7 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) = monster_soldier : "Soldier"
+@PointClass base(Monsters) studio("models/monsters/soldier/tris.md2") skin(2) = monster_soldier : "Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1061,7 +1059,7 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) = monster_soldier_ss : "SS Soldier"
+@PointClass base(Monsters) studio("models/monsters/soldier/tris.md2") skin(4) = monster_soldier_ss : "SS Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1070,8 +1068,8 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) = monster_tank : "Tank" []
-@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) = monster_tank_commander : "Tank Commander"
+@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) studio("models/monsters/tank/tris.md2") offset(0 0 16) = monster_tank : "Tank" []
+@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) studio("models/monsters/tank/tris.md2") skin(2) offset(0 0 16) = monster_tank_commander : "Tank Commander"
 [
 	speed(float) : "homing missile speed" : "0.0"
     spawnflags(Flags) =
@@ -1080,7 +1078,7 @@ monster_mutant : "Mutant"
 		16 : "Heat-Seeking Missiles" : 0
     ]
 ]
-@PointClass base(Monsters) size(-64 -64 0, 64 64 72) = monster_supertank : "Super Tank Boss"
+@PointClass base(Monsters) size(-64 -64 0, 64 64 72) studio("models/monsters/boss1/tris.md2") offset(0 0 16) = monster_supertank : "Super Tank Boss"
 [
     spawnflags(Flags) =
     [
@@ -1091,7 +1089,7 @@ monster_mutant : "Mutant"
 ]
 
 // Expansions
-@PointClass base(Monsters) = monster_soldier_ripper : "Ripper Soldier"
+@PointClass base(Monsters) size(-16 -16 -24, 16 16 32) = monster_soldier_ripper : "Ripper Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1100,7 +1098,7 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) = monster_soldier_hypergun : "Hypergun Soldier"
+@PointClass base(Monsters) size(-16 -16 -24, 16 16 32) = monster_soldier_hypergun : "Hypergun Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1109,7 +1107,7 @@ monster_mutant : "Mutant"
         8 : "Blind" : 0
     ]
 ]
-@PointClass base(Monsters) = monster_soldier_lasergun : "Lasergun Soldier"
+@PointClass base(Monsters) size(-16 -16 -24, 16 16 32) = monster_soldier_lasergun : "Lasergun Soldier"
 [
     spawnflags(Flags) =
     [
@@ -1162,7 +1160,7 @@ monster_gekk : "Gekk"
     wait(float) : "wait for this amount of time" : "0"
 ]
 
-@PointClass base(Monsters) = monster_daedalus : "Daedalus" []
+@PointClass base(Monsters) size(-16 -16 -24, 16 16 32) = monster_daedalus : "Daedalus" []
 
 @PointClass base(Monsters) size(-56 -56 -44, 56 56 44) = monster_carrier : "Carrier"
 [
@@ -1174,12 +1172,12 @@ monster_gekk : "Gekk"
 //Why is there two of these with no difference?
 //@PointClass base(Monsters) size(-70 -70 0, 70 70 144) = monster_widow : "Black Widow (spider)" []
 
-@PointClass base(Monsters) = monster_medic_commander : "Medic Commander"
+@PointClass base(Monsters) size(-16 -16 -24, 16 16 32) = monster_medic_commander : "Medic Commander"
 [
     reinforcements(string): "Semicolon separated list of entity classes and cost of monster to spawn" : "monster_soldier_light 1;monster_soldier 2;monster_soldier_ss 2;monster_infantry 3;monster_gunner 4;monster_medic 5;monster_gladiator 6"
     monster_slots(integer) : "How many points to spend on monster spawns. Increases by up to 2x for Hard skill" : 3
 ]
-@PointClass base(Monsters) = monster_kamikaze : "Flyer (kamikaze)" []
+@PointClass base(Monsters) size(-16 -16 -24, 16 16 32) = monster_kamikaze : "Flyer (kamikaze)" []
 
 @PointClass base(Monsters) size(-12 -12 -12, 12 12 12) = monster_turret : "Turret Monster"
 [
@@ -1428,7 +1426,7 @@ monster_gekk : "Gekk"
     speed(float) : "Speed"
 ]
 
-@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_speaker : "Sound player"
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) iconsprite("sprites/speaker.spr") = target_speaker : "Sound player"
 [
     spawnflags(Flags) =
     [

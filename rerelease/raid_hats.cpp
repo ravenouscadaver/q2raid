@@ -19,7 +19,11 @@ struct applied_hat_t
     entity_ref_t monster;
     entity_ref_t attachment;
     bool watched = false;
+    bool observation_initialized = false;
+    bool moving = true;
     gtime_t freeze_at;
+    gtime_t release_at;
+    gtime_t moving_since;
     gtime_t next_twitch;
 };
 
@@ -117,6 +121,16 @@ void ApplyModifiers(edict_t *hat, edict_t *monster)
         gi.linkentity(monster);
     }
 
+    if (hat->monsterinfo.power_armor_power > 0)
+    {
+        monster->monsterinfo.power_armor_type = hat->monsterinfo.power_armor_type != IT_NULL
+            ? hat->monsterinfo.power_armor_type
+            : IT_ITEM_POWER_SHIELD;
+        monster->monsterinfo.power_armor_power = hat->monsterinfo.power_armor_power;
+        monster->monsterinfo.max_power_armor_power = hat->monsterinfo.power_armor_power;
+        monster->monsterinfo.initial_power_armor_type = monster->monsterinfo.power_armor_type;
+    }
+
     if (hat->style == 1)
     {
         monster->s.effects |= EF_COLOR_SHELL;
@@ -184,26 +198,52 @@ void UpdateObserverLock(edict_t *hat, applied_hat_t &applied)
     for (edict_t *player : active_players())
         if (PlayerWatches(player, monster, range)) { watched = true; break; }
 
-    if (watched != applied.watched)
+    const bool should_move = hat->style_on ? watched : !watched;
+    if (!applied.observation_initialized || watched != applied.watched)
     {
+        applied.observation_initialized = true;
         applied.watched = watched;
-        if (watched)
-            applied.freeze_at = level.time + gtime_t::from_sec(std::max(0.0f, hat->delay));
+        if (should_move)
+        {
+            applied.release_at = level.time + gtime_t::from_sec(std::max(0.0f, hat->wait));
+            applied.freeze_at = 0_ms;
+        }
         else
         {
-            applied.freeze_at = 0_ms;
-            monster->monsterinfo.aiflags &= ~(AI_HOLD_FRAME | AI_STAND_GROUND);
-            monster->nextthink = level.time + FRAME_TIME_S;
+            applied.release_at = 0_ms;
+            const gtime_t minimum_move_end = applied.moving_since + gtime_t::from_sec(std::max(0.0f, hat->decel));
+            applied.freeze_at = std::max(level.time + gtime_t::from_sec(std::max(0.0f, hat->delay)), minimum_move_end);
         }
         RaidDirector_NotifyEntityEvent(hat, watched ? "watched" : "unwatched", monster);
     }
-    if (!watched || level.time < applied.freeze_at)
+
+    if (should_move)
+    {
+        if (level.time < applied.release_at)
+            return;
+        if (!applied.moving)
+        {
+            applied.moving = true;
+            applied.moving_since = level.time;
+            monster->monsterinfo.aiflags &= ~(AI_HOLD_FRAME | AI_STAND_GROUND);
+            monster->nextthink = level.time + FRAME_TIME_S;
+            RaidDirector_NotifyEntityEvent(hat, "movement_released", monster);
+        }
+        return;
+    }
+
+    if (level.time < applied.freeze_at)
         return;
 
     monster->velocity = {};
     monster->avelocity = {};
     monster->monsterinfo.aiflags |= AI_HOLD_FRAME | AI_STAND_GROUND;
     monster->nextthink = level.time + 200_ms;
+    if (applied.moving)
+    {
+        applied.moving = false;
+        RaidDirector_NotifyEntityEvent(hat, "movement_frozen", monster);
+    }
     if (hat->random > 0.0f && (!applied.next_twitch || level.time >= applied.next_twitch))
     {
         applied.next_twitch = level.time + 1_sec;
@@ -234,11 +274,28 @@ THINK(raid_hat_think) (edict_t *self) -> void
 
 USE(raid_hat_use) (edict_t *self, edict_t *, edict_t *activator) -> void
 {
+    if (self->count && self->mass == 3)
+    {
+        RaidHats_SetObserverInverted(self, !self->style_on, activator);
+        return;
+    }
     if (self->count)
         return;
     self->count = 1;
     RaidDirector_NotifyEntityEvent(self, "activated", activator);
 }
+}
+
+bool RaidHats_SetObserverInverted(edict_t *hat, bool inverted, edict_t *activator)
+{
+    if (!hat || !hat->classname || Q_strcasecmp(hat->classname, "raid_hat") || hat->mass != 3)
+        return false;
+    hat->style_on = inverted ? 1 : 0;
+    for (applied_hat_t &applied : applied_hats)
+        if (SameRef(applied.hat, hat))
+            applied.observation_initialized = false;
+    RaidDirector_NotifyEntityEvent(hat, inverted ? "observation_inverted" : "observation_normal", activator);
+    return true;
 }
 
 void SP_raid_hat(edict_t *ent)
@@ -292,6 +349,7 @@ void RaidHats_UpdateHUD(edict_t *player)
         return;
     player->client->ps.stats[STAT_RAID_HAT_NAME] = 0;
     player->client->ps.stats[STAT_RAID_HAT_HEALTH] = 0;
+    player->client->ps.stats[STAT_RAID_HAT_SHIELD] = 0;
     player->client->ps.stats[STAT_RAID_HAT_RANK] = 0;
     if (player->deadflag || player->client->resp.spectator)
         return;
@@ -335,6 +393,9 @@ void RaidHats_UpdateHUD(edict_t *player)
     player->client->ps.stats[STAT_RAID_HAT_NAME] = static_cast<int16_t>(best_hat->noise_index + 1);
     player->client->ps.stats[STAT_RAID_HAT_HEALTH] = static_cast<int16_t>(std::clamp(
         best_monster->health * 1000 / std::max(1, best_monster->max_health), 0, 1000));
+    player->client->ps.stats[STAT_RAID_HAT_SHIELD] = static_cast<int16_t>(std::clamp(
+        best_monster->monsterinfo.power_armor_power * 1000 /
+            std::max(1, best_monster->monsterinfo.max_power_armor_power), 0, 1000));
     player->client->ps.stats[STAT_RAID_HAT_RANK] = static_cast<int16_t>(std::clamp(best_hat->style, 0, 3));
 }
 

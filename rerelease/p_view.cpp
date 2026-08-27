@@ -660,6 +660,16 @@ void SV_CalcBlend(edict_t *ent)
 	}
 	// PGM
 
+	if (ent->client->raid_flash_end > level.time)
+	{
+		float alpha = ent->client->raid_flash_alpha;
+		if (level.time >= ent->client->raid_flash_fade_at && ent->client->raid_flash_end > ent->client->raid_flash_fade_at)
+			alpha *= (ent->client->raid_flash_end - level.time).seconds() /
+				(ent->client->raid_flash_end - ent->client->raid_flash_fade_at).seconds();
+		G_AddBlend(ent->client->raid_flash_color[0], ent->client->raid_flash_color[1],
+			ent->client->raid_flash_color[2], std::clamp(alpha, 0.0f, 1.0f), ent->client->ps.screen_blend);
+	}
+
 	// add for damage
 	if (ent->client->damage_alpha > 0)
 		G_AddBlend(ent->client->damage_blend[0], ent->client->damage_blend[1], ent->client->damage_blend[2], ent->client->damage_alpha, ent->client->ps.damage_blend);

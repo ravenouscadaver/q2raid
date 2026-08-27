@@ -4,6 +4,8 @@
 #include "g_local.h"
 #include "bots/bot_includes.h"
 #include "raid_director.h"
+#include "raid_reconstruction.h"
+#include "raid_bots.h"
 
 CHECK_GCLIENT_INTEGRITY;
 CHECK_EDICT_INTEGRITY;
@@ -844,6 +846,8 @@ inline void G_RunFrame_(bool main_loop)
 
 	level.time += FRAME_TIME_MS;
 	RaidDirector_RunFrame();
+	RaidReconstruction_RunFrame();
+	RaidBots_RunFrame();
 
 	if (level.intermission_fading)
 	{

@@ -1772,11 +1772,23 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
             const float x = center_x - width * 0.5f;
             const float y = name_y + cgi.SCR_FontLineHeight(scale) + 2.0f * scale;
             const float health = std::clamp<int>(ps->stats[STAT_RAID_HAT_HEALTH], 0, 1000) / 1000.0f;
+            const float shield = std::clamp<int>(ps->stats[STAT_RAID_HAT_SHIELD], 0, 1000) / 1000.0f;
             cgi.SCR_DrawColorPic(x - scale, y - scale, width + 2.0f * scale, height + 2.0f * scale,
                 "_white", rgba_t{ 0, 0, 0, 220 });
             cgi.SCR_DrawColorPic(x, y, width, height, "_white", rgba_t{ 48, 48, 48, 230 });
             if (health > 0.0f)
                 cgi.SCR_DrawColorPic(x, y, width * health, height, "_white", rank_colors[rank]);
+            if (shield > 0.0f)
+            {
+                constexpr int segments = 12;
+                const float shield_y = y - 4.0f * scale;
+                const float gap = 1.0f * scale;
+                const float segment_width = (width - gap * (segments - 1)) / segments;
+                const int active_segments = static_cast<int>(std::ceil(shield * segments));
+                for (int segment = 0; segment < active_segments; ++segment)
+                    cgi.SCR_DrawColorPic(x + segment * (segment_width + gap), shield_y,
+                        segment_width, 2.0f * scale, "_white", rgba_t{ 96, 208, 255, 235 });
+            }
         }
 
         const char *raid_message = cgi.get_configstring(CONFIG_RAID_MESSAGE);

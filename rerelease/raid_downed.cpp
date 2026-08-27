@@ -9,6 +9,7 @@ struct downed_state_t
 {
     bool downed = false;
     int saved_health = 1;
+    int damage_buffer = 0;
     int frame = FRAME_crawl1;
     gtime_t next_frame;
     gtime_t damage_grace_until;
@@ -28,11 +29,13 @@ bool ValidPlayer(edict_t *player)
 
 void EnterDowned(edict_t *player)
 {
+    static cvar_t *downed_buffer = gi.cvar("raid_downed_damage_buffer", "25", CVAR_NOFLAGS);
     downed_state_t &state = State(player);
     if (state.downed || player->deadflag)
         return;
     state.downed = true;
     state.saved_health = std::max(1, player->max_health / 4);
+    state.damage_buffer = std::max(0, downed_buffer->integer);
     state.frame = FRAME_crawl1;
     state.next_frame = level.time + 100_ms;
     // Shotguns and similar attacks arrive as several T_Damage calls. Keep the
@@ -75,6 +78,17 @@ bool RaidDowned_InterceptFatalDamage(edict_t *player)
             player->health = 1;
             return true;
         }
+        // Downed durability is deliberately separate from inventory armour so
+        // revival cannot grant, consume, or corrupt the player's real armour.
+        // health was one before this hit, so the negative result tells us how
+        // much of the dedicated buffer this attack consumed.
+        const int damage = std::max(1, 1 - player->health);
+        State(player).damage_buffer -= damage;
+        if (State(player).damage_buffer > 0)
+        {
+            player->health = 1;
+            return true;
+        }
         return false;
     }
     if (player->health <= -25)
@@ -98,10 +112,12 @@ void RaidDowned_ToggleTest(edict_t *player)
 
 void RaidDowned_FilterCommand(edict_t *player, usercmd_t &cmd)
 {
+    static cvar_t *crawl_scale = gi.cvar("raid_downed_crawl_scale", "0.35", CVAR_NOFLAGS);
     if (!RaidDowned_IsDown(player))
         return;
-    cmd.forwardmove *= 0.2f;
-    cmd.sidemove *= 0.2f;
+    const float scale = std::clamp(crawl_scale->value, 0.05f, 1.0f);
+    cmd.forwardmove *= scale;
+    cmd.sidemove *= scale;
     cmd.buttons &= ~BUTTON_ATTACK;
 }
 

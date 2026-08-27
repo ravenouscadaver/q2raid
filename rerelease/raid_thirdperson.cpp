@@ -1,4 +1,5 @@
 #include "g_local.h"
+#include "raid_items.h"
 #include "raid_thirdperson.h"
 
 namespace
@@ -159,9 +160,7 @@ void UpdateHeldModel(edict_t *player)
         held->s.scale = state.held_model_scale;
     }
 
-    vec3_t forward;
-    AngleVectors(player->client->v_angle, forward, nullptr, nullptr);
-    held->s.origin = player->s.origin + (forward * 13.0f) + vec3_t{ 0, 0, 20.0f };
+    held->s.origin = RaidCarry_HeldOrigin(player);
     held->s.angles = { 0, player->client->v_angle[YAW] + 90.0f, 0 };
     gi.linkentity(held);
 }

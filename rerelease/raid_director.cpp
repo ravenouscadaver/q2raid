@@ -7,6 +7,8 @@
 #include "raid_monsters.h"
 #include "raid_hats.h"
 #include "raid_downed.h"
+#include "raid_reconstruction.h"
+#include "raid_bots.h"
 
 #include "json/json.h"
 
@@ -285,7 +287,12 @@ void RaidDirector_RestoreEntitySnapshots()
 void RaidDirector_ClearTransientState()
 {
     for (edict_t *player : active_players())
+    {
         RaidDirector_ClearStatusHUD(player);
+        player->client->raid_flash_fade_at = 0_ms;
+        player->client->raid_flash_end = 0_ms;
+        player->client->raid_flash_alpha = 0.0f;
+    }
     color_cycles.clear();
     player_statuses.clear();
     queued_events.clear();
@@ -327,6 +334,8 @@ void RaidDirector_ClearDocument()
     RaidMonsters_Reset();
     RaidHats_Reset();
     RaidDowned_ResetAll();
+    RaidReconstruction_Reset();
+    RaidBots_Reset();
     RaidDirector_ClearTransientState();
 
     director.loaded = false;
@@ -548,6 +557,11 @@ void RaidDirector_SetField(const std::string &targetname, const std::string &fie
             entity->sounds = value.asBool() ? 1 : 0;
             ++matches;
         }
+        else if (field == "observer_inverted" && value.isBool() && entity->classname && !Q_strcasecmp(entity->classname, "raid_hat"))
+        {
+            if (RaidHats_SetObserverInverted(entity, value.asBool()))
+                ++matches;
+        }
         else
         {
             gi.Com_PrintFmt("[raid] unsupported field write '{}.{}'\n", targetname, field);
@@ -584,6 +598,26 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
             const std::string target = operation.get("target", "").asString();
             if (!RaidMonsters_SetEnabled(target.c_str(), operation.get("enabled", true).asBool()))
                 gi.Com_PrintFmt("[raid] monster door target '{}' not found\n", target);
+        }
+        else if (op == "bot_move_to")
+        {
+            if (!RaidBots_MoveTo(operation.get("bot", "first").asString().c_str(),
+                operation.get("target", "").asString().c_str(), operation.get("tolerance", 0.0f).asFloat()))
+                gi.Com_PrintFmt("[raid] bot_move_to could not resolve bot '{}' or goal '{}'\n",
+                    operation.get("bot", "first").asString(), operation.get("target", "").asString());
+        }
+        else if (op == "bot_follow_activator")
+        {
+            if (!RaidBots_Follow(operation.get("bot", "first").asString().c_str(), activator))
+                gi.Com_Print("[raid] bot_follow_activator could not resolve bot or activator\n");
+        }
+        else if (op == "bot_operate_gadget")
+        {
+            if (!RaidBots_Operate(operation.get("bot", "first").asString().c_str(),
+                operation.get("goal", "").asString().c_str(), operation.get("target", "").asString().c_str(),
+                operation.get("tolerance", 0.0f).asFloat(), operation.get("duration", 0.0f).asFloat(),
+                operation.get("hold", true).asBool()))
+                gi.Com_Print("[raid] bot_operate_gadget could not resolve its bot, goal, or gadget\n");
         }
         else if (op == "post_message")
         {
@@ -626,6 +660,25 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
                 {
                     player->client->quake_time = std::max(player->client->quake_time, level.time + gtime_t::from_sec(duration));
                     player->client->raid_shake_intensity = std::max(player->client->raid_shake_intensity, intensity);
+                }
+        }
+        else if (op == "screen_flash")
+        {
+            rgba_t color = rgba_white;
+            RaidDirector_ReadColor(operation["color"], color);
+            const float hold = std::max(0.0f, operation.get("duration", 0.15f).asFloat());
+            const float fade = std::max(0.0f, operation.get("fade", 1.0f).asFloat());
+            const float alpha = std::clamp(operation.get("intensity", color.a / 255.0f).asFloat(), 0.0f, 1.0f);
+            const bool all = operation.get("scope", "activator").asString() == "all";
+            for (edict_t *player : active_players())
+                if (all || player == activator)
+                {
+                    player->client->raid_flash_color = {
+                        color.r / 255.0f, color.g / 255.0f, color.b / 255.0f
+                    };
+                    player->client->raid_flash_alpha = alpha;
+                    player->client->raid_flash_fade_at = level.time + gtime_t::from_sec(hold);
+                    player->client->raid_flash_end = player->client->raid_flash_fade_at + gtime_t::from_sec(fade);
                 }
         }
         else if (op == "play_sound")
@@ -687,7 +740,8 @@ bool RaidDirector_ValidateOperations(const Json::Value &operations, const std::s
     static const std::vector<std::string> known_ops = {
         "fire_target", "disable_entity", "set_field", "post_message", "post_encounter_message",
         "apply_status", "clear_status", "damage_player", "kill_player", "screen_shake",
-        "play_sound", "color_cycle", "set_monster_door"
+        "screen_flash", "play_sound", "color_cycle", "set_monster_door", "bot_move_to",
+        "bot_follow_activator", "bot_operate_gadget"
     };
 
     for (Json::ArrayIndex i = 0; i < operations.size(); ++i)
@@ -706,7 +760,8 @@ bool RaidDirector_ValidateOperations(const Json::Value &operations, const std::s
             return false;
         }
 
-        if ((op == "fire_target" || op == "disable_entity" || op == "set_field" || op == "set_monster_door") &&
+        if ((op == "fire_target" || op == "disable_entity" || op == "set_field" || op == "set_monster_door" ||
+            op == "bot_move_to" || op == "bot_operate_gadget") &&
             (!operation["target"].isString() || operation["target"].asString().empty()))
         {
             error = fmt::format("{}[{}] op '{}' requires target", context, i, op);
@@ -715,6 +770,11 @@ bool RaidDirector_ValidateOperations(const Json::Value &operations, const std::s
         if (op == "set_monster_door" && operation.isMember("enabled") && !operation["enabled"].isBool())
         {
             error = fmt::format("{}[{}] set_monster_door enabled must be boolean", context, i);
+            return false;
+        }
+        if (op == "bot_operate_gadget" && (!operation["goal"].isString() || operation["goal"].asString().empty()))
+        {
+            error = fmt::format("{}[{}] bot_operate_gadget requires goal", context, i);
             return false;
         }
         if ((op == "post_message" || op == "post_encounter_message") && !operation["text"].isString())
@@ -731,6 +791,15 @@ bool RaidDirector_ValidateOperations(const Json::Value &operations, const std::s
         {
             error = fmt::format("{}[{}] play_sound requires sound", context, i);
             return false;
+        }
+        if (op == "screen_flash" && operation.isMember("color"))
+        {
+            rgba_t color;
+            if (!RaidDirector_ReadColor(operation["color"], color))
+            {
+                error = fmt::format("{}[{}] screen_flash color must be [r,g,b] or [r,g,b,a] bytes", context, i);
+                return false;
+            }
         }
         if (op == "color_cycle" && (!operation["targets"].isArray() || !operation["colors"].isArray()))
         {
@@ -1199,6 +1268,8 @@ bool RaidDirector_ResetEncounter()
     RaidMonsters_Reset();
     RaidHats_Reset();
     RaidDowned_ResetAll();
+    RaidReconstruction_Reset();
+    RaidBots_Reset();
     RaidDirector_ClearTransientState();
     director.state = director.document["initial_state"].asString();
     RaidDirector_ExecuteOperations(director.document["reset"], "encounter reset", nullptr);
