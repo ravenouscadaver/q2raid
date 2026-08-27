@@ -2,6 +2,9 @@
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
 #include "m_player.h"
+#include "raid_thirdperson.h"
+#include "raid_items.h"
+#include "raid_downed.h"
 
 void SelectNextItem(edict_t *ent, item_flags_t itflags, bool menu = true)
 {
@@ -640,6 +643,8 @@ void Cmd_Use_f(edict_t *ent)
 		return;
 	}
 	index = it->id;
+	if (it->flags & IF_WEAPON)
+		RaidCarry_Drop(ent);
 
 	// Paril: Use_Weapon handles weapon availability
 	if (!(it->flags & IF_WEAPON) && !ent->client->pers.inventory[index])
@@ -671,6 +676,7 @@ void Cmd_Drop_f(edict_t *ent)
 
 	if (ent->health <= 0 || ent->deadflag)
 		return;
+	RaidCarry_Drop(ent);
 
 	// ZOID--special case for tech powerups
 	if (Q_strcasecmp(gi.args(), "tech") == 0)
@@ -821,6 +827,8 @@ Cmd_WeapPrev_f
 */
 void Cmd_WeapPrev_f(edict_t *ent)
 {
+	RaidCarry_Drop(ent);
+
 	gclient_t *cl;
 	item_id_t  i, index;
 	gitem_t	*it;
@@ -865,6 +873,8 @@ Cmd_WeapNext_f
 */
 void Cmd_WeapNext_f(edict_t *ent)
 {
+	RaidCarry_Drop(ent);
+
 	gclient_t *cl;
 	item_id_t  i, index;
 	gitem_t	*it;
@@ -911,6 +921,9 @@ Cmd_WeapLast_f
 */
 void Cmd_WeapLast_f(edict_t *ent)
 {
+	if (RaidCarry_Drop(ent))
+		return;
+
 	gclient_t *cl;
 	int		   index;
 	gitem_t	*it;
@@ -943,6 +956,9 @@ Cmd_InvDrop_f
 */
 void Cmd_InvDrop_f(edict_t *ent)
 {
+	if (RaidCarry_Drop(ent))
+		return;
+
 	gitem_t *it;
 
 	if (ent->health <= 0 || ent->deadflag)
@@ -1712,6 +1728,10 @@ void ClientCommand(edict_t *ent)
 		Cmd_Wave_f(ent);
 	else if (Q_strcasecmp(cmd, "playerlist") == 0)
 		Cmd_PlayerList_f(ent);
+	else if (Q_strcasecmp(cmd, "raid_thirdperson") == 0)
+		RaidThirdPerson_Toggle(ent);
+	else if (Q_strcasecmp(cmd, "raid_downed_test") == 0)
+		RaidDowned_ToggleTest(ent);
 	// ZOID
 	else if (Q_strcasecmp(cmd, "team") == 0)
 		CTFTeam_f(ent);

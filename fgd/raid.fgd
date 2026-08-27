@@ -1,0 +1,137 @@
+// q2raid mapper entities
+// Include this file from quake2.fgd. Do not add it separately in JACK.
+// Requires the parent FGD to define Appearflags, Targetname and Target.
+
+@PointClass base(Appearflags, Targetname) flags(Angle) color(64 192 255) size(-16 -16 -16, 16 16 16) = raid_item : "Carryable raid item"
+[
+    item_type(choices) : "Item type" : "power_core" =
+    [
+        "power_core" : "Power Core"
+        "bfg_relic" : "BFG10K Weapon Relic"
+        "custom" : "Custom JSON-defined item"
+    ]
+    carry_mode(choices) : "Carry behaviour" : 0 =
+    [
+        0 : "Automatic from item type"
+        1 : "Heavy object: third person and weapons blocked"
+        2 : "Weapon relic: first person and configured weapon equipped"
+    ]
+    weapon(string) : "Weapon classname for weapon relic" : "weapon_bfg"
+    encumber_scale(float) : "Movement multiplier while carried" : 0.45
+    model(studio) : "World, carried and deposited model" : "models/items/keys/power/tris.md2"
+    held_model(studio) : "Optional model shown while carried; blank uses world model" : ""
+    scale(float) : "Model scale" : 1
+
+    carry_status(string) : "Status conferred to carrier (power cores default to volatile; use none to disable)" : ""
+    status_duration(float) : "Conferred status duration; 0 uses JSON/default duration" : 0
+    status_policy(choices) : "Status reapplication policy" : "refresh" =
+    [
+        "refresh" : "Refresh"
+        "replace" : "Replace"
+        "extend" : "Extend"
+        "stack" : "Stack"
+        "ignore" : "Ignore if already present"
+    ]
+    clear_status_on_drop(choices) : "Remove conferred status when relinquished" : 1 =
+    [
+        0 : "No"
+        1 : "Yes"
+    ]
+]
+
+@PointClass base(Appearflags, Targetname) flags(Angle) color(255 160 32) size(-8 -8 -8, 8 8 8) = raid_gadget : "Reusable raid gadget anchor"
+[
+    gadget_type(choices) : "Gadget role" : "core_socket" =
+    [
+        "core_socket" : "Core Socket"
+        "relic_socket" : "Relic Socket"
+        "anchor" : "Generic JSON-controlled anchor"
+    ]
+    accepts(string) : "Accepted raid_item item_type" : "power_core"
+    order(integer) : "Selection order within socket group" : 1
+    team(string) : "Socket group name"
+    model(studio) : "Optional occupied presentation model" : ""
+    scale(float) : "Optional model scale" : 1
+]
+
+@SolidClass base(Appearflags, Targetname, Target) color(255 128 32) = trigger_raid_deposit : "Deposit the player's carried raid item"
+[
+    target(target_destination) : "Socket group (matches raid_gadget team)"
+]
+
+@PointClass base(Appearflags, Targetname, Target) color(80 255 180) size(-6 -6 -6, 6 6 6) = raid_hovertext : "Crosshair hover message and JSON-event marker"
+[
+    text(string) : "Hover text; leave blank for JSON-only delivery" : ""
+    hover_radius(float) : "Aim radius around marker, in world units" : 24
+    hover_distance(float) : "Absolute maximum activation distance" : 256
+    require_los(choices) : "Require unobstructed world line of sight" : 1 =
+    [
+        0 : "No"
+        1 : "Yes"
+    ]
+    target(target_destination) : "Optional entity to follow or describe"
+]
+
+@PointClass base(Appearflags, Targetname, Target) color(255 80 80) size(-12 -12 -12, 12 12 12) = raid_monster_door : "Director-controlled deployment group"
+[
+    target(string) : "Accepted roster slots: comma-separated targetnames on editor-placed monster_* templates"
+    pathtarget(target_destination) : "Optional first path_corner or point_combat after deployment"
+
+    deploy_interval(float) : "Seconds between releasing roster members" : 0.5
+    initial_count(integer) : "Number created when activated; 0 uses min_active, then max_active, then 1" : 0
+    min_active(integer) : "Population floor used by Maintain mode" : 0
+    max_active(integer) : "Maximum simultaneously active monsters; 0 is unlimited" : 0
+    wave_size(integer) : "Fresh monsters created per replacement wave; 0 uses max_active, then 1" : 0
+    replenish_delay(float) : "Delay before replenishment" : 3
+    replenish_mode(choices) : "Population behaviour" : 0 =
+    [
+        0 : "None: create initial deployment once"
+        1 : "Maintain min_active with fresh monsters"
+        2 : "Create replacement wave after active population is killed"
+    ]
+
+    leash_radius(float) : "Maximum pursuit distance from this controller; 0 disables leash" : 0
+    leash_return_radius(float) : "Distance from controller considered returned" : 64
+    leash_grace(float) : "Seconds outside leash before forced return" : 1
+    wake_mode(choices) : "How released monsters acquire players" : 1 =
+    [
+        0 : "Preserve mapper-authored wake behaviour"
+        1 : "Wake and seek nearest player"
+        2 : "Follow pathtarget before normal combat"
+    ]
+]
+
+@PointClass base(Appearflags, Targetname, Target) color(255 180 40) size(-12 -12 -12, 12 12 12) = raid_hat : "Reusable raid metadata wrapper for named monster groups"
+[
+    spawnflags(flags) =
+    [
+        1 : "START_DISABLED" : 0
+    ]
+    target(target_destination) : "Monster selector: matches a monster raid_hat key, or targetname for whole-group wrapping"
+    message(string) : "Display name shown while aiming at the monster" : "RAID TARGET"
+    display_distance(float) : "Maximum name/health presentation distance" : 1024
+    rank(choices) : "Raid rank / test shell" : 0 =
+    [
+        0 : "Normal"
+        1 : "Elite (red shell)"
+        2 : "Ultra (blue shell)"
+        3 : "Boss (purple shell)"
+    ]
+    health(integer) : "Absolute health override; 0 preserves base health" : 0
+    raid_health_multiplier(float) : "Base-health multiplier when no absolute override is set" : 1
+    raid_monster_scale(float) : "Physical/model scale; 0 or 1 preserves base scale" : 1
+    raid_ai_mode(choices) : "Temporary AI test mode" : 0 =
+    [
+        0 : "Normal"
+        1 : "Dunce: awake but non-hostile"
+        2 : "Dumb hat: frozen and non-hostile"
+        3 : "Observer locked: active only while unseen"
+    ]
+    start_pose(integer) : "Safe offset within the monster's standing animation" : 0
+    freeze_delay(float) : "Observer-lock delay before fully freezing" : 0.12
+    twitch_chance(float) : "Chance per watched second to advance one frame (0-1)" : 0.02
+    model(studio) : "Optional attached hat/head/test model"
+    attachment_offset(string) : "Model offset: forward right up" : "0 0 32"
+    attachment_angles(string) : "Model angle offset: pitch yaw roll" : "0 0 0"
+    scale(float) : "Attached model scale" : 1
+]

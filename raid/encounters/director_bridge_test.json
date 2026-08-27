@@ -1,0 +1,22 @@
+{
+  "encounter": "director_bridge_test",
+  "initial_state": "lights_off",
+  "states": {
+    "lights_off": {
+      "enter": []
+    },
+    "lights_on": {
+      "enter": [
+        {
+          "op": "set_state",
+          "group": "test_lights",
+          "value": "on"
+        },
+        {
+          "op": "fire_target",
+          "target": "test_door"
+        }
+      ]
+    }
+  }
+}

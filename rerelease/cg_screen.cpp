@@ -1729,7 +1729,113 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
 
     // draw HUD
     if (!cl_skipHud->integer && !(ps->stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD))
+    {
         CG_ExecuteLayoutString(cgi.get_configstring(CS_STATUSBAR), hud_vrect, hud_safe, scale, playernum, ps);
+
+        constexpr std::array<player_stat_t, 4> status_stats = {
+            STAT_RAID_STATUS, STAT_RAID_STATUS_2, STAT_RAID_STATUS_3, STAT_RAID_STATUS_4
+        };
+        constexpr std::array<player_stat_t, 4> status_time_stats = {
+            STAT_RAID_STATUS_TIME, STAT_RAID_STATUS_TIME_2, STAT_RAID_STATUS_TIME_3, STAT_RAID_STATUS_TIME_4
+        };
+        int status_row = 0;
+        for (size_t slot = 0; slot < status_stats.size(); ++slot)
+        {
+            const int code = ps->stats[status_stats[slot]];
+            if (!code)
+                continue;
+            const char *label = code == 1 ? "VOLATILE" : code == 2 ? "DOOMSDAY" : "STATUS";
+            const std::string status = fmt::format("{}  {:02}", label, std::max<int16_t>(0, ps->stats[status_time_stats[slot]]));
+            cgi.SCR_DrawFontString(status.c_str(),
+                (hud_vrect.x + (hud_vrect.width / 2)) * scale,
+                (hud_vrect.y + hud_vrect.height - 52 - (status_row * 12)) * scale,
+                scale, code == 1 ? rgba_t{ 255, 196, 64, 255 } : rgba_t{ 255, 64, 64, 255 }, true, text_align_t::CENTER);
+            ++status_row;
+        }
+
+        const bool terminal_active = ps->stats[STAT_RAID_HAT_NAME] == 33;
+        if (terminal_active)
+        {
+            const float terminal_height = hud_vrect.height * 0.94f * scale;
+            const float terminal_width = terminal_height * (1224.0f / 1285.0f);
+            const float terminal_x = (hud_vrect.x + hud_vrect.width * 0.5f) * scale - terminal_width * 0.5f;
+            const float terminal_y = (hud_vrect.y + hud_vrect.height * 0.5f) * scale - terminal_height * 0.5f;
+            cgi.SCR_DrawColorPic(hud_vrect.x * scale, hud_vrect.y * scale,
+                hud_vrect.width * scale, hud_vrect.height * scale, "_white", rgba_t{ 0, 0, 0, 185 });
+            cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height,
+                "/raid/ui/terminal_grunge/terminal_chassis.png");
+            cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height,
+                "/raid/ui/terminal_grunge/terminal_screen.png");
+            cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height,
+                "/raid/ui/terminal_grunge/terminal_controls_puzzle_v2.png");
+
+            const float button_x = (hud_vrect.x + hud_vrect.width * 0.38f) * scale;
+            const float button_y = (hud_vrect.y + hud_vrect.height * 0.38f) * scale;
+            const float button_w = hud_vrect.width * 0.24f * scale;
+            const float button_h = hud_vrect.height * 0.17f * scale;
+            cgi.SCR_DrawColorPic(button_x, button_y, button_w, button_h, "_white", rgba_t{ 20, 48, 30, 215 });
+            cgi.SCR_DrawFontString("COMPLETE", button_x + button_w * 0.5f,
+                button_y + button_h * 0.5f - cgi.SCR_FontLineHeight(scale) * 0.5f,
+                scale, rgba_t{ 120, 255, 150, 255 }, true, text_align_t::CENTER);
+
+            const float cursor_x = (hud_vrect.x + hud_vrect.width *
+                (std::clamp<int>(ps->stats[STAT_RAID_HAT_HEALTH], 0, 1000) / 1000.0f)) * scale;
+            const float cursor_y = (hud_vrect.y + hud_vrect.height *
+                (std::clamp<int>(ps->stats[STAT_RAID_HAT_RANK], 0, 1000) / 1000.0f)) * scale;
+            cgi.SCR_DrawColorPic(cursor_x - 7.0f * scale, cursor_y - 1.0f * scale,
+                14.0f * scale, 2.0f * scale, "_white", rgba_t{ 255, 220, 96, 255 });
+            cgi.SCR_DrawColorPic(cursor_x - 1.0f * scale, cursor_y - 7.0f * scale,
+                2.0f * scale, 14.0f * scale, "_white", rgba_t{ 255, 220, 96, 255 });
+        }
+
+        const int hat_name_slot = ps->stats[STAT_RAID_HAT_NAME] - 1;
+        if (!terminal_active && hat_name_slot >= 0 && hat_name_slot < 32)
+        {
+            const int packed_rank = std::max<int>(0, ps->stats[STAT_RAID_HAT_RANK]);
+            const int rank = std::clamp(packed_rank & 3, 0, 3);
+            const bool has_shield = (packed_rank & (1 << 14)) != 0;
+            constexpr std::array<rgba_t, 4> rank_colors = {
+                rgba_t{ 255, 255, 255, 255 }, rgba_t{ 255, 80, 64, 255 },
+                rgba_t{ 80, 180, 255, 255 }, rgba_t{ 210, 96, 255, 255 }
+            };
+            const char *name = cgi.get_configstring(CONFIG_RAID_HAT_NAME + hat_name_slot);
+            const float center_x = (hud_vrect.x + hud_vrect.width * 0.5f) * scale;
+            const float name_y = (hud_vrect.y + hud_vrect.height * 0.5f + 42.0f) * scale;
+            cgi.SCR_DrawFontString(name && *name ? name : "RAID TARGET", center_x, name_y,
+                scale, rank_colors[rank], true, text_align_t::CENTER);
+
+            const float width = 144.0f * scale;
+            const float height = 5.0f * scale;
+            const float x = center_x - width * 0.5f;
+            const float y = name_y + cgi.SCR_FontLineHeight(scale) + 2.0f * scale;
+            const float health = std::clamp<int>(ps->stats[STAT_RAID_HAT_HEALTH], 0, 1000) / 1000.0f;
+            const float shield = std::clamp((packed_rank & 0x3ffc) >> 2, 0, 1000) / 1000.0f;
+            cgi.SCR_DrawColorPic(x - scale, y - scale, width + 2.0f * scale, height + 2.0f * scale,
+                "_white", rgba_t{ 0, 0, 0, 220 });
+            cgi.SCR_DrawColorPic(x, y, width, height, "_white", rgba_t{ 48, 48, 48, 230 });
+            if (health > 0.0f)
+                cgi.SCR_DrawColorPic(x, y, width * health, height, "_white", rank_colors[rank]);
+            if (has_shield)
+            {
+                constexpr int segments = 12;
+                const float shield_y = y - 4.0f * scale;
+                const float gap = 1.0f * scale;
+                const float segment_width = (width - gap * (segments - 1)) / segments;
+                const int active_segments = static_cast<int>(std::ceil(shield * segments));
+                for (int segment = 0; segment < segments; ++segment)
+                    cgi.SCR_DrawColorPic(x + segment * (segment_width + gap), shield_y,
+                        segment_width, 2.0f * scale, "_white",
+                        segment < active_segments ? rgba_t{ 96, 208, 255, 235 } : rgba_t{ 25, 48, 60, 190 });
+            }
+        }
+
+        const char *raid_message = cgi.get_configstring(CONFIG_RAID_MESSAGE);
+        if (raid_message && *raid_message)
+            cgi.SCR_DrawFontString(raid_message,
+                (hud_vrect.x + 100) * scale,
+                (hud_vrect.y + hud_vrect.height - 76) * scale,
+                scale, rgba_white, true, text_align_t::CENTER);
+    }
 
     // draw centerprint string
     CG_CheckDrawCenterString(ps, hud_vrect, hud_safe, isplit, scale);

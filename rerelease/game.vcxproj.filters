@@ -35,6 +35,13 @@
     <ClInclude Include="m_tank.h" />
     <ClInclude Include="q_std.h" />
     <ClInclude Include="q_vec3.h" />
+    <ClInclude Include="raid_director.h" />
+    <ClInclude Include="raid_thirdperson.h" />
+    <ClInclude Include="raid_items.h" />
+    <ClInclude Include="raid_monsters.h" />
+    <ClInclude Include="raid_reconstruction.h" />
+    <ClInclude Include="raid_bots.h" />
+    <ClInclude Include="raid_terminal.h" />
     <ClInclude Include="bots\bot_debug.h">
       <Filter>bots</Filter>
     </ClInclude>
@@ -133,6 +140,15 @@
     <ClCompile Include="p_view.cpp" />
     <ClCompile Include="p_weapon.cpp" />
     <ClCompile Include="q_std.cpp" />
+    <ClCompile Include="raid_director.cpp" />
+    <ClCompile Include="raid_thirdperson.cpp" />
+    <ClCompile Include="raid_items.cpp" />
+    <ClCompile Include="raid_monsters.cpp" />
+    <ClCompile Include="raid_reconstruction.cpp" />
+    <ClCompile Include="raid_bots.cpp" />
+    <ClCompile Include="raid_terminal.cpp" />
+    <ClCompile Include="raid_hats.cpp" />
+    <ClCompile Include="raid_downed.cpp" />
     <ClCompile Include="bots\bot_debug.cpp">
       <Filter>bots</Filter>
     </ClCompile>

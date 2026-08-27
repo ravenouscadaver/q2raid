@@ -1,0 +1,18 @@
+Q2RAID MERGED JACK/RERELEASE FGD
+
+1. Close JACK.
+2. Copy q2raid_merged.fgd into JACK/quake2/.
+3. In JACK Game Configurations, add only q2raid_merged.fgd.
+4. Remove the experimental FGD entries supplied during the failed recovery attempts.
+5. Restart JACK.
+
+Merge policy:
+- Rerelease definitions own entity keys, flags, choices and bounds.
+- The mapper-supplied JACK definitions contribute studio models, skins, offsets,
+  sequences, icons and other editor presentation metadata.
+- Each classname is defined once.
+- Q2Raid entities are included directly.
+- No external @include files are required.
+
+The shared Monsters base is not modified with a raid_hat property. Attach hats
+through the monster targetname, which is the already-tested working path.
