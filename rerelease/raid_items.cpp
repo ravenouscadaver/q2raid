@@ -440,7 +440,7 @@ vec3_t RaidCarry_HeldOrigin(edict_t *player)
 trace_t RaidCarry_PmoveTrace(gvec3_cref_t start, gvec3_cptr_t mins, gvec3_cptr_t maxs,
     gvec3_cref_t end, const edict_t *passent, contents_t contentmask)
 {
-    trace_t body = gi.trace(start, mins, maxs, end, passent, contentmask);
+    trace_t body = gi.trace(start, *mins, *maxs, end, passent, contentmask);
     edict_t *player = const_cast<edict_t *>(passent);
     if (!RaidCarry_IsCarrying(player))
         return body;

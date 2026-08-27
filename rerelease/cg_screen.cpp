@@ -1756,7 +1756,8 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
         const int hat_name_slot = ps->stats[STAT_RAID_HAT_NAME] - 1;
         if (hat_name_slot >= 0 && hat_name_slot < 32)
         {
-            const int rank = std::clamp<int>(ps->stats[STAT_RAID_HAT_RANK], 0, 3);
+            const int packed_rank = std::max<int>(0, ps->stats[STAT_RAID_HAT_RANK]);
+            const int rank = std::clamp(packed_rank & 3, 0, 3);
             constexpr std::array<rgba_t, 4> rank_colors = {
                 rgba_t{ 255, 255, 255, 255 }, rgba_t{ 255, 80, 64, 255 },
                 rgba_t{ 80, 180, 255, 255 }, rgba_t{ 210, 96, 255, 255 }
@@ -1772,7 +1773,7 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
             const float x = center_x - width * 0.5f;
             const float y = name_y + cgi.SCR_FontLineHeight(scale) + 2.0f * scale;
             const float health = std::clamp<int>(ps->stats[STAT_RAID_HAT_HEALTH], 0, 1000) / 1000.0f;
-            const float shield = std::clamp<int>(ps->stats[STAT_RAID_HAT_SHIELD], 0, 1000) / 1000.0f;
+            const float shield = std::clamp(packed_rank >> 2, 0, 1000) / 1000.0f;
             cgi.SCR_DrawColorPic(x - scale, y - scale, width + 2.0f * scale, height + 2.0f * scale,
                 "_white", rgba_t{ 0, 0, 0, 220 });
             cgi.SCR_DrawColorPic(x, y, width, height, "_white", rgba_t{ 48, 48, 48, 230 });

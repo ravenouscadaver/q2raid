@@ -271,7 +271,6 @@ enum player_stat_t
 	STAT_RAID_STATUS_TIME_4,
 	STAT_RAID_HAT_NAME,
 	STAT_RAID_HAT_HEALTH,
-	STAT_RAID_HAT_SHIELD,
 	STAT_RAID_HAT_RANK,
 
 	// don't use; just for verification

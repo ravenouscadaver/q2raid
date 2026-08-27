@@ -1,6 +1,7 @@
 #include "g_local.h"
 #include "raid_bots.h"
 #include "raid_director.h"
+#include "bots/bot_exports.h"
 
 #include <algorithm>
 #include <string>
@@ -90,7 +91,7 @@ void Fail(bot_state_t &state, const char *signal)
 
 void SP_raid_bot_goal(edict_t *ent)
 {
-    if (ent->radius <= 0.0f) ent->radius = 24.0f;
+    ent->dmg_radius = st.radius > 0.0f ? st.radius : 24.0f;
     ent->solid = SOLID_NOT;
     ent->movetype = MOVETYPE_NONE;
     ent->svflags |= SVF_NOCLIENT;
@@ -104,7 +105,7 @@ bool RaidBots_MoveTo(const char *bot_name, const char *goal_name, float toleranc
     if (!bot || !goal)
         return false;
     ReplaceState(bot, { Ref(bot), Ref(goal), {}, {}, bot_task_t::move,
-        tolerance > 0.0f ? tolerance : (goal->radius > 0.0f ? goal->radius : 24.0f) });
+        tolerance > 0.0f ? tolerance : (goal->dmg_radius > 0.0f ? goal->dmg_radius : 24.0f) });
     RaidDirector_NotifyEntityEvent(goal, "bot_assigned", bot);
     return true;
 }
@@ -135,7 +136,7 @@ bool RaidBots_Operate(const char *bot_name, const char *goal_name, const char *g
     state.goal = Ref(goal);
     state.gadget = Ref(gadget);
     state.task = bot_task_t::operate;
-    state.tolerance = tolerance > 0.0f ? tolerance : (goal->radius > 0.0f ? goal->radius : 24.0f);
+    state.tolerance = tolerance > 0.0f ? tolerance : (goal->dmg_radius > 0.0f ? goal->dmg_radius : 24.0f);
     state.duration = std::max(0.0f, duration);
     state.hold = hold;
     ReplaceState(bot, std::move(state));
@@ -199,7 +200,7 @@ void RaidBots_RunFrame()
         bot->client->weapon_fire_buffered = false;
         bot->client->latched_buttons &= ~BUTTON_ATTACK;
         bot->client->buttons &= ~BUTTON_ATTACK;
-        gi.Edict_ForceLookAtPoint(bot, gadget->s.origin);
+        Edict_ForceLookAtPoint(bot, gadget->s.origin);
         if (!state.operation_started)
         {
             state.operation_started = level.time;

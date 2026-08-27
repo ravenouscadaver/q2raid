@@ -198,7 +198,7 @@ void UpdateObserverLock(edict_t *hat, applied_hat_t &applied)
     for (edict_t *player : active_players())
         if (PlayerWatches(player, monster, range)) { watched = true; break; }
 
-    const bool should_move = hat->style_on ? watched : !watched;
+    const bool should_move = hat->sounds ? watched : !watched;
     if (!applied.observation_initialized || watched != applied.watched)
     {
         applied.observation_initialized = true;
@@ -276,7 +276,7 @@ USE(raid_hat_use) (edict_t *self, edict_t *, edict_t *activator) -> void
 {
     if (self->count && self->mass == 3)
     {
-        RaidHats_SetObserverInverted(self, !self->style_on, activator);
+        RaidHats_SetObserverInverted(self, !self->sounds, activator);
         return;
     }
     if (self->count)
@@ -290,7 +290,7 @@ bool RaidHats_SetObserverInverted(edict_t *hat, bool inverted, edict_t *activato
 {
     if (!hat || !hat->classname || Q_strcasecmp(hat->classname, "raid_hat") || hat->mass != 3)
         return false;
-    hat->style_on = inverted ? 1 : 0;
+    hat->sounds = inverted ? 1 : 0;
     for (applied_hat_t &applied : applied_hats)
         if (SameRef(applied.hat, hat))
             applied.observation_initialized = false;
@@ -349,7 +349,6 @@ void RaidHats_UpdateHUD(edict_t *player)
         return;
     player->client->ps.stats[STAT_RAID_HAT_NAME] = 0;
     player->client->ps.stats[STAT_RAID_HAT_HEALTH] = 0;
-    player->client->ps.stats[STAT_RAID_HAT_SHIELD] = 0;
     player->client->ps.stats[STAT_RAID_HAT_RANK] = 0;
     if (player->deadflag || player->client->resp.spectator)
         return;
@@ -393,10 +392,11 @@ void RaidHats_UpdateHUD(edict_t *player)
     player->client->ps.stats[STAT_RAID_HAT_NAME] = static_cast<int16_t>(best_hat->noise_index + 1);
     player->client->ps.stats[STAT_RAID_HAT_HEALTH] = static_cast<int16_t>(std::clamp(
         best_monster->health * 1000 / std::max(1, best_monster->max_health), 0, 1000));
-    player->client->ps.stats[STAT_RAID_HAT_SHIELD] = static_cast<int16_t>(std::clamp(
+    const int shield = std::clamp(
         best_monster->monsterinfo.power_armor_power * 1000 /
-            std::max(1, best_monster->monsterinfo.max_power_armor_power), 0, 1000));
-    player->client->ps.stats[STAT_RAID_HAT_RANK] = static_cast<int16_t>(std::clamp(best_hat->style, 0, 3));
+            std::max(1, best_monster->monsterinfo.max_power_armor_power), 0, 1000);
+    player->client->ps.stats[STAT_RAID_HAT_RANK] = static_cast<int16_t>(
+        (shield << 2) | std::clamp(best_hat->style, 0, 3));
 }
 
 void RaidHats_Reset()

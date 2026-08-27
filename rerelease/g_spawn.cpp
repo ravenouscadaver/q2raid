@@ -732,7 +732,7 @@ static const std::initializer_list<field_t> entity_fields = {
 	FIELD_AUTO_NAMED("freeze_delay", delay),
 	FIELD_AUTO_NAMED("release_delay", wait),
 	FIELD_AUTO_NAMED("minimum_move_time", decel),
-	FIELD_AUTO_NAMED("observer_inverted", style_on),
+	FIELD_AUTO_NAMED("observer_inverted", sounds),
 	FIELD_AUTO_NAMED("twitch_chance", random),
 	FIELD_AUTO_NAMED("raid_hat", map),
 	FIELD_AUTO_NAMED("rank", style),
