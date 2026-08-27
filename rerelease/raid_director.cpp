@@ -219,7 +219,7 @@ void RaidDirector_CaptureNewPlayers()
     }
 }
 
-void RaidDirector_OnClientDisconnect(edict_t *player)
+void RaidDirector_RemovePlayerSnapshot(edict_t *player)
 {
     if (!player)
         return;
@@ -1002,6 +1002,11 @@ std::filesystem::path RaidDirector_ResolvePath(const char *path)
         return std::filesystem::path(raid_game_dir->string) / requested;
     return requested;
 }
+}
+
+void RaidDirector_OnClientDisconnect(edict_t *player)
+{
+    RaidDirector_RemovePlayerSnapshot(player);
 }
 
 bool RaidDirector_OnPartyWipe()
