@@ -1,5 +1,6 @@
 #include "g_local.h"
 #include "m_insane.h"
+#include "m_player.h"
 #include "raid_downed.h"
 #include "raid_thirdperson.h"
 
