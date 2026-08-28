@@ -1,6 +1,5 @@
 #include "g_local.h"
 #include "m_insane.h"
-#include "m_player.h"
 #include "raid_downed.h"
 #include "raid_thirdperson.h"
 
@@ -150,10 +149,7 @@ void RaidDowned_Update(edict_t *player)
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
         if (player->deadflag)
         {
-            player->client->anim_priority = ANIM_DEATH;
-            player->s.frame = FRAME_death101;
-            player->client->anim_end = FRAME_death106;
-            player->client->anim_time = level.time + 100_ms;
+            RaidDowned_ForceStandingCorpse(player);
         }
         return;
     }

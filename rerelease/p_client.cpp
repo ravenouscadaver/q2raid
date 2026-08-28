@@ -767,6 +767,16 @@ DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 	gi.linkentity(self);
 }
 
+void RaidDowned_ForceStandingCorpse(edict_t *ent)
+{
+	if (!ent || !ent->client || !ent->deadflag)
+		return;
+	ent->client->anim_priority = ANIM_DEATH;
+	ent->s.frame = FRAME_death101;
+	ent->client->anim_end = FRAME_death106;
+	ent->client->anim_time = level.time + 100_ms;
+}
+
 //=======================================================================
 
 #include <string>

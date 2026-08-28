@@ -2022,6 +2022,7 @@ edict_t	*Drop_Item(edict_t *ent, gitem_t *item);
 void	  SetRespawn(edict_t *ent, gtime_t delay, bool hide_self = true);
 void	  ChangeWeapon(edict_t *ent);
 bool      RaidQuickGrenade_Start(edict_t *ent);
+void      RaidDowned_ForceStandingCorpse(edict_t *ent);
 void	  SpawnItem(edict_t *ent, gitem_t *item);
 void	  Think_Weapon(edict_t *ent);
 item_id_t ArmorIndex(edict_t *ent);
