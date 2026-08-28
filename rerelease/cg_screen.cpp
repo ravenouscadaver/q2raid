@@ -1190,537 +1190,670 @@ static void CG_ExecuteLayoutString (const char *s, vrect_t hud_vrect, vrect_t hu
             // skip to endif
             if (!skip_depth && cgi.CL_ServerFrame() < atoi(token))
             {
-                skip_depth =#]:ó¾í¢G§²ÚîÆ­yÕvel.level_name);
+                skip_depth = true;
+                endif_depth = if_depth;
+            }
 
-	if (level.is_n64)
-	{
-		helpString += G_Fmt("xv 0 yv 54 loc_cstring 1 \"{{}}\" \"{}\" ",  // help 1
-			game.helpmessage1);
-	}
-	else 
-	{
-		int y = 54;
-		if (strlen(game.helpmessage1))
-		{
-			helpString += G_Fmt("xv 0 yv {} loc_cstring2 0 \"$g_pc_primary_objective\" "  // title
-				"xv 0 yv {} loc_cstring 0 \"{}\" ",
-				y,
-				y + 11,
-				game.helpmessage1);
+            continue;
+        }
 
-			y += 58;
-		}
+        if (!strcmp(token, "endif"))
+        {
+            if (skip_depth && (if_depth == endif_depth))
+                skip_depth = false;
 
-		if (strlen(game.helpmessage2))
-		{
-			helpString += G_Fmt("xv 0 yv {} loc_cstring2 0 \"$g_pc_secondary_objective\" "  // title
-				"xv 0 yv {} loc_cstring 0 \"{}\" ",
-				y,
-				y + 11,
-				game.helpmessage2);
-		}
+            if_depth--;
 
-	}
+            if (if_depth < 0)
+                cgi.Com_Error("endif without matching if");
 
-	helpString += G_Fmt("xv 55 yv 164 loc_string2 0 \"{}\" "
-		"xv 265 yv 164 loc_rstring2 1 \"{{}}: {}/{}\" \"$g_pc_goals\" "
-		"xv 55 yv 172 loc_string2 1 \"{{}}: {}/{}\" \"$g_pc_kills\" "
-		"xv 265 yv 172 loc_rstring2 1 \"{{}}: {}/{}\" \"$g_pc_secrets\" ",
-		sk,
-		level.found_goals, level.total_goals,
-		level.killed_monsters, level.total_monsters,
-		level.found_secrets, level.total_secrets);
+            continue;
+        }
 
-	gi.WriteByte(svc_layout);
-	gi.WriteString(helpString.c_str());
-	gi.unicast(ent, true);
+        // localization stuff
+        if (!strcmp(token, "loc_stat_string"))
+        {
+            token = COM_Parse (&s);
+
+            if (!skip_depth)
+            {
+                index = atoi(token);
+                if (index < 0 || index >= MAX_STATS)
+                    cgi.Com_Error("Bad stat_string index");
+                index = ps->stats[index];
+
+                if (cgi.CL_ServerProtocol() <= PROTOCOL_VERSION_3XX)
+                    index = CS_REMAP(index).start / CS_MAX_STRING_LENGTH;
+
+                if (index < 0 || index >= MAX_CONFIGSTRINGS)
+                    cgi.Com_Error("Bad stat_string index");
+                if (!scr_usekfont->integer)
+                    CG_DrawString (x, y, scale, cgi.Localize(cgi.get_configstring(index), nullptr, 0));
+                else
+                    cgi.SCR_DrawFontString(cgi.Localize(cgi.get_configstring(index), nullptr, 0), x, y - (font_y_offset * scale), scale, rgba_white, true, text_align_t::LEFT);
+            }
+            continue;
+        }
+
+        if (!strcmp(token, "loc_stat_rstring"))
+        {
+            token = COM_Parse (&s);
+
+            if (!skip_depth)
+            {
+                index = atoi(token);
+                if (index < 0 || index >= MAX_STATS)
+                    cgi.Com_Error("Bad stat_string index");
+                index = ps->stats[index];
+
+                if (cgi.CL_ServerProtocol() <= PROTOCOL_VERSION_3XX)
+                    index = CS_REMAP(index).start / CS_MAX_STRING_LENGTH;
+
+                if (index < 0 || index >= MAX_CONFIGSTRINGS)
+                    cgi.Com_Error("Bad stat_string index");
+                const char *s = cgi.Localize(cgi.get_configstring(index), nullptr, 0);
+                if (!scr_usekfont->integer)
+                    CG_DrawString (x - (strlen(s) * CONCHAR_WIDTH * scale), y, scale, s);
+                else
+                {
+                    vec2_t size = cgi.SCR_MeasureFontString(s, scale);
+                    cgi.SCR_DrawFontString(s, x - size.x, y - (font_y_offset * scale), scale, rgba_white, true, text_align_t::LEFT);
+                }
+            }
+            continue;
+        }
+        
+        if (!strcmp(token, "loc_stat_cstring"))
+        {
+            token = COM_Parse (&s);
+
+            if (!skip_depth)
+            {
+                index = atoi(token);
+                if (index < 0 || index >= MAX_STATS)
+                    cgi.Com_Error("Bad stat_string index");
+                index = ps->stats[index];
+
+                if (cgi.CL_ServerProtocol() <= PROTOCOL_VERSION_3XX)
+                    index = CS_REMAP(index).start / CS_MAX_STRING_LENGTH;
+
+                if (index < 0 || index >= MAX_CONFIGSTRINGS)
+                    cgi.Com_Error("Bad stat_string index");
+                CG_DrawHUDString (cgi.Localize(cgi.get_configstring(index), nullptr, 0), x, y, hx*2*scale, 0, scale);
+            }
+            continue;
+        }
+
+        if (!strcmp(token, "loc_stat_cstring2"))
+        {
+            token = COM_Parse (&s);
+
+            if (!skip_depth)
+            {
+                index = atoi(token);
+                if (index < 0 || index >= MAX_STATS)
+                    cgi.Com_Error("Bad stat_string index");
+                index = ps->stats[index];
+
+                if (cgi.CL_ServerProtocol() <= PROTOCOL_VERSION_3XX)
+                    index = CS_REMAP(index).start / CS_MAX_STRING_LENGTH;
+
+                if (index < 0 || index >= MAX_CONFIGSTRINGS)
+                    cgi.Com_Error("Bad stat_string index");
+                CG_DrawHUDString (cgi.Localize(cgi.get_configstring(index), nullptr, 0), x, y, hx*2*scale, 0x80, scale);
+            }
+            continue;
+        }
+
+        static char arg_tokens[MAX_LOCALIZATION_ARGS + 1][MAX_TOKEN_CHARS];
+        static const char *arg_buffers[MAX_LOCALIZATION_ARGS];
+
+        if (!strcmp(token, "loc_cstring"))
+        {
+            int32_t num_args = atoi(COM_Parse (&s));
+
+            if (num_args < 0 || num_args >= MAX_LOCALIZATION_ARGS)
+                cgi.Com_Error("Bad loc string");
+
+            // parse base
+            token = COM_Parse (&s);
+            Q_strlcpy(arg_tokens[0], token, sizeof(arg_tokens[0]));
+
+            // parse args
+            for (int32_t i = 0; i < num_args; i++)
+            {
+                token = COM_Parse (&s);
+                Q_strlcpy(arg_tokens[1 + i], token, sizeof(arg_tokens[0]));
+                arg_buffers[i] = arg_tokens[1 + i];
+            }
+
+            if (!skip_depth)
+                CG_DrawHUDString (cgi.Localize(arg_tokens[0], arg_buffers, num_args), x, y, hx*2*scale, 0, scale);
+            continue;
+        }
+
+        if (!strcmp(token, "loc_string"))
+        {
+            int32_t num_args = atoi(COM_Parse (&s));
+
+            if (num_args < 0 || num_args >= MAX_LOCALIZATION_ARGS)
+                cgi.Com_Error("Bad loc string");
+
+            // parse base
+            token = COM_Parse (&s);
+            Q_strlcpy(arg_tokens[0], token, sizeof(arg_tokens[0]));
+
+            // parse args
+            for (int32_t i = 0; i < num_args; i++)
+            {
+                token = COM_Parse (&s);
+                Q_strlcpy(arg_tokens[1 + i], token, sizeof(arg_tokens[0]));
+                arg_buffers[i] = arg_tokens[1 + i];
+            }
+            
+            if (!skip_depth)
+            {
+                if (!scr_usekfont->integer)
+                    CG_DrawString (x, y, scale, cgi.Localize(arg_tokens[0], arg_buffers, num_args));
+                else
+                    cgi.SCR_DrawFontString(cgi.Localize(arg_tokens[0], arg_buffers, num_args), x, y - (font_y_offset * scale), scale, rgba_white, true, text_align_t::LEFT);
+            }
+            continue;
+        }
+
+        if (!strcmp(token, "loc_cstring2"))
+        {
+            int32_t num_args = atoi(COM_Parse (&s));
+
+            if (num_args < 0 || num_args >= MAX_LOCALIZATION_ARGS)
+                cgi.Com_Error("Bad loc string");
+
+            // parse base
+            token = COM_Parse (&s);
+            Q_strlcpy(arg_tokens[0], token, sizeof(arg_tokens[0]));
+
+            // parse args
+            for (int32_t i = 0; i < num_args; i++)
+            {
+                token = COM_Parse (&s);
+                Q_strlcpy(arg_tokens[1 + i], token, sizeof(arg_tokens[0]));
+                arg_buffers[i] = arg_tokens[1 + i];
+            }
+            
+            if (!skip_depth)
+                CG_DrawHUDString (cgi.Localize(arg_tokens[0], arg_buffers, num_args), x, y, hx*2*scale, 0x80, scale);
+            continue;
+        }
+
+        if (!strcmp(token, "loc_string2") || !strcmp(token, "loc_rstring2") ||
+            !strcmp(token, "loc_string") || !strcmp(token, "loc_rstring"))
+        {
+            bool green = token[strlen(token) - 1] == '2';
+            bool rightAlign = !Q_strncasecmp(token, "loc_rstring", strlen("loc_rstring"));
+            int32_t num_args = atoi(COM_Parse (&s));
+
+            if (num_args < 0 || num_args >= MAX_LOCALIZATION_ARGS)
+                cgi.Com_Error("Bad loc string");
+
+            // parse base
+            token = COM_Parse (&s);
+            Q_strlcpy(arg_tokens[0], token, sizeof(arg_tokens[0]));
+
+            // parse args
+            for (int32_t i = 0; i < num_args; i++)
+            {
+                token = COM_Parse (&s);
+                Q_strlcpy(arg_tokens[1 + i], token, sizeof(arg_tokens[0]));
+                arg_buffers[i] = arg_tokens[1 + i];
+            }
+            
+            if (!skip_depth)
+            {
+                const char *locStr = cgi.Localize(arg_tokens[0], arg_buffers, num_args);
+                int xOffs = 0;
+                if (rightAlign)
+                {
+                    xOffs = scr_usekfont->integer ? cgi.SCR_MeasureFontString(locStr, scale).x : (strlen(locStr) * CONCHAR_WIDTH * scale);
+                }
+
+                if (!scr_usekfont->integer)
+                    CG_DrawString (x - xOffs, y, scale, locStr, green);
+                else
+                    cgi.SCR_DrawFontString(locStr, x - xOffs, y - (font_y_offset * scale), scale, green ? alt_color : rgba_white, true, text_align_t::LEFT);
+            }
+            continue;
+        }
+
+        // draw time remaining
+        if (!strcmp(token, "time_limit"))
+        {
+            // end frame
+            token = COM_Parse (&s);
+
+            if (!skip_depth)
+            {
+                int32_t end_frame = atoi(token);
+
+                if (end_frame < cgi.CL_ServerFrame())
+                    continue;
+
+                uint64_t remaining_ms = (end_frame - cgi.CL_ServerFrame()) * cgi.frame_time_ms;
+
+                const bool green = true;
+                arg_buffers[0] = G_Fmt("{:02}:{:02}", (remaining_ms / 1000) / 60, (remaining_ms / 1000) % 60).data();
+
+                const char *locStr = cgi.Localize("$g_score_time", arg_buffers, 1);
+                int xOffs = scr_usekfont->integer ? cgi.SCR_MeasureFontString(locStr, scale).x : (strlen(locStr) * CONCHAR_WIDTH * scale);
+                if (!scr_usekfont->integer)
+                    CG_DrawString (x - xOffs, y, scale, locStr, green);
+                else
+                    cgi.SCR_DrawFontString(locStr, x - xOffs, y - (font_y_offset * scale), scale, green ? alt_color : rgba_white, true, text_align_t::LEFT);
+            }
+        }
+
+        // draw client dogtag
+        if (!strcmp(token, "dogtag"))
+        {
+            token = COM_Parse (&s);
+            
+            if (!skip_depth)
+            {
+                value = atoi(token);
+                if (value >= MAX_CLIENTS || value < 0)
+                    cgi.Com_Error("client >= MAX_CLIENTS");
+
+                const std::string_view path = G_Fmt("/tags/{}", cgi.CL_GetClientDogtag(value));
+                cgi.SCR_DrawPic(x, y, 198 * scale, 32 * scale, path.data());
+            }
+        }
+
+        if (!strcmp(token, "start_table"))
+        {
+            token = COM_Parse (&s);
+            value = atoi(token);
+
+            if (!skip_depth)
+            {
+                if (value >= q_countof(hud_temp.table_rows[0].table_cells))
+                    cgi.Com_Error("table too big");
+
+                hud_temp.num_columns = value;
+                hud_temp.num_rows = 1;
+
+                for (int i = 0; i < value; i++)
+                    hud_temp.column_widths[i] = 0;
+            }
+
+            for (int i = 0; i < value; i++)
+            {
+                token = COM_Parse (&s);
+                if (!skip_depth)
+                {
+                    token = cgi.Localize(token, nullptr, 0);
+                    Q_strlcpy(hud_temp.table_rows[0].table_cells[i].text, token, sizeof(hud_temp.table_rows[0].table_cells[i].text));
+                    hud_temp.column_widths[i] = max(hud_temp.column_widths[i], (size_t) cgi.SCR_MeasureFontString(hud_temp.table_rows[0].table_cells[i].text, scale).x);
+                }
+            }
+        }
+
+        if (!strcmp(token, "table_row"))
+        {
+            token = COM_Parse (&s);
+            value = atoi(token);
+
+            if (!skip_depth)
+            {
+                if (hud_temp.num_rows >= q_countof(hud_temp.table_rows))
+                {
+                    cgi.Com_Error("table too big");
+                    return;
+                }
+            }
+            
+            auto &row = hud_temp.table_rows[hud_temp.num_rows];
+
+            for (int i = 0; i < value; i++)
+            {
+                token = COM_Parse (&s);
+                if (!skip_depth)
+                {
+                    Q_strlcpy(row.table_cells[i].text, token, sizeof(row.table_cells[i].text));
+                    hud_temp.column_widths[i] = max(hud_temp.column_widths[i], (size_t) cgi.SCR_MeasureFontString(row.table_cells[i].text, scale).x);
+                }
+            }
+            
+            if (!skip_depth)
+            {
+                for (int i = value; i < hud_temp.num_columns; i++)
+                    row.table_cells[i].text[0] = '\0';
+
+                hud_temp.num_rows++;
+            }
+        }
+
+        if (!strcmp(token, "draw_table"))
+        {
+            if (!skip_depth)
+            {
+                // in scaled pixels, incl padding between elements
+                uint32_t total_inner_table_width = 0;
+
+                for (int i = 0; i < hud_temp.num_columns; i++)
+                {
+                    if (i != 0)
+                        total_inner_table_width += cgi.SCR_MeasureFontString(" ", scale).x;
+
+                    total_inner_table_width += hud_temp.column_widths[i];
+                }
+
+                // in scaled pixels
+                uint32_t total_table_height = hud_temp.num_rows * (CONCHAR_WIDTH + font_y_offset) * scale;
+
+                CG_DrawTable(x, y, total_inner_table_width, total_table_height, scale);
+            }
+        }
+
+        if (!strcmp(token, "stat_pname"))
+        {
+            token = COM_Parse(&s);
+
+            if (!skip_depth)
+            {
+                index = atoi(token);
+                if (index < 0 || index >= MAX_STATS)
+                    cgi.Com_Error("Bad stat_string index");
+                index = ps->stats[index] - 1;
+
+                if (!scr_usekfont->integer)
+                    CG_DrawString(x, y, scale, cgi.CL_GetClientName(index));
+                else
+                    cgi.SCR_DrawFontString(cgi.CL_GetClientName(index), x, y - (font_y_offset * scale), scale, rgba_white, true, text_align_t::LEFT);
+            }
+            continue;
+        }
+
+        if (!strcmp(token, "health_bars"))
+        {
+            if (skip_depth)
+                continue;
+
+            const byte *stat = reinterpret_cast<const byte *>(&ps->stats[STAT_HEALTH_BARS]);
+            const char *name = cgi.Localize(cgi.get_configstring(CONFIG_HEALTH_BAR_NAME), nullptr, 0);
+
+            CG_DrawHUDString(name, (hud_vrect.x + hud_vrect.width/2 + -160) * scale, y, (320 / 2) * 2 * scale, 0, scale);
+
+            float bar_width = ((hud_vrect.width * scale) - (hud_safe.x * 2)) * 0.50f;
+            float bar_height = 4 * scale;
+
+            y += cgi.SCR_FontLineHeight(scale);
+
+            float x = ((hud_vrect.x + (hud_vrect.width * 0.5f)) * scale) - (bar_width * 0.5f);
+
+            // 2 health bars, hardcoded
+            for (size_t i = 0; i < 2; i++, stat++)
+            {
+                if (!(*stat & 0b10000000))
+                    continue;
+
+                float percent = (*stat & 0b01111111) / 127.f;
+
+                cgi.SCR_DrawColorPic(x, y, bar_width + scale, bar_height + scale, "_white", rgba_black);
+
+                if (percent > 0)
+                    cgi.SCR_DrawColorPic(x, y, bar_width * percent, bar_height, "_white", rgba_red);
+                if (percent < 1)
+                    cgi.SCR_DrawColorPic(x + (bar_width * percent), y, bar_width * (1.f - percent), bar_height, "_white", { 80, 80, 80, 255 });
+
+                y += bar_height * 3;
+            }
+        }
+
+        if (!strcmp(token, "story"))
+        {
+            const char *story_str = cgi.get_configstring(CONFIG_STORY);
+
+            if (!*story_str)
+                continue;
+
+            const char *localized = cgi.Localize(story_str, nullptr, 0);
+            vec2_t size = cgi.SCR_MeasureFontString(localized, scale);
+            float centerx = ((hud_vrect.x + (hud_vrect.width * 0.5f)) * scale);
+            float centery = ((hud_vrect.y + (hud_vrect.height * 0.5f)) * scale) - (size.y * 0.5f);
+
+            cgi.SCR_DrawFontString(localized, centerx, centery, scale, rgba_white, true, text_align_t::CENTER);
+        }
+    }
+
+    if (skip_depth)
+        cgi.Com_Error("if with no matching endif");
+}
+
+static cvar_t *cl_skipHud;
+static cvar_t *cl_paused;
+
+/*
+================
+CL_DrawInventory
+================
+*/
+constexpr size_t DISPLAY_ITEMS   = 19;
+
+static void CG_DrawInventory(const player_state_t *ps, const std::array<int16_t, MAX_ITEMS> &inventory, vrect_t hud_vrect, int32_t scale)
+{
+    int     i;
+    int     num, selected_num, item;
+    int     index[MAX_ITEMS];
+    int     x, y;
+    int     width, height;
+    int     selected;
+    int     top;
+
+    selected = ps->stats[STAT_SELECTED_ITEM];
+
+    num = 0;
+    selected_num = 0;
+    for (i=0 ; i<MAX_ITEMS ; i++) {
+        if ( i == selected ) {
+            selected_num = num;
+        }
+        if ( inventory[i] ) {
+            index[num] = i;
+            num++;
+        }
+    }
+
+    // determine scroll point
+    top = selected_num - DISPLAY_ITEMS/2;
+    if (num - top < DISPLAY_ITEMS)
+        top = num - DISPLAY_ITEMS;
+    if (top < 0)
+        top = 0;
+
+    x = hud_vrect.x * scale;
+    y = hud_vrect.y * scale;
+    width = hud_vrect.width;
+    height = hud_vrect.height;
+
+    x += ((width / 2) - (256 / 2)) * scale;
+    y += ((height / 2) - (216 / 2)) * scale;
+
+    int pich, picw;
+    cgi.Draw_GetPicSize(&picw, &pich, "inventory");
+    cgi.SCR_DrawPic(x, y+8*scale, picw * scale, pich * scale, "inventory");
+
+    y += 27 * scale;
+    x += 22 * scale;
+
+    for (i=top ; i<num && i < top+DISPLAY_ITEMS ; i++)
+    {
+        item = index[i];
+        if (item == selected) // draw a blinky cursor by the selected item
+        {
+            if ( (cgi.CL_ClientRealTime() * 10) & 1)
+                cgi.SCR_DrawChar(x-8, y, scale, 15, false);
+        }
+
+        if (!scr_usekfont->integer)
+        {
+            CG_DrawString(x, y, scale,
+                G_Fmt("{:3} {}", inventory[item],
+                    cgi.Localize(cgi.get_configstring(CS_ITEMS + item), nullptr, 0)).data(),
+                item == selected, false);
+        }
+        else
+        {
+            const char *string = G_Fmt("{}", inventory[item]).data();
+            cgi.SCR_DrawFontString(string, x + (216 * scale) - (16 * scale), y - (font_y_offset * scale), scale, (item == selected) ? alt_color : rgba_white, true, text_align_t::RIGHT);
+
+            string = cgi.Localize(cgi.get_configstring(CS_ITEMS + item), nullptr, 0);
+            cgi.SCR_DrawFontString(string, x + (16 * scale), y - (font_y_offset * scale), scale, (item == selected) ? alt_color : rgba_white, true, text_align_t::LEFT);
+        }
+            
+        y += 8 * scale;
+    }
+}
+
+extern uint64_t cgame_init_time;
+
+void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect, vrect_t hud_safe, int32_t scale, int32_t playernum, const player_state_t *ps)
+{
+    if (cgi.CL_InAutoDemoLoop())
+    {
+        if (cl_paused->integer) return; // demo is paused, menu is open
+
+        uint64_t time = cgi.CL_ClientRealTime() - cgame_init_time;
+        if (time < 20000 && 
+            (time % 4000) < 2000)
+            cgi.SCR_DrawFontString(cgi.Localize("$m_eou_press_button", nullptr, 0), hud_vrect.width * 0.5f * scale, (hud_vrect.height - 64.f) * scale, scale, rgba_green, true, text_align_t::CENTER);
+        return;
+    }
+
+    // draw HUD
+    if (!cl_skipHud->integer && !(ps->stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD))
+    {
+        CG_ExecuteLayoutString(cgi.get_configstring(CS_STATUSBAR), hud_vrect, hud_safe, scale, playernum, ps);
+
+        constexpr std::array<player_stat_t, 4> status_stats = {
+            STAT_RAID_STATUS, STAT_RAID_STATUS_2, STAT_RAID_STATUS_3, STAT_RAID_STATUS_4
+        };
+        constexpr std::array<player_stat_t, 4> status_time_stats = {
+            STAT_RAID_STATUS_TIME, STAT_RAID_STATUS_TIME_2, STAT_RAID_STATUS_TIME_3, STAT_RAID_STATUS_TIME_4
+        };
+        int status_row = 0;
+        for (size_t slot = 0; slot < status_stats.size(); ++slot)
+        {
+            const int code = ps->stats[status_stats[slot]];
+            if (!code)
+                continue;
+            const char *label = code == 1 ? "VOLATILE" : code == 2 ? "DOOMSDAY" : "STATUS";
+            const std::string status = fmt::format("{}  {:02}", label, std::max<int16_t>(0, ps->stats[status_time_stats[slot]]));
+            cgi.SCR_DrawFontString(status.c_str(),
+                (hud_vrect.x + (hud_vrect.width / 2)) * scale,
+                (hud_vrect.y + hud_vrect.height - 52 - (status_row * 12)) * scale,
+                scale, code == 1 ? rgba_t{ 255, 196, 64, 255 } : rgba_t{ 255, 64, 64, 255 }, true, text_align_t::CENTER);
+            ++status_row;
+        }
+
+        const int hat_name_slot = ps->stats[STAT_RAID_HAT_NAME] - 1;
+        if (hat_name_slot >= 0 && hat_name_slot < 32)
+        {
+            const int packed_rank = std::max<int>(0, ps->stats[STAT_RAID_HAT_RANK]);
+            const int rank = std::clamp(packed_rank & 3, 0, 3);
+            const bool has_shield = (packed_rank & (1 << 14)) != 0;
+            constexpr std::array<rgba_t, 4> rank_colors = {
+                rgba_t{ 255, 255, 255, 255 }, rgba_t{ 255, 80, 64, 255 },
+                rgba_t{ 80, 180, 255, 255 }, rgba_t{ 210, 96, 255, 255 }
+            };
+            const char *name = cgi.get_configstring(CONFIG_RAID_HAT_NAME + hat_name_slot);
+            const float center_x = (hud_vrect.x + hud_vrect.width * 0.5f) * scale;
+            const float name_y = (hud_vrect.y + hud_vrect.height * 0.5f + 42.0f) * scale;
+            cgi.SCR_DrawFontString(name && *name ? name : "RAID TARGET", center_x, name_y,
+                scale, rank_colors[rank], true, text_align_t::CENTER);
+
+            const float width = 144.0f * scale;
+            const float height = 5.0f * scale;
+            const float x = center_x - width * 0.5f;
+            const float y = name_y + cgi.SCR_FontLineHeight(scale) + 2.0f * scale;
+            const float health = std::clamp<int>(ps->stats[STAT_RAID_HAT_HEALTH], 0, 1000) / 1000.0f;
+            const float shield = std::clamp((packed_rank & 0x3ffc) >> 2, 0, 1000) / 1000.0f;
+            cgi.SCR_DrawColorPic(x - scale, y - scale, width + 2.0f * scale, height + 2.0f * scale,
+                "_white", rgba_t{ 0, 0, 0, 220 });
+            cgi.SCR_DrawColorPic(x, y, width, height, "_white", rgba_t{ 48, 48, 48, 230 });
+            if (health > 0.0f)
+                cgi.SCR_DrawColorPic(x, y, width * health, height, "_white", rank_colors[rank]);
+            if (has_shield)
+            {
+                constexpr int shield_stops = 45;
+                const int active_stops = static_cast<int>(std::ceil(shield * shield_stops));
+                const std::string empty_wrapper(shield_stops, '.');
+                const std::string active_wrapper(active_stops, '.');
+                const float shield_y = y + height * 0.5f - cgi.SCR_FontLineHeight(scale) * 0.5f;
+                const float shield_x = center_x - cgi.SCR_MeasureFontString(empty_wrapper.c_str(), scale).x * 0.5f;
+                // Shield is a separate font presentation drawn in front of
+                // the health bar. Rank colour remains exclusively on the name
+                // and health presentation above.
+                cgi.SCR_DrawFontString(empty_wrapper.c_str(), shield_x, shield_y,
+                    scale, rgba_t{ 24, 68, 82, 230 }, true, text_align_t::LEFT);
+                if (!active_wrapper.empty())
+                    cgi.SCR_DrawFontString(active_wrapper.c_str(), shield_x, shield_y,
+                        scale, rgba_t{ 96, 224, 255, 255 }, true, text_align_t::LEFT);
+            }
+        }
+
+        const char *raid_message = cgi.get_configstring(CONFIG_RAID_MESSAGE);
+        if (raid_message && *raid_message)
+            cgi.SCR_DrawFontString(raid_message,
+                (hud_vrect.x + 100) * scale,
+                (hud_vrect.y + hud_vrect.height - 76) * scale,
+                scale, rgba_white, true, text_align_t::CENTER);
+    }
+
+    CG_RaidUI_Draw(ps, hud_vrect, scale);
+
+    // draw centerprint string
+    CG_CheckDrawCenterString(ps, hud_vrect, hud_safe, isplit, scale);
+
+    // draw notify
+    CG_DrawNotify(isplit, hud_vrect, hud_safe, scale);
+
+    // svc_layout still drawn with hud off
+    if (ps->stats[STAT_LAYOUTS] & LAYOUTS_LAYOUT)
+        CG_ExecuteLayoutString(data->layout, hud_vrect, hud_safe, scale, playernum, ps);
+
+    // inventory too
+    if (ps->stats[STAT_LAYOUTS] & LAYOUTS_INVENTORY)
+        CG_DrawInventory(ps, data->inventory, hud_vrect, scale);
 }
 
 /*
-==================
-Cmd_Help_f
+================
+CG_TouchPics
 
-Display the current help message
-==================
+================
 */
-void Cmd_Help_f(edict_t *ent)
+void CG_TouchPics()
 {
-	// this is for backwards compatability
-	if (deathmatch->integer)
-	{
-		Cmd_Score_f(ent);
-		return;
-	}
+    for (auto &nums : sb_nums)
+        for (auto &str : nums)
+            cgi.Draw_RegisterPic(str);
 
-	if (level.intermissiontime)
-		return;
+    cgi.Draw_RegisterPic("inventory");
 
-	ent->client->showinventory = false;
-	ent->client->showscores = false;
-
-	if (ent->client->showhelp &&
-			(ent->client->pers.game_help1changed == game.help1changed ||
-			ent->client->pers.game_help2changed == game.help2changed))
-	{
-		ent->client->showhelp = false;
-		globals.server_flags &= ~SERVER_FLAG_SLOW_TIME;
-		return;
-	}
-
-	ent->client->showhelp = true;
-	ent->client->pers.helpchanged = 0;
-	globals.server_flags |= SERVER_FLAG_SLOW_TIME;
-	HelpComputer(ent);
+    font_y_offset = (cgi.SCR_FontLineHeight(1) - CONCHAR_WIDTH) / 2;
 }
 
-//=======================================================================
-
-// [Paril-KEX] for stats we want to always be set in coop
-// even if we're spectating
-void G_SetCoopStats(edict_t *ent)
+void CG_InitScreen()
 {
-	if (coop->integer && g_coop_enable_lives->integer)
-		ent->client->ps.stats[STAT_LIVES] = ent->client->pers.lives + 1;
-	else
-		ent->client->ps.stats[STAT_LIVES] = 0;
+    cl_paused = cgi.cvar("paused", "0", CVAR_NOFLAGS);
+    cl_skipHud = cgi.cvar("cl_skipHud", "0", CVAR_ARCHIVE);
+    scr_usekfont = cgi.cvar("scr_usekfont", "1", CVAR_NOFLAGS);
 
-	// stat for text on what we're doing for respawn
-	if (ent->client->coop_respawn_state)
-		ent->client->ps.stats[STAT_COOP_RESPAWN] = CONFIG_COOP_RESPAWN_STRING + (ent->client->coop_respawn_state - COOP_RESPAWN_IN_COMBAT);
-	else
-		ent->client->ps.stats[STAT_COOP_RESPAWN] = 0;
-}
+    scr_centertime  = cgi.cvar ("scr_centertime", "5.0",  CVAR_ARCHIVE); // [Sam-KEX] Changed from 2.5
+    scr_printspeed  = cgi.cvar ("scr_printspeed", "0.04", CVAR_NOFLAGS); // [Sam-KEX] Changed from 8
+    cl_notifytime   = cgi.cvar ("cl_notifytime", "5.0",   CVAR_ARCHIVE);
+    scr_maxlines    = cgi.cvar ("scr_maxlines", "4",      CVAR_ARCHIVE);
+    ui_acc_contrast = cgi.cvar ("ui_acc_contrast", "0",   CVAR_NOFLAGS);
+    ui_acc_alttypeface = cgi.cvar("ui_acc_alttypeface", "0", CVAR_NOFLAGS);
 
-struct powerup_info_t
-{
-	item_id_t item;
-	gtime_t gclient_t::*time_ptr = nullptr;
-	int32_t gclient_t::*count_ptr = nullptr;
-} powerup_table[] = {
-	{ IT_ITEM_QUAD, &gclient_t::quad_time },
-	{ IT_ITEM_QUADFIRE, &gclient_t::quadfire_time },
-	{ IT_ITEM_DOUBLE, &gclient_t::double_time },
-	{ IT_ITEM_INVULNERABILITY, &gclient_t::invincible_time },
-	{ IT_ITEM_INVISIBILITY, &gclient_t::invisible_time },
-	{ IT_ITEM_ENVIROSUIT, &gclient_t::enviro_time },
-	{ IT_ITEM_REBREATHER, &gclient_t::breather_time },
-	{ IT_ITEM_IR_GOGGLES, &gclient_t::ir_time },
-	{ IT_ITEM_SILENCER, nullptr, &gclient_t::silencer_shots }
-};
-
-/*
-===============
-G_SetStats
-===============
-*/
-void G_SetStats(edict_t *ent)
-{
-	gitem_t	*item;
-	item_id_t index;
-	int		  cells = 0;
-	item_id_t power_armor_type;
-	unsigned int invIndex;
-
-	//
-	// health
-	//
-	if (ent->s.renderfx & RF_USE_DISGUISE)
-		ent->client->ps.stats[STAT_HEALTH_ICON] = level.disguise_icon;
-	else
-		ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
-	ent->client->ps.stats[STAT_HEALTH] = ent->health;
-	if (RaidDowned_IsDown(ent))
-		ent->client->ps.stats[STAT_HEALTH] = 0;
-
-	//
-	// weapons
-	//
-	uint32_t weaponbits = 0;
-
-	for (invIndex = IT_WEAPON_GRAPPLE; invIndex <= IT_WEAPON_DISRUPTOR; invIndex++)
-	{
-		if (ent->client->pers.inventory[invIndex])
-		{
-			weaponbits |= 1 << GetItemByIndex((item_id_t) invIndex)->weapon_wheel_index;
-		}
-	}
-
-	ent->client->ps.stats[STAT_WEAPONS_OWNED_1] = (weaponbits & 0xFFFF);
-	ent->client->ps.stats[STAT_WEAPONS_OWNED_2] = (weaponbits >> 16);
-
-	ent->client->ps.stats[STAT_ACTIVE_WHEEL_WEAPON] = (ent->client->newweapon ? ent->client->newweapon->weapon_wheel_index :
-		ent->client->pers.weapon ? ent->client->pers.weapon->weapon_wheel_index :
-		-1);
-	ent->client->ps.stats[STAT_ACTIVE_WEAPON] = ent->client->pers.weapon ? ent->client->pers.weapon->weapon_wheel_index : -1;
-
-	//
-	// ammo
-	//
-	ent->client->ps.stats[STAT_AMMO_ICON] = 0;
-	ent->client->ps.stats[STAT_AMMO] = 0;
-
-	if (ent->client->pers.weapon && ent->client->pers.weapon->ammo)
-	{
-		item = GetItemByIndex(ent->client->pers.weapon->ammo);
-
-		if (!G_CheckInfiniteAmmo(item))
-		{
-			ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex(item->icon);
-			ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->pers.weapon->ammo];
-		}
-	}
-	
-	memset(&ent->client->ps.stats[STAT_AMMO_INFO_START], 0, sizeof(uint16_t) * NUM_AMMO_STATS);
-	for (unsigned int ammoIndex = AMMO_BULLETS; ammoIndex < AMMO_MAX; ++ammoIndex)
-	{
-		gitem_t *ammo = GetItemByAmmo((ammo_t) ammoIndex);
-		uint16_t val = G_CheckInfiniteAmmo(ammo) ? AMMO_VALUE_INFINITE : clamp(ent->client->pers.inventory[ammo->id], 0, AMMO_VALUE_INFINITE - 1);
-		G_SetAmmoStat((uint16_t *) &ent->client->ps.stats[STAT_AMMO_INFO_START], ammo->ammo_wheel_index, val);
-	}
-
-	//
-	// armor
-	//
-	power_armor_type = PowerArmorType(ent);
-	if (power_armor_type)
-		cells = ent->client->pers.inventory[IT_AMMO_CELLS];
-
-	index = ArmorIndex(ent);
-	if (power_armor_type && (!index || (level.time.milliseconds() % 3000) < 1500))
-	{ // flash between power armor and other armor icon
-		ent->client->ps.stats[STAT_ARMOR_ICON] = power_armor_type == IT_ITEM_POWER_SHIELD ? gi.imageindex("i_powershield") : gi.imageindex("i_powerscreen");
-		ent->client->ps.stats[STAT_ARMOR] = cells;
-	}
-	else if (index)
-	{
-		item = GetItemByIndex(index);
-		ent->client->ps.stats[STAT_ARMOR_ICON] = gi.imageindex(item->icon);
-		ent->client->ps.stats[STAT_ARMOR] = ent->client->pers.inventory[index];
-	}
-	else
-	{
-		ent->client->ps.stats[STAT_ARMOR_ICON] = 0;
-		ent->client->ps.stats[STAT_ARMOR] = 0;
-	}
-
-	//
-	// pickup message
-	//
-	if (level.time > ent->client->pickup_msg_time)
-	{
-		ent->client->ps.stats[STAT_PICKUP_ICON] = 0;
-		ent->client->ps.stats[STAT_PICKUP_STRING] = 0;
-	}
-
-	// owned powerups
-	memset(&ent->client->ps.stats[STAT_POWERUP_INFO_START], 0, sizeof(uint16_t) * NUM_POWERUP_STATS);
-	for (unsigned int powerupIndex = POWERUP_SCREEN; powerupIndex < POWERUP_MAX; ++powerupIndex)
-	{
-		gitem_t *powerup = GetItemByPowerup((powerup_t) powerupIndex);
-		uint16_t val;
-
-		switch (powerup->id)
-		{
-		case IT_ITEM_POWER_SCREEN:
-		case IT_ITEM_POWER_SHIELD:
-			if (!ent->client->pers.inventory[powerup->id])
-				val = 0;
-			else if (ent->flags & FL_POWER_ARMOR)
-				val = 2;
-			else
-				val = 1;
-			break;
-		case IT_ITEM_FLASHLIGHT:
-			if (!ent->client->pers.inventory[powerup->id])
-				val = 0;
-			else if (ent->flags & FL_FLASHLIGHT)
-				val = 2;
-			else
-				val = 1;
-			break;
-		default:
-			val = clamp(ent->client->pers.inventory[powerup->id], 0, 3);
-			break;
-		}
-
-		G_SetPowerupStat((uint16_t *) &ent->client->ps.stats[STAT_POWERUP_INFO_START], powerup->powerup_wheel_index, val);
-	}
-
-	ent->client->ps.stats[STAT_TIMER_ICON] = 0;
-	ent->client->ps.stats[STAT_TIMER] = 0;
-
-	//
-	// timers
-	//
-	// PGM
-	if (ent->client->owned_sphere)
-	{
-		if (ent->client->owned_sphere->spawnflags == SPHERE_DEFENDER) // defender
-			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_defender");
-		else if (ent->client->owned_sphere->spawnflags == SPHERE_HUNTER) // hunter
-			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_hunter");
-		else if (ent->client->owned_sphere->spawnflags == SPHERE_VENGEANCE) // vengeance
-			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_vengeance");
-		else // error case
-			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("i_fixme");
-
-		ent->client->ps.stats[STAT_TIMER] = ceil(ent->client->owned_sphere->wait - level.time.seconds());
-	}
-	else
-	{
-		powerup_info_t *best_powerup = nullptr;
-
-		for (auto &powerup : powerup_table)
-		{
-			auto *powerup_time = powerup.time_ptr ? &(ent->client->*powerup.time_ptr) : nullptr;
-			auto *powerup_count = powerup.count_ptr ? &(ent->client->*powerup.count_ptr) : nullptr;
-
-			if (powerup_time && *powerup_time <= level.time)
-				continue;
-			else if (powerup_count && !*powerup_count)
-				continue;
-
-			if (!best_powerup)
-			{
-				best_powerup = &powerup;
-				continue;
-			}
-			
-			if (powerup_time && *powerup_time < ent->client->*best_powerup->time_ptr)
-			{
-				best_powerup = &powerup;
-				continue;
-			}
-			else if (powerup_count && !best_powerup->time_ptr)
-			{
-				best_powerup = &powerup;
-				continue;
-			}
-		}
-
-		if (best_powerup)
-		{
-			int16_t value;
-
-			if (best_powerup->count_ptr)
-				value = (ent->client->*best_powerup->count_ptr);
-			else
-				value = ceil((ent->client->*best_powerup->time_ptr - level.time).seconds());
-
-			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex(GetItemByIndex(best_powerup->item)->icon);
-			ent->client->ps.stats[STAT_TIMER] = value;
-		}
-	}
-	// PGM
-
-	//
-	// selected item
-	//
-	ent->client->ps.stats[STAT_SELECTED_ITEM] = ent->client->pers.selected_item;
-
-	if (ent->client->pers.selected_item == IT_NULL)
-		ent->client->ps.stats[STAT_SELECTED_ICON] = 0;
-	else
-	{
-		ent->client->ps.stats[STAT_SELECTED_ICON] = gi.imageindex(itemlist[ent->client->pers.selected_item].icon);
-
-		if (ent->client->pers.selected_item_time < level.time)
-			ent->client->ps.stats[STAT_SELECTED_ITEM_NAME] = 0;
-	}
-
-	//
-	// layouts
-	//
-	ent->client->ps.stats[STAT_LAYOUTS] = 0;
-
-	if (deathmatch->integer)
-	{
-		if (ent->client->pers.health <= 0 || level.intermissiontime || ent->client->showscores)
-			ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_LAYOUT;
-		if (ent->client->showinventory && ent->client->pers.health > 0)
-			ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INVENTORY;
-	}
-	else
-	{
-		if (ent->client->showscores || ent->client->showhelp || ent->client->showeou)
-			ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_LAYOUT;
-		if (ent->client->showinventory && ent->client->pers.health > 0)
-			ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INVENTORY;
-
-		if (ent->client->showhelp)
-			ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_HELP;
-	}
-
-	if (level.intermissiontime || ent->client->awaiting_respawn)
-	{
-		if (ent->client->awaiting_respawn || (level.intermission_eou || level.is_n64 || (deathmatch->integer && level.intermissiontime)))
-			ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_HIDE_HUD;
-
-		// N64 always merges into one screen on level ends
-		if (level.intermission_eou || level.is_n64 || (deathmatch->integer && level.intermissiontime))
-			ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INTERMISSION;
-	}
-	
-	if (level.story_active)
-		ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_HIDE_CROSSHAIR;
-	else
-		ent->client->ps.stats[STAT_LAYOUTS] &= ~LAYOUTS_HIDE_CROSSHAIR;
-
-	// [Paril-KEX] key display
-	if (!deathmatch->integer)
-	{
-		int32_t key_offset = 0;
-		player_stat_t stat = STAT_KEY_A;
-		
-		ent->client->ps.stats[STAT_KEY_A] = 
-		ent->client->ps.stats[STAT_KEY_B] = 
-		ent->client->ps.stats[STAT_KEY_C] = 0;
-
-		// there's probably a way to do this in one pass but
-		// I'm lazy
-		std::array<item_id_t, IT_TOTAL> keys_held;
-		size_t num_keys_held = 0;
-
-		for (auto &item : itemlist)
-		{
-			if (!(item.flags & IF_KEY))
-				continue;
-			else if (!ent->client->pers.inventory[item.id])
-				continue;
-
-			keys_held[num_keys_held++] = item.id;
-		}
-
-		if (num_keys_held > 3)
-			key_offset = (int32_t) (level.time.seconds() / 5);
-
-		for (int32_t i = 0; i < min(num_keys_held, (size_t) 3); i++, stat = (player_stat_t) (stat + 1))
-			ent->client->ps.stats[stat] = gi.imageindex(GetItemByIndex(keys_held[(i + key_offset) % num_keys_held])->icon);
-	}
-
-	//
-	// frags
-	//
-	ent->client->ps.stats[STAT_FRAGS] = ent->client->resp.score;
-
-	//
-	// help icon / current weapon if not shown
-	//
-	if (ent->client->pers.helpchanged >= 1 && ent->client->pers.helpchanged <= 2 && (level.time.milliseconds() % 1000) < 500) // haleyjd: time-limited
-		ent->client->ps.stats[STAT_HELPICON] = gi.imageindex("i_help");
-	else if ((ent->client->pers.hand == CENTER_HANDED) && ent->client->pers.weapon)
-		ent->client->ps.stats[STAT_HELPICON] = gi.imageindex(ent->client->pers.weapon->icon);
-	else
-		ent->client->ps.stats[STAT_HELPICON] = 0;
-
-	ent->client->ps.stats[STAT_SPECTATOR] = 0;
-
-	// set & run the health bar stuff
-	for (size_t i = 0; i < MAX_HEALTH_BARS; i++)
-	{
-		byte *health_byte = reinterpret_cast<byte *>(&ent->client->ps.stats[STAT_HEALTH_BARS]) + i;
-
-		if (!level.health_bar_entities[i])
-			*health_byte = 0;
-		else if (level.health_bar_entities[i]->timestamp)
-		{
-			if (level.health_bar_entities[i]->timestamp < level.time)
-			{
-				level.health_bar_entities[i] = nullptr;
-				*health_byte = 0;
-				continue;
-			}
-
-			*health_byte = 0b10000000;
-		}
-		else
-		{
-			// enemy dead
-			if (!level.health_bar_entities[i]->enemy->inuse || level.health_bar_entities[i]->enemy->health <= 0)
-			{
-				// hack for Makron
-				if (level.health_bar_entities[i]->enemy->monsterinfo.aiflags & AI_DOUBLE_TROUBLE)
-				{
-					*health_byte = 0b10000000;
-					continue;
-				}
-
-				if (level.health_bar_entities[i]->delay)
-				{
-					level.health_bar_entities[i]->timestamp = level.time + gtime_t::from_sec(level.health_bar_entities[i]->delay);
-					*health_byte = 0b10000000;
-				}
-				else
-				{
-					level.health_bar_entities[i] = nullptr;
-					*health_byte = 0;
-				}
-				
-				continue;
-			}
-			else if (level.health_bar_entities[i]->spawnflags.has(SPAWNFLAG_HEALTHBAR_PVS_ONLY) && !gi.inPVS(ent->s.origin, level.health_bar_entities[i]->enemy->s.origin, true))
-			{
-				*health_byte = 0;
-				continue;
-			}
-
-			float health_remaining = ((float) level.health_bar_entities[i]->enemy->health) / level.health_bar_entities[i]->enemy->max_health;
-			*health_byte = ((byte) (health_remaining * 0b01111111)) | 0b10000000;
-		}
-	}
-
-	// ZOID
-	SetCTFStats(ent);
-	// ZOID
-	// Raid presentation deliberately owns its aliased stat slots after CTF has
-	// finished clearing/updating them.
-	RaidHats_UpdateHUD(ent);
-	RaidUI_UpdateHUD(ent);
-}
-
-/*
-===============
-G_CheckChaseStats
-===============
-*/
-void G_CheckChaseStats(edict_t *ent)
-{
-	gclient_t *cl;
-
-	for (uint32_t i = 1; i <= game.maxclients; i++)
-	{
-		cl = g_edicts[i].client;
-		if (!g_edicts[i].inuse || cl->chase_target != ent)
-			continue;
-		cl->ps.stats = ent->client->ps.stats;
-		G_SetSpectatorStats(g_edicts + i);
-	}
-}
-
-/*
-===============
-G_SetSpectatorStats
-===============
-*/
-void G_SetSpectatorStats(edict_t *ent)
-{
-	gclient_t *cl = ent->client;
-
-	if (!cl->chase_target)
-		G_SetStats(ent);
-
-	cl->ps.stats[STAT_SPECTATOR] = 1;
-
-	// layouts are independant in spectator
-	cl->ps.stats[STAT_LAYOUTS] = 0;
-	if (cl->pers.health <= 0 || level.intermissiontime || cl->showscores)
-		cl->ps.stats[STAT_LAYOUTS] |= LAYOUTS_LAYOUT;
-	if (cl->showinventory && cl->pers.health > 0)
-		cl->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INVENTORY;
-
-	if (cl->chase_target && cl->chase_target->inuse)
-		cl->ps.stats[STAT_CHASE] = CS_PLAYERSKINS +
-								   (cl->chase_target - g_edicts) - 1;
-	else
-		cl->ps.stats[STAT_CHASE] = 0;
+    hud_data = {};
 }
