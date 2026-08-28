@@ -3294,11 +3294,10 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 	if (client->menu && ent->movetype != MOVETYPE_NOCLIP)
 	{
 		client->ps.pmove.pm_type = PM_FREEZE;
-		client->velocity = {};
+		ent->velocity = {};
 		HandleMenuMovement(ent, ucmd);
 		ucmd->forwardmove = 0;
 		ucmd->sidemove = 0;
-		ucmd->upmove = 0;
 		ucmd->buttons = BUTTON_NONE;
 		client->latched_buttons = BUTTON_NONE;
 		return;

@@ -104,7 +104,6 @@ void ConsumeInput(edict_t *player, usercmd_t *cmd)
 {
     cmd->forwardmove = 0;
     cmd->sidemove = 0;
-    cmd->upmove = 0;
     cmd->buttons = BUTTON_NONE;
     player->client->latched_buttons = BUTTON_NONE;
     player->velocity = {};
