@@ -6,7 +6,8 @@
 // this is so that a static set of pmenu entries can be used
 // for multiple clients and changed without interference
 // note that arg will be freed when the menu is closed, it must be allocated memory
-pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, void *arg, UpdateFunc_t UpdateFunc)
+pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, void *arg,
+	UpdateFunc_t UpdateFunc, void *owner, CloseFunc_t CloseFunc, bool draw_layout)
 {
 	pmenuhnd_t *hnd;
 	const pmenu_t	*p;
@@ -23,6 +24,9 @@ pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, v
 
 	hnd = (pmenuhnd_t *) gi.TagMalloc(sizeof(*hnd), TAG_LEVEL);
 	hnd->UpdateFunc = UpdateFunc;
+	hnd->CloseFunc = CloseFunc;
+	hnd->owner = owner;
+	hnd->draw_layout = draw_layout;
 
 	hnd->arg = arg;
 	hnd->entries = (pmenu_t *) gi.TagMalloc(sizeof(pmenu_t) * num, TAG_LEVEL);
@@ -68,12 +72,16 @@ void PMenu_Close(edict_t *ent)
 		return;
 
 	hnd = ent->client->menu;
+	ent->client->menu_suppressed_buttons |= ent->client->buttons;
+	ent->client->menu = nullptr;
+	ent->client->inmenu = false;
+	ent->client->showscores = false;
+	if (hnd->CloseFunc)
+		hnd->CloseFunc(ent, hnd);
 	gi.TagFree(hnd->entries);
 	if (hnd->arg)
 		gi.TagFree(hnd->arg);
 	gi.TagFree(hnd);
-	ent->client->menu = nullptr;
-	ent->client->showscores = false;
 }
 
 // only use on pmenu's that have been called with PMenu_Open
@@ -102,6 +110,12 @@ void PMenu_Do_Update(edict_t *ent)
 	}
 
 	hnd = ent->client->menu;
+	if (!hnd->draw_layout)
+	{
+		gi.WriteByte(svc_layout);
+		gi.WriteString("");
+		return;
+	}
 
 	if (hnd->UpdateFunc)
 		hnd->UpdateFunc(ent);

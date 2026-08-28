@@ -9,7 +9,7 @@
 #include "raid_downed.h"
 #include "raid_reconstruction.h"
 #include "raid_bots.h"
-#include "raid_terminal.h"
+#include "raid_ui.h"
 
 #include "json/json.h"
 
@@ -381,7 +381,7 @@ void RaidDirector_ClearDocument()
     RaidDowned_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
-    RaidTerminal_Reset();
+    RaidUI_Reset();
     RaidDirector_ClearTransientState();
 
     director.loaded = false;
@@ -651,7 +651,7 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
             edict_t *terminal = target.empty()
                 ? nullptr
                 : G_FindByString<&edict_t::targetname>(nullptr, target.c_str());
-            if (!RaidTerminal_Open(activator, terminal))
+            if (!RaidUI_Open(activator, terminal))
                 gi.Com_PrintFmt("[raid] open_terminal could not open '{}' for its activator\n", target);
         }
         else if (op == "bot_move_to")
@@ -1079,7 +1079,7 @@ void RaidDirector_ResetForMap(const char *mapname)
     RaidDowned_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
-    RaidTerminal_Reset();
+    RaidUI_Reset();
     RaidDirector_ClearTransientState();
     entity_snapshots.clear();
     player_snapshots.clear();
@@ -1357,7 +1357,7 @@ bool RaidDirector_ResetEncounter()
     RaidDowned_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
-    RaidTerminal_Reset();
+    RaidUI_Reset();
     RaidDirector_RestorePlayers();
     RaidDirector_ClearTransientState();
     director.state = director.document["initial_state"].asString();

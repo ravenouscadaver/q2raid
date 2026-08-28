@@ -26,14 +26,15 @@ sv raid_set_state <state>
 Player commands are issued directly from the client console:
 
 ```text
-raid_grenade       Throw one grenade immediately without switching weapons
++raid_grenade      Equip and begin priming a temporary native hand grenade
+-raid_grenade      Release the native throw, then restore the previous weapon
 raid_thirdperson   Toggle the raid third-person camera
 ```
 
 Recommended quick-grenade binding:
 
 ```text
-bind g raid_grenade
+bind g +raid_grenade
 ```
 
 The server cvars are:
