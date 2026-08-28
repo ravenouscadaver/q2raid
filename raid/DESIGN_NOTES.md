@@ -1,5 +1,36 @@
 # Q2Raid Design Notes
 
+## First-door terminal onboarding
+
+- Place the first functional terminal immediately before the first locked door,
+  outside combat pressure.
+- Use it to teach cursor movement, keyboard interaction, pressed/dim feedback,
+  submit, and cancel before terminals appear during encounters.
+- Make the first task short and forgiving: reconstruct a simple callsign such as
+  `ALPHA`; success emits a semantic action and encounter JSON opens the door.
+- This establishes the mod's thesis immediately: the machinery is recognisably
+  Quake II, but the expected play vocabulary is not ordinary Quake II.
+- Full terminal shell, puzzle permutations, art contract, and camera composition
+  are defined in `TERMINAL_SYSTEM.md`.
+
+## Powered emissive fixtures
+
+- Pair a dull permanent base face with a slightly offset toggleable emissive
+  `func_wall` overlay and its actual light sources.
+- Existing Director `fire_target` can prove synchronized shutdown immediately; later a
+  generic `set_powered` group can coordinate visibility, light, sound, and VFX.
+- Do not require an overlap trigger merely to discover ordinary authored
+  fixtures. See `POWERED_SURFACES.md`.
+
+## Modular BSP kit generator
+
+- Author simple reusable tile brushes in a source `.map`, enclosed by bounds
+  volumes and marked with generator-only connector textures/metadata.
+- An offline constraint solver assembles an editable `.map` blockout, preserving
+  its seed and stripping generator markers.
+- Generated geometry is an inspiration/cleanup substrate for JACK, not runtime
+  procedural generation. See `MODULAR_BSP_GENERATOR.md`.
+
 ## Shield-drone laser-field proof encounter
 
 - Build a traversal room blocked by a named laser field.

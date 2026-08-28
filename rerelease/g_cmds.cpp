@@ -1607,6 +1607,51 @@ static void Cmd_ListMonsters_f(edict_t *ent)
 
 /*
 =================
+Cmd_RaidGrenade_f
+
+Destiny-style quick grenade: throw immediately without changing the equipped
+weapon. The native hand-grenade timers are shared deliberately so this cannot
+overlap a grenade already being primed or bypass its recovery time.
+=================
+*/
+static void Cmd_RaidGrenade_f(edict_t *ent)
+{
+	if (!ent->client || ent->deadflag || ent->health <= 0 || ent->client->resp.spectator)
+		return;
+
+	if (RaidDowned_IsDown(ent) || RaidCarry_BlocksWeapons(ent))
+		return;
+
+	if (ent->client->grenade_time || ent->client->grenade_finished_time > level.time)
+		return;
+
+	if (ent->client->pers.inventory[IT_AMMO_GRENADES] <= 0)
+	{
+		gi.LocClient_Print(ent, PRINT_HIGH, "No grenades.\n");
+		return;
+	}
+
+	constexpr int damage = 125;
+	constexpr float radius = damage + 40.f;
+	constexpr gtime_t fuse = 2500_ms;
+	constexpr gtime_t recovery = 1_sec;
+
+	vec3_t start, dir;
+	P_ProjectSource(ent,
+		{ max(-62.5f, ent->client->v_angle[0]), ent->client->v_angle[1], ent->client->v_angle[2] },
+		{ 2, 0, -14 }, start, dir);
+
+	const int modified_damage = damage * P_DamageModifier(ent);
+	fire_grenade2(ent, start, dir, modified_damage, static_cast<int>(GRENADE_MAXSPEED), fuse, radius, false);
+
+	if (!G_CheckInfiniteAmmo(&itemlist[IT_AMMO_GRENADES]))
+		ent->client->pers.inventory[IT_AMMO_GRENADES]--;
+
+	ent->client->grenade_finished_time = level.time + recovery;
+}
+
+/*
+=================
 ClientCommand
 =================
 */
@@ -1730,6 +1775,8 @@ void ClientCommand(edict_t *ent)
 		Cmd_PlayerList_f(ent);
 	else if (Q_strcasecmp(cmd, "raid_thirdperson") == 0)
 		RaidThirdPerson_Toggle(ent);
+	else if (Q_strcasecmp(cmd, "raid_grenade") == 0)
+		Cmd_RaidGrenade_f(ent);
 	else if (Q_strcasecmp(cmd, "raid_downed_test") == 0)
 		RaidDowned_ToggleTest(ent);
 	// ZOID

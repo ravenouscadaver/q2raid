@@ -1896,7 +1896,7 @@ monster_gekk : "Gekk"
 [
     spawnflags(flags) =
     [
-        1 : "Requires charging before deposit/status" : 0
+        1 : "START_CHARGED (explicit map override)" : 0
     ]
     item_type(choices) : "Item type" : "power_core" =
     [
@@ -1914,7 +1914,7 @@ monster_gekk : "Gekk"
     model(studio) : "World/carried/deposited model" : "models/items/keys/power/tris.md2"
     held_model(studio) : "Optional model shown while carried; blank uses world model" : ""
     scale(float) : "Model scale" : 1
-    carry_status(string) : "Status conferred to carrier (power cores default to volatile; use none to disable)" : ""
+    carry_status(string) : "Charged-carrier status override (charged power cores default to volatile; use none to disable)" : ""
     status_duration(float) : "Conferred status duration; 0 uses JSON/default duration" : 0
     status_policy(choices) : "Status reapplication policy" : "refresh" =
     [
@@ -1947,7 +1947,7 @@ monster_gekk : "Gekk"
     accepts(string) : "Accepted item type" : "power_core"
     required_state(choices) : "Required item state" : "" =
     [
-        "" : "Automatic (charged for reconstruction)"
+        "" : "Automatic (charged for core/reconstruction sockets)"
         "any" : "Any"
         "charged" : "Charged"
     ]
@@ -1981,9 +1981,18 @@ monster_gekk : "Gekk"
     charge_time(float) : "Required uninterrupted overlap seconds" : 1
 ]
 
-@SolidClass base(EditorFlags, Targetable) color(80 255 160) = trigger_raid_terminal : "Open a client-local raid terminal"
+@SolidClass base(EditorFlags, Targetable) color(80 255 160) = trigger_raid_interaction : "Generic Director-first interaction volume"
 [
-    target(target_destination) : "raid_gadget terminal targetname"
+    wait(float) : "Minimum seconds between interaction events" : 0.5
+]
+
+@SolidClass base(EditorFlags, Targetable) color(80 255 160) = trigger_raid_terminal : "Deprecated terminal interaction wrapper; prefer generic interaction -> JSON open_terminal"
+[
+    spawnflags(flags) =
+    [
+        1 : "LEGACY_DIRECT_OPEN (compatibility proof only)" : 0
+    ]
+    target(target_destination) : "Legacy direct-open terminal target; JSON should own this association"
 ]
 
 @PointClass base(EditorFlags, Targetable, Target) color(80 255 180) size(-6 -6 -6, 6 6 6) = raid_hovertext : "Crosshair hover message/event marker"

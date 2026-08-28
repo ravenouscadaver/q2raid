@@ -65,7 +65,6 @@
 "classname" "raid_item"
 "targetname" "sanity_core"
 "item_type" "power_core"
-"spawnflags" "1"
 "carry_status" "volatile"
 "charged_vfx" "electric_sparks"
 "origin" "-208 -112 32"
@@ -109,7 +108,9 @@
 }
 {
 "classname" "trigger_raid_terminal"
+"targetname" "sanity_terminal_interact"
 "target" "sanity_terminal"
+"spawnflags" "1"
 {
 ( 192 -176 96 ) ( 192 -176 0 ) ( 192 -48 96 ) e1u1/trigger [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( 320 -48 96 ) ( 320 -48 0 ) ( 320 -176 96 ) e1u1/trigger [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1

@@ -138,7 +138,11 @@ void RaidDowned_Update(edict_t *player)
         // Let the normal death callback leave the downed presentation so the
         // replacement model/camera cannot survive into respawn.  A small
         // lethal hit produces an ordinary corpse instead of gibbing the player.
+        // Downed crawling uses the crouched player flag; clear it before
+        // player_die chooses an animation so bleedout uses one of the normal
+        // standing death sequences rather than the crouch-death pose.
         state.damage_buffer = 0;
+        player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
         return;

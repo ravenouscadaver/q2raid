@@ -1,7 +1,8 @@
 {
 "classname" "worldspawn"
 "mapversion" "220"
-"message" "Q2Raid Terminal Only Test"
+"sounds" "1"
+"message" "Preloaded Charged Core Test"
 {
 ( -256 -192 0 ) ( -256 -192 -32 ) ( -256 192 0 ) e1u1/metal3_5 [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
 ( 256 192 0 ) ( 256 192 -32 ) ( 256 -192 0 ) e1u1/metal3_5 [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
@@ -58,24 +59,23 @@
 }
 {
 "classname" "raid_gadget"
-"targetname" "terminal_1"
-"gadget_type" "terminal"
-"origin" "160 0 48"
+"targetname" "preloaded_socket"
+"gadget_type" "core_socket"
+"required_state" "charged"
+"origin" "112 0 32"
 }
 {
-"classname" "trigger_raid_interaction"
-"targetname" "terminal_interact_1"
-{
-( 96 64 96 ) ( 96 64 0 ) ( 96 -64 96 ) e1u1/trigger [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 32 -64 96 ) ( 32 -64 0 ) ( 32 64 96 ) e1u1/trigger [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 96 -64 96 ) ( 96 -64 0 ) ( 32 -64 96 ) e1u1/trigger [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 32 64 96 ) ( 32 64 0 ) ( 96 64 96 ) e1u1/trigger [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
-( 32 64 0 ) ( 32 -64 0 ) ( 96 64 0 ) e1u1/trigger [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-( 96 -64 96 ) ( 32 -64 96 ) ( 96 64 96 ) e1u1/trigger [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
-}
+"classname" "raid_item"
+"targetname" "preloaded_core"
+"item_type" "power_core"
+"spawnflags" "1"
+"carry_status" "volatile"
+"charged_vfx" "electric_sparks"
+"origin" "112 0 32"
 }
 {
 "classname" "light"
 "origin" "0 0 144"
 "light" "300"
+"_color" "0.55 0.75 1"
 }

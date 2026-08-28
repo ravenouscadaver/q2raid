@@ -42,6 +42,7 @@
     <ClInclude Include="raid_reconstruction.h" />
     <ClInclude Include="raid_bots.h" />
     <ClInclude Include="raid_terminal.h" />
+    <ClInclude Include="raid_terminal_shared.h" />
     <ClInclude Include="bots\bot_debug.h">
       <Filter>bots</Filter>
     </ClInclude>

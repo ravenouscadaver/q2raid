@@ -8,9 +8,8 @@
     "lights_on": {
       "enter": [
         {
-          "op": "set_state",
-          "group": "test_lights",
-          "value": "on"
+          "op": "fire_target",
+          "target": "test_lights"
         },
         {
           "op": "fire_target",

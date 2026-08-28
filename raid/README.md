@@ -3,6 +3,9 @@
 Architecture and current maturity are documented in:
 
 - `DIRECTOR_FIRST_DOCTRINE.md` — canonical ownership and authoring rules.
+- `HARDENED_DEFINITIONS.md` — canonical primitive and mechanic meanings.
+- `IMPLEMENTATION_STYLE_GUIDE.md` — cross-layer dependency, terminology, and lifecycle rules.
+- `ENCOUNTER_JSON_STYLE_GUIDE.md` — canonical encounter JSON authoring convention.
 - `PHASE9_SANITY_AUDIT.md` — evidence-based defects, risks, and next gates.
 
 The raid Director is a single server-authoritative runtime. Encounter JSON is
@@ -18,6 +21,19 @@ sv raid_load <path>
 sv raid_reload
 sv raid_dump
 sv raid_set_state <state>
+```
+
+Player commands are issued directly from the client console:
+
+```text
+raid_grenade       Throw one grenade immediately without switching weapons
+raid_thirdperson   Toggle the raid third-person camera
+```
+
+Recommended quick-grenade binding:
+
+```text
+bind g raid_grenade
 ```
 
 The server cvars are:

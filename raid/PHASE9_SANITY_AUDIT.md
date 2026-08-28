@@ -1,9 +1,10 @@
 # Phase 9 Sanity Audit
 
-Audit basis: local `director-scaffold` through `01b9fb6`, plus the uncommitted
-third-person restoration correction. This is an evidence ledger, not a recovered
-wishlist. Historical concepts are not classified as current missing features
-until canon explicitly retains them.
+Audit basis: local `director-scaffold` through `41c5428`. Build #76 is rejected
+because its terminal path crashes at runtime; commits after that build remain
+unbuilt. This is an evidence ledger, not a recovered wishlist. Historical
+concepts are not classified as current missing features until canon explicitly
+retains them.
 
 ## Executive finding
 
@@ -72,6 +73,19 @@ This is only a compatibility repair. Permanent remediation is a dedicated HUD
 presentation mode/fields rather than terminal state masquerading as Raid Hat
 state.
 
+### P0 — Raid Hat rank exceeded the fixed network stat array
+
+Evidence: KEX exposes 64 player stats indexed `0` through `63`, but the appended
+raid fields placed `STAT_RAID_HAT_RANK` at index `64`. Raid Hat shield/rank and
+the terminal's borrowed cursor-Y channel therefore performed an out-of-bounds
+read/write. This is a direct candidate cause for both HUD malformation and the
+terminal crash.
+
+Local correction: retain Raid Hat name/health in valid slots 62/63, explicitly
+reuse otherwise inactive CTF HUD slots for rank and dedicated terminal mode,
+cursor, and state fields, and assert every raid stat is below `MAX_STATS`.
+Runtime verification remains required.
+
 ### P0 — terminal manifest and hardcoded asset disagree
 
 Evidence:
@@ -86,6 +100,20 @@ DLL can be tested.
 
 Permanent remediation: load the manifest or accept Director-selected terminal
 presentation data. Do not hardcode encounter artwork paths in `cg_screen.cpp`.
+
+### P0 — terminal renderer has no asset safety boundary
+
+Evidence: the current client renderer unconditionally draws three external
+1224x1285 terminal PNGs. Build #76 packaged the DLL without those assets and
+crashes immediately when the terminal is activated.
+
+Asset verification also found that the checked-out `terminal_chassis.png` and
+`terminal_master.png` are truncated/corrupt PNGs. The screen and controls alpha
+layers are valid, and the intact saved original artwork was recovered.
+
+Required correction: one flattened, renderer-safe runtime texture; an explicit
+availability check; a safe rectangle/text fallback; and packaging validation.
+Terminal failure must also release movement/input ownership.
 
 ### P0 — mapper interface is split across incompatible FGDs
 
@@ -107,6 +135,11 @@ Remediation:
 4. Add a CI comparison that fails when registered raid classes/keys are absent
    from the canonical delivered FGD.
 
+Local unbuilt correction: `fgd/q2raid.fgd` is the sole hand-maintained Q2Raid
+FGD. The obsolete standalone `fgd/raid.fgd` moved to `raid/archive/fgd/`, and
+the old merged distribution is marked as a legacy generated snapshot. Automated
+DLL/FGD comparison remains outstanding.
+
 ### P1 — terminal uses a dedicated direct-opening trigger
 
 Evidence: `trigger_raid_terminal` resolves its `target` and directly calls the
@@ -119,11 +152,16 @@ Remediation: generic interaction/activation emits an event; JSON issues an
 `open_terminal` operation against a terminal primitive. Retain the old class
 only as a deprecated compatibility alias during map migration.
 
+Local unbuilt correction: `trigger_raid_interaction` emits `interact`,
+`open_terminal` is a validated Director operation, and `trigger_raid_terminal`
+is now a compatibility alias whose direct-open path requires the explicit
+`LEGACY_DIRECT_OPEN` flag.
+
 ### P1 — core state and compatibility are too implicit
 
 Evidence:
 
-- A core's initial charge state is the inverse of spawnflag 1.
+- The rejected build encoded initial charge as the inverse of spawnflag 1.
 - No explicit state is visible in normal mapper properties when using the stale
   FGD.
 - Beam filtering, status application, socket acceptance, and VFX depend on
@@ -138,6 +176,10 @@ Required semantic default:
 - Director: decides what `charge_complete` and `deposit` mean for phase logic.
 
 Group names and filters remain optional disambiguation, never baseline setup.
+
+Local unbuilt correction: power cores now begin uncharged and the positive
+`START_CHARGED` override authors deliberate precharged/preloaded variants.
+Charged-only Volatile application remains enforced by the runtime primitive.
 
 ### P1 — semantic configuration is stored in legacy fields
 
@@ -202,7 +244,7 @@ At minimum, add debug assertions/dump checks for:
 | Downed | Implemented proof with local critical fixes | Teammate revival status is not classified here until canonical ledger review. |
 | Third-person | Implemented proof with local critical fix | State exit tests required. |
 | Terminal | Internal interaction proof; presentation broken in pushed DLL | Local HUD fix requires compile and runtime proof. |
-| Quick grenade | Confirmed current requirement and absent | This is a real missing Destiny-like feature, not historical archaeology. |
+| Quick grenade | Implemented locally, unbuilt | `41c5428` adds `raid_grenade`; requires compile and runtime proof. |
 | Historical design-note concepts | Unclassified | Must be marked retained, superseded by Director, deferred, or rejected before counting. |
 
 ## Redundant-dependency policy
@@ -221,7 +263,8 @@ otherwise:
 
 ## Required next pass
 
-1. Compile and runtime-test the local P0 corrections.
+1. Implement the terminal crash guard/fallback, then compile and runtime-test
+   the local P0 corrections when explicitly authorized.
 2. Establish a canonical feature ledger from post-Director decisions only.
 3. Mark every historical note: `retained`, `superseded`, `deferred`, or
    `rejected`.
@@ -230,7 +273,7 @@ otherwise:
    deprecate direct terminal trigger wiring.
 6. Add map-load diagnostics and extend `raid_dump`.
 7. Replace raw reset snapshots before calling the reset system alpha-safe.
-8. Implement and proof-test the confirmed quick-grenade requirement.
+8. Proof-test the locally implemented quick-grenade requirement.
 
 ## Completion rule
 

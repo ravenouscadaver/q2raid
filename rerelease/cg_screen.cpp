@@ -1,6 +1,7 @@
 // Copyright (c) ZeniMax Media Inc.
 // Licensed under the GNU General Public License 2.0.
 #include "cg_local.h"
+#include "raid_terminal_shared.h"
 
 constexpr int32_t STAT_MINUS      = 10;  // num frame for '-' stats digit
 constexpr const char *sb_nums[2][11] =
@@ -1753,7 +1754,7 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
             ++status_row;
         }
 
-        const bool terminal_active = ps->stats[STAT_RAID_HAT_NAME] == 33;
+        const bool terminal_active = ps->stats[STAT_RAID_TERMINAL_MODE] != 0;
         if (terminal_active)
         {
             const float terminal_height = hud_vrect.height * 0.94f * scale;
@@ -1762,26 +1763,85 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
             const float terminal_y = (hud_vrect.y + hud_vrect.height * 0.5f) * scale - terminal_height * 0.5f;
             cgi.SCR_DrawColorPic(hud_vrect.x * scale, hud_vrect.y * scale,
                 hud_vrect.width * scale, hud_vrect.height * scale, "_white", rgba_t{ 0, 0, 0, 185 });
-            cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height,
-                "/raid/ui/terminal_grunge/terminal_chassis.png");
-            cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height,
-                "/raid/ui/terminal_grunge/terminal_screen.png");
-            cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height,
-                "/raid/ui/terminal_grunge/terminal_controls.png");
 
-            const float button_x = (hud_vrect.x + hud_vrect.width * 0.38f) * scale;
-            const float button_y = (hud_vrect.y + hud_vrect.height * 0.38f) * scale;
-            const float button_w = hud_vrect.width * 0.24f * scale;
-            const float button_h = hud_vrect.height * 0.17f * scale;
-            cgi.SCR_DrawColorPic(button_x, button_y, button_w, button_h, "_white", rgba_t{ 20, 48, 30, 215 });
-            cgi.SCR_DrawFontString("COMPLETE", button_x + button_w * 0.5f,
-                button_y + button_h * 0.5f - cgi.SCR_FontLineHeight(scale) * 0.5f,
-                scale, rgba_t{ 120, 255, 150, 255 }, true, text_align_t::CENTER);
+            const auto draw_terminal_layer = [&](const char *path) {
+                int source_width = 0, source_height = 0;
+                cgi.Draw_GetPicSize(&source_width, &source_height, path);
+                if (source_width <= 0 || source_height <= 0)
+                    return false;
+                cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height, path);
+                return true;
+            };
 
-            const float cursor_x = (hud_vrect.x + hud_vrect.width *
-                (std::clamp<int>(ps->stats[STAT_RAID_HAT_HEALTH], 0, 1000) / 1000.0f)) * scale;
-            const float cursor_y = (hud_vrect.y + hud_vrect.height *
-                (std::clamp<int>(ps->stats[STAT_RAID_HAT_RANK], 0, 1000) / 1000.0f)) * scale;
+            const bool chassis_available = draw_terminal_layer(
+                "/raid/ui/terminal_grunge/terminal_chassis_runtime.png");
+            if (!chassis_available)
+            {
+                // Renderer-safe fallback. Leave the central aperture uncovered
+                // so a mapper camera still reads as the terminal's CRT view.
+                const float aperture_x = terminal_x + terminal_width * (180.0f / 1224.0f);
+                const float aperture_y = terminal_y + terminal_height * (160.0f / 1285.0f);
+                const float aperture_w = terminal_width * ((1050.0f - 180.0f) / 1224.0f);
+                const float aperture_h = terminal_height * ((720.0f - 160.0f) / 1285.0f);
+                const rgba_t fallback_color{ 18, 20, 18, 245 };
+                cgi.SCR_DrawColorPic(terminal_x, terminal_y, terminal_width,
+                    aperture_y - terminal_y, "_white", fallback_color);
+                cgi.SCR_DrawColorPic(terminal_x, aperture_y, aperture_x - terminal_x,
+                    aperture_h, "_white", fallback_color);
+                cgi.SCR_DrawColorPic(aperture_x + aperture_w, aperture_y,
+                    terminal_x + terminal_width - (aperture_x + aperture_w), aperture_h,
+                    "_white", fallback_color);
+                cgi.SCR_DrawColorPic(terminal_x, aperture_y + aperture_h, terminal_width,
+                    terminal_y + terminal_height - (aperture_y + aperture_h),
+                    "_white", fallback_color);
+            }
+            draw_terminal_layer("/raid/ui/terminal_grunge/terminal_screen.png");
+            draw_terminal_layer("/raid/ui/terminal_grunge/terminal_controls.png");
+
+            const int terminal_state = std::max<int>(0, ps->stats[STAT_RAID_TERMINAL_STATE]);
+            const int puzzle_progress = std::clamp(terminal_state & 0x0f, 0,
+                raid_terminal_ui::onboarding_answer_length);
+            const int pressed_key = ((terminal_state >> 4) & 0x0f) - 1;
+
+            const float screen_center_x = terminal_x + terminal_width * 0.5f;
+            const float prompt_y = terminal_y + terminal_height * (260.0f / 1285.0f);
+            cgi.SCR_DrawFontString("ACCESS TOKEN CORRUPTED", screen_center_x, prompt_y,
+                scale, rgba_t{ 114, 255, 148, 255 }, true, text_align_t::CENTER);
+
+            std::string reconstruction;
+            for (int index = 0; index < raid_terminal_ui::onboarding_answer_length; ++index)
+            {
+                if (index)
+                    reconstruction += ' ';
+                reconstruction += index < puzzle_progress ? raid_terminal_ui::onboarding_answer[index] : '_';
+            }
+            cgi.SCR_DrawFontString(reconstruction.c_str(), screen_center_x,
+                prompt_y + cgi.SCR_FontLineHeight(scale) * 2.0f, scale,
+                rgba_t{ 210, 255, 220, 255 }, true, text_align_t::CENTER);
+
+            const auto draw_key = [&](const raid_terminal_ui::key_t &key, int key_index,
+                const rgba_t &label_color) {
+                const float key_x = terminal_x + terminal_width * key.x;
+                const float key_y = terminal_y + terminal_height * key.y;
+                const float key_width = terminal_width * key.width;
+                const float key_height = terminal_height * key.height;
+                if (pressed_key == key_index)
+                    cgi.SCR_DrawColorPic(key_x, key_y, key_width, key_height, "_white",
+                        rgba_t{ 5, 10, 7, 165 });
+                cgi.SCR_DrawFontString(key.label, key_x + 4.0f * scale,
+                    key_y + 2.0f * scale, scale, label_color, true, text_align_t::LEFT);
+            };
+
+            for (size_t key_index = 0; key_index < raid_terminal_ui::onboarding_keys.size(); ++key_index)
+                draw_key(raid_terminal_ui::onboarding_keys[key_index], static_cast<int>(key_index),
+                    rgba_t{ 175, 230, 185, 255 });
+            draw_key(raid_terminal_ui::clear_key, 4, rgba_t{ 255, 184, 80, 255 });
+            draw_key(raid_terminal_ui::submit_key, 5, rgba_t{ 130, 255, 150, 255 });
+
+            const float cursor_x = terminal_x + terminal_width *
+                (std::clamp<int>(ps->stats[STAT_RAID_TERMINAL_CURSOR_X], 0, 1000) / 1000.0f);
+            const float cursor_y = terminal_y + terminal_height *
+                (std::clamp<int>(ps->stats[STAT_RAID_TERMINAL_CURSOR_Y], 0, 1000) / 1000.0f);
             cgi.SCR_DrawColorPic(cursor_x - 7.0f * scale, cursor_y - 1.0f * scale,
                 14.0f * scale, 2.0f * scale, "_white", rgba_t{ 255, 220, 96, 255 });
             cgi.SCR_DrawColorPic(cursor_x - 1.0f * scale, cursor_y - 7.0f * scale,
@@ -1799,16 +1859,10 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
                 rgba_t{ 80, 180, 255, 255 }, rgba_t{ 210, 96, 255, 255 }
             };
             const char *name = cgi.get_configstring(CONFIG_RAID_HAT_NAME + hat_name_slot);
-            const char *display_name = name && *name ? name : "RAID TARGET";
             const float center_x = (hud_vrect.x + hud_vrect.width * 0.5f) * scale;
             const float name_y = (hud_vrect.y + hud_vrect.height * 0.5f + 42.0f) * scale;
-            // Raid targets deliberately use the original bitmap alphabet. It
-            // reads as Quake-world instrumentation rather than a generic KEX
-            // menu label, and makes this presentation iteration testable at a
-            // glance regardless of scr_usekfont.
-            const int name_x = static_cast<int>(center_x -
-                (strlen(display_name) * CONCHAR_WIDTH * scale) * 0.5f);
-            CG_DrawString(name_x, static_cast<int>(name_y), scale, display_name, rank != 0, true);
+            cgi.SCR_DrawFontString(name && *name ? name : "RAID TARGET", center_x, name_y,
+                scale, rank_colors[rank], true, text_align_t::CENTER);
 
             const float width = 144.0f * scale;
             const float height = 5.0f * scale;
@@ -1823,19 +1877,20 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
                 cgi.SCR_DrawColorPic(x, y, width * health, height, "_white", rank_colors[rank]);
             if (has_shield)
             {
-                constexpr int segments = 12;
-                const float shield_height = 4.0f * scale;
-                const float shield_y = y - 7.0f * scale;
-                const float gap = 1.0f * scale;
-                const float segment_width = (width - gap * (segments - 1)) / segments;
-                const int active_segments = static_cast<int>(std::ceil(shield * segments));
-                cgi.SCR_DrawColorPic(x - scale, shield_y - scale,
-                    width + 2.0f * scale, shield_height + 2.0f * scale,
-                    "_white", rgba_t{ 0, 0, 0, 220 });
-                for (int segment = 0; segment < segments; ++segment)
-                    cgi.SCR_DrawColorPic(x + segment * (segment_width + gap), shield_y,
-                        segment_width, shield_height, "_white",
-                        segment < active_segments ? rgba_t{ 96, 208, 255, 255 } : rgba_t{ 25, 48, 60, 220 });
+                constexpr int shield_stops = 15;
+                const int active_stops = static_cast<int>(std::ceil(shield * shield_stops));
+                const std::string empty_wrapper(shield_stops, '.');
+                const std::string active_wrapper(active_stops, '.');
+                const float shield_y = y + height * 0.5f - cgi.SCR_FontLineHeight(scale) * 0.5f;
+                const float shield_x = center_x - cgi.SCR_MeasureFontString(empty_wrapper.c_str(), scale).x * 0.5f;
+                // Shield is a separate font presentation drawn in front of
+                // the health bar. Rank colour remains exclusively on the name
+                // and health presentation above.
+                cgi.SCR_DrawFontString(empty_wrapper.c_str(), shield_x, shield_y,
+                    scale, rgba_t{ 24, 68, 82, 230 }, true, text_align_t::LEFT);
+                if (!active_wrapper.empty())
+                    cgi.SCR_DrawFontString(active_wrapper.c_str(), shield_x, shield_y,
+                        scale, rgba_t{ 96, 224, 255, 255 }, true, text_align_t::LEFT);
             }
         }
 
