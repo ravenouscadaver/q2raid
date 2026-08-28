@@ -18,6 +18,7 @@ trace_t RaidCarry_PmoveTrace(gvec3_cref_t start, gvec3_cptr_t mins, gvec3_cptr_t
 bool RaidCarry_Drop(edict_t *player);
 void RaidCarry_OnPlayerDeath(edict_t *player);
 void RaidCarry_Update(edict_t *player);
+void RaidItems_OnMapReady();
 void RaidItems_RunFrame();
 void RaidCarry_ResetAll();
 void RaidHover_RunFrame();

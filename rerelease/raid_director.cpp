@@ -645,6 +645,15 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
             if (!RaidMonsters_SetEnabled(target.c_str(), operation.get("enabled", true).asBool()))
                 gi.Com_PrintFmt("[raid] monster door target '{}' not found\n", target);
         }
+        else if (op == "open_terminal")
+        {
+            const std::string target = operation.get("target", "").asString();
+            edict_t *terminal = target.empty()
+                ? nullptr
+                : G_FindByString<&edict_t::targetname>(nullptr, target.c_str());
+            if (!RaidTerminal_Open(activator, terminal))
+                gi.Com_PrintFmt("[raid] open_terminal could not open '{}' for its activator\n", target);
+        }
         else if (op == "bot_move_to")
         {
             if (!RaidBots_MoveTo(operation.get("bot", "first").asString().c_str(),
@@ -795,7 +804,7 @@ bool RaidDirector_ValidateOperations(const Json::Value &operations, const std::s
         "fire_target", "disable_entity", "set_field", "post_message", "post_encounter_message",
         "apply_status", "clear_status", "damage_player", "kill_player", "screen_shake",
         "screen_flash", "play_sound", "color_cycle", "set_monster_door", "bot_move_to",
-        "bot_follow_activator", "bot_operate_gadget"
+        "bot_follow_activator", "bot_operate_gadget", "open_terminal"
     };
 
     for (Json::ArrayIndex i = 0; i < operations.size(); ++i)
@@ -815,7 +824,7 @@ bool RaidDirector_ValidateOperations(const Json::Value &operations, const std::s
         }
 
         if ((op == "fire_target" || op == "disable_entity" || op == "set_field" || op == "set_monster_door" ||
-            op == "bot_move_to" || op == "bot_operate_gadget") &&
+            op == "bot_move_to" || op == "bot_operate_gadget" || op == "open_terminal") &&
             (!operation["target"].isString() || operation["target"].asString().empty()))
         {
             error = fmt::format("{}[{}] op '{}' requires target", context, i, op);
@@ -1084,6 +1093,7 @@ void RaidDirector_ResetForMap(const char *mapname)
 
 void RaidDirector_OnMapReady()
 {
+    RaidItems_OnMapReady();
     RaidDirector_CaptureEntityBaseline();
     if (!director.initialized || !raid_autoload || !raid_autoload->integer)
         return;

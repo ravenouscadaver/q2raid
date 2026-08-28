@@ -149,6 +149,7 @@
     <ClInclude Include="raid_reconstruction.h" />
     <ClInclude Include="raid_bots.h" />
     <ClInclude Include="raid_terminal.h" />
+    <ClInclude Include="raid_terminal_shared.h" />
     <ClInclude Include="rogue\m_rogue_carrier.h" />
     <ClInclude Include="rogue\m_rogue_stalker.h" />
     <ClInclude Include="rogue\m_rogue_turret.h" />

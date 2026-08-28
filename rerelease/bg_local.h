@@ -271,10 +271,22 @@ enum player_stat_t
 	STAT_RAID_STATUS_TIME_4,
 	STAT_RAID_HAT_NAME,
 	STAT_RAID_HAT_HEALTH,
-	STAT_RAID_HAT_RANK,
+
+	// The KEX player-state protocol has exactly 64 stat slots (0-63). Raid Hat
+	// rank previously became index 64 and wrote out of bounds. Q2Raid is a coop
+	// game, so reuse otherwise inactive CTF HUD slots for the remaining raid
+	// presentation state instead of extending the protocol array.
+	STAT_RAID_HAT_RANK = STAT_CTF_TEAMINFO,
+	STAT_RAID_TERMINAL_MODE = STAT_CTF_ID_VIEW,
+	STAT_RAID_TERMINAL_CURSOR_X = STAT_CTF_MATCH,
+	STAT_RAID_TERMINAL_CURSOR_Y = STAT_CTF_ID_VIEW_COLOR,
+	STAT_RAID_TERMINAL_STATE = STAT_CTF_TECH,
 
 	// don't use; just for verification
-    STAT_LAST
+	STAT_LAST = MAX_STATS
 };
 
-static_assert(STAT_LAST <= MAX_STATS + 1, "stats list overflow");
+static_assert(STAT_RAID_HAT_NAME < MAX_STATS && STAT_RAID_HAT_HEALTH < MAX_STATS &&
+	STAT_RAID_HAT_RANK < MAX_STATS && STAT_RAID_TERMINAL_MODE < MAX_STATS &&
+	STAT_RAID_TERMINAL_CURSOR_X < MAX_STATS && STAT_RAID_TERMINAL_CURSOR_Y < MAX_STATS &&
+	STAT_RAID_TERMINAL_STATE < MAX_STATS, "q2raid stats list overflow");

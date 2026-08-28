@@ -303,6 +303,7 @@ static const std::initializer_list<spawn_t> spawns = {
 	{ "trigger_raid_item", SP_trigger_raid_item },
 	{ "raid_hovertext", SP_raid_hovertext },
 	{ "raid_bot_goal", SP_raid_bot_goal },
+	{ "trigger_raid_interaction", SP_trigger_raid_interaction },
 	{ "trigger_raid_terminal", SP_trigger_raid_terminal },
 	{ "raid_monster_door", SP_raid_monster_door },
 	{ "raid_hat", SP_raid_hat },
