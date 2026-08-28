@@ -303,7 +303,52 @@ static void Weapon_RunThink(edict_t *ent)
 		is_silenced = MZ_SILENCED;
 	else
 		is_silenced = MZ_NONE;
+	const bool quick_grenade = ent->client->raid_quick_grenade_active &&
+		ent->client->pers.weapon->id == IT_AMMO_GRENADES;
+	const bool saved_attack = (ent->client->buttons & BUTTON_ATTACK) != 0;
+	if (quick_grenade)
+	{
+		if (!ent->client->raid_quick_grenade_released && ent->client->weaponstate == WEAPON_READY)
+			ent->client->latched_buttons |= BUTTON_ATTACK;
+		if (ent->client->grenade_time)
+		{
+			ent->client->raid_quick_grenade_released = true;
+			ent->client->buttons &= ~BUTTON_ATTACK;
+			ent->client->latched_buttons &= ~BUTTON_ATTACK;
+		}
+	}
 	ent->client->pers.weapon->weaponthink(ent);
+	if (saved_attack)
+		ent->client->buttons |= BUTTON_ATTACK;
+	if (quick_grenade && ent->client->raid_quick_grenade_released &&
+		ent->client->weaponstate == WEAPON_READY && !ent->client->grenade_time &&
+		!ent->client->grenade_finished_time)
+	{
+		const item_id_t return_weapon = ent->client->raid_quick_grenade_return_weapon;
+		ent->client->raid_quick_grenade_active = false;
+		ent->client->raid_quick_grenade_released = false;
+		ent->client->raid_quick_grenade_return_weapon = IT_NULL;
+		if (return_weapon != IT_NULL && ent->client->pers.inventory[return_weapon] > 0)
+			ent->client->newweapon = &itemlist[return_weapon];
+	}
+}
+
+bool RaidQuickGrenade_Start(edict_t *ent)
+{
+	if (!ent || !ent->client || !ent->client->pers.weapon ||
+		ent->client->raid_quick_grenade_active || ent->client->grenade_time ||
+		ent->client->grenade_finished_time > level.time)
+		return false;
+	if (ent->client->pers.inventory[IT_AMMO_GRENADES] <= 0)
+	{
+		gi.LocClient_Print(ent, PRINT_HIGH, "No grenades.\n");
+		return false;
+	}
+	ent->client->raid_quick_grenade_active = true;
+	ent->client->raid_quick_grenade_released = false;
+	ent->client->raid_quick_grenade_return_weapon = ent->client->pers.weapon->id;
+	ent->client->newweapon = &itemlist[IT_AMMO_GRENADES];
+	return true;
 }
 
 /*
