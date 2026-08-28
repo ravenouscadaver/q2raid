@@ -1,6 +1,8 @@
 #include "g_local.h"
+#include "raid_downed.h"
 #include "raid_director.h"
 #include "raid_terminal.h"
+#include "raid_terminal_shared.h"
 
 #include <array>
 
@@ -8,6 +10,8 @@ void InitTrigger(edict_t *self);
 
 namespace
 {
+constexpr spawnflags_t RAID_TERMINAL_LEGACY_DIRECT_OPEN = 1_spawnflag;
+
 struct terminal_state_t
 {
     bool active = false;
@@ -20,6 +24,9 @@ struct terminal_state_t
     gvec3_t last_cmd_angles;
     float cursor_x = 0.5f;
     float cursor_y = 0.5f;
+    int puzzle_progress = 0;
+    int last_key = -1;
+    gtime_t key_feedback_until;
 };
 
 std::array<terminal_state_t, MAX_CLIENTS> states;
@@ -46,9 +53,10 @@ void ClearHUD(edict_t *player)
 {
     if (!player || !player->client)
         return;
-    player->client->ps.stats[STAT_RAID_HAT_NAME] = 0;
-    player->client->ps.stats[STAT_RAID_HAT_HEALTH] = 0;
-    player->client->ps.stats[STAT_RAID_HAT_RANK] = 0;
+    player->client->ps.stats[STAT_RAID_TERMINAL_MODE] = 0;
+    player->client->ps.stats[STAT_RAID_TERMINAL_CURSOR_X] = 0;
+    player->client->ps.stats[STAT_RAID_TERMINAL_CURSOR_Y] = 0;
+    player->client->ps.stats[STAT_RAID_TERMINAL_STATE] = 0;
 }
 
 void Close(edict_t *player, bool completed)
@@ -70,7 +78,7 @@ void Close(edict_t *player, bool completed)
     }
 }
 
-void Open(edict_t *player, edict_t *gadget)
+void OpenTerminal(edict_t *player, edict_t *gadget)
 {
     terminal_state_t &state = State(player);
     if (state.active || gadget->timestamp > level.time)
@@ -98,22 +106,49 @@ void Open(edict_t *player, edict_t *gadget)
     RaidDirector_NotifyEntityEvent(gadget, "terminal_open", player);
 }
 
-TOUCH(raid_terminal_touch) (edict_t *self, edict_t *other, const trace_t &, bool) -> void
+TOUCH(raid_interaction_touch) (edict_t *self, edict_t *other, const trace_t &, bool) -> void
 {
-    if (!other->client || other->health <= 0)
+    if (!other->client || other->health <= 0 || RaidDowned_IsDown(other) ||
+        level.time < self->touch_debounce_time)
         return;
-    edict_t *gadget = NamedEntity(self->target);
-    if (!gadget || !gadget->classname || Q_strcasecmp(gadget->classname, "raid_gadget"))
+    self->touch_debounce_time = level.time + gtime_t::from_sec(self->wait > 0.0f ? self->wait : 0.5f);
+    // Compatibility wrapper only. Canonical terminals emit an interaction and
+    // let encounter JSON decide whether/which terminal should open.
+    RaidDirector_NotifyEntityEvent(self, "interact", other);
+
+    if (!self->spawnflags.has(RAID_TERMINAL_LEGACY_DIRECT_OPEN))
         return;
-    Open(other, gadget);
+
+    RaidTerminal_Open(other, NamedEntity(self->target));
 }
+}
+
+void SP_trigger_raid_interaction(edict_t *ent)
+{
+    InitTrigger(ent);
+    ent->touch = raid_interaction_touch;
+    gi.linkentity(ent);
 }
 
 void SP_trigger_raid_terminal(edict_t *ent)
 {
-    InitTrigger(ent);
-    ent->touch = raid_terminal_touch;
-    gi.linkentity(ent);
+    SP_trigger_raid_interaction(ent);
+}
+
+bool RaidTerminal_Open(edict_t *player, edict_t *terminal)
+{
+    if (!player || !player->client || player->health <= 0 ||
+        !terminal || !terminal->inuse || !terminal->classname ||
+        Q_strcasecmp(terminal->classname, "raid_gadget") ||
+        !terminal->message || Q_strcasecmp(terminal->message, "terminal"))
+        return false;
+
+    terminal_state_t &state = State(player);
+    if (state.active || terminal->timestamp > level.time)
+        return false;
+
+    OpenTerminal(player, terminal);
+    return true;
 }
 
 bool RaidTerminal_IsActive(edict_t *player)
@@ -146,15 +181,52 @@ bool RaidTerminal_HandleInput(edict_t *player, usercmd_t *cmd)
 
     player->client->ps.pmove.pm_type = PM_FREEZE;
     player->velocity = {};
-    player->client->ps.stats[STAT_RAID_HAT_NAME] = 33;
-    player->client->ps.stats[STAT_RAID_HAT_HEALTH] = static_cast<int16_t>(state.cursor_x * 1000.0f);
-    player->client->ps.stats[STAT_RAID_HAT_RANK] = static_cast<int16_t>(state.cursor_y * 1000.0f);
+    player->client->ps.stats[STAT_RAID_TERMINAL_MODE] = 1;
+    player->client->ps.stats[STAT_RAID_TERMINAL_CURSOR_X] = static_cast<int16_t>(state.cursor_x * 1000.0f);
+    player->client->ps.stats[STAT_RAID_TERMINAL_CURSOR_Y] = static_cast<int16_t>(state.cursor_y * 1000.0f);
+
+    if (state.key_feedback_until <= level.time)
+        state.last_key = -1;
+    player->client->ps.stats[STAT_RAID_TERMINAL_STATE] = static_cast<int16_t>(
+        (state.puzzle_progress & 0x0f) | ((state.last_key + 1) << 4));
 
     const bool click = (cmd->buttons & BUTTON_ATTACK) && !(player->client->oldbuttons & BUTTON_ATTACK);
-    if (click && state.cursor_x >= 0.38f && state.cursor_x <= 0.62f && state.cursor_y >= 0.38f && state.cursor_y <= 0.55f)
+    if (click)
     {
-        Close(player, true);
-        return true;
+        for (size_t key_index = 0; key_index < raid_terminal_ui::onboarding_keys.size(); ++key_index)
+        {
+            const raid_terminal_ui::key_t &key = raid_terminal_ui::onboarding_keys[key_index];
+            if (!raid_terminal_ui::contains(key, state.cursor_x, state.cursor_y))
+                continue;
+
+            state.last_key = static_cast<int>(key_index);
+            state.key_feedback_until = level.time + 180_ms;
+            if (state.puzzle_progress >= raid_terminal_ui::onboarding_answer_length)
+                break;
+            if (key.value == raid_terminal_ui::onboarding_answer[state.puzzle_progress])
+                state.puzzle_progress++;
+            else
+                state.puzzle_progress = key.value == raid_terminal_ui::onboarding_answer[0] ? 1 : 0;
+            break;
+        }
+
+        if (raid_terminal_ui::contains(raid_terminal_ui::clear_key, state.cursor_x, state.cursor_y))
+        {
+            state.puzzle_progress = 0;
+            state.last_key = 4;
+            state.key_feedback_until = level.time + 180_ms;
+        }
+        else if (raid_terminal_ui::contains(raid_terminal_ui::submit_key, state.cursor_x, state.cursor_y))
+        {
+            state.last_key = 5;
+            state.key_feedback_until = level.time + 180_ms;
+            if (state.puzzle_progress == raid_terminal_ui::onboarding_answer_length)
+            {
+                Close(player, true);
+                return true;
+            }
+            state.puzzle_progress = 0;
+        }
     }
     if ((cmd->buttons & BUTTON_USE) && !(player->client->oldbuttons & BUTTON_USE))
         Close(player, false);
