@@ -66,12 +66,9 @@ Evidence: terminal input sets `STAT_RAID_HAT_NAME` to sentinel value `33`.
 Hat stats before the client renderer reads them. Movement locks because terminal
 state is active, but no terminal is drawn.
 
-Correction applied locally: Raid Hat HUD update is skipped while terminal state
-owns those temporary slots.
-
-This is only a compatibility repair. Permanent remediation is a dedicated HUD
-presentation mode/fields rather than terminal state masquerading as Raid Hat
-state.
+Superseding local replacement: Raid Hat state is always updated independently.
+The Raid UI uses dedicated `STAT_RAID_UI_*` names and a separate renderer; no
+Raid Hat sentinel or temporary Raid Hat ownership remains.
 
 ### P0 — Raid Hat rank exceeded the fixed network stat array
 
@@ -90,13 +87,14 @@ Runtime verification remains required.
 
 Evidence:
 
-- `terminal_layers.json` names `terminal_controls.png`.
+- An older `terminal_layers.json` names `terminal_controls.png`.
 - The last pushed DLL named `terminal_controls_puzzle_v2.png`.
-- The latter was a rejected/misaligned artwork variant.
+- The replacement handoff identifies `terminal_controls_puzzle_v2.png` as the
+  preserved onboarding artwork.
 
-Correction applied locally: renderer uses `terminal_controls.png`. The temporary
-asset package duplicates the approved pixels under both names only so the old
-DLL can be tested.
+Current local replacement: `cg_raid_ui.cpp` centralizes the approved path as
+`terminal_controls_puzzle_v2.png`; `cg_screen.cpp` contains no terminal asset
+paths.
 
 Permanent remediation: load the manifest or accept Director-selected terminal
 presentation data. Do not hardcode encounter artwork paths in `cg_screen.cpp`.
@@ -111,8 +109,9 @@ Asset verification also found that the checked-out `terminal_chassis.png` and
 `terminal_master.png` are truncated/corrupt PNGs. The screen and controls alpha
 layers are valid, and the intact saved original artwork was recovered.
 
-Required correction: one flattened, renderer-safe runtime texture; an explicit
-availability check; a safe rectangle/text fallback; and packaging validation.
+Current local replacement preflights each graphical layer and retains a safe
+chassis fallback. The valid replacement `terminal_chassis.png` asset is still
+missing, and packaging/runtime validation remain required.
 Terminal failure must also release movement/input ownership.
 
 ### P0 — mapper interface is split across incompatible FGDs
@@ -244,7 +243,7 @@ At minimum, add debug assertions/dump checks for:
 | Downed | Implemented proof with local critical fixes | Teammate revival status is not classified here until canonical ledger review. |
 | Third-person | Implemented proof with local critical fix | State exit tests required. |
 | Terminal | Internal interaction proof; presentation broken in pushed DLL | Local HUD fix requires compile and runtime proof. |
-| Quick grenade | Implemented locally, unbuilt | `41c5428` adds `raid_grenade`; requires compile and runtime proof. |
+| Quick grenade | Incorrect `41c5428` design superseded; paired-command correction local and unbuilt | Must use `bind g +raid_grenade`: native prime while held, native throw on release, then previous-weapon restoration. Requires compile and runtime proof. |
 | Historical design-note concepts | Unclassified | Must be marked retained, superseded by Director, deferred, or rejected before counting. |
 
 ## Redundant-dependency policy

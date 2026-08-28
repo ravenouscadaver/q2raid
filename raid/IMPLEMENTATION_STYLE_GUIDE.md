@@ -65,7 +65,37 @@ Defaults must describe the ordinary fiction and mechanic:
 
 Exceptional initial conditions use positive, explicit names such as `START_CHARGED`. Avoid inverted flags such as `DOES_NOT_REQUIRE_CHARGE`.
 
-## 6. Entity policy
+## 6. Field economy and term association
+
+Quake II entities deliberately reuse a small set of broad edict fields. Preserve that economy instead of inventing a bespoke key or classname for every new role.
+
+Prefer the smallest common mapper vocabulary that can express the primitive:
+
+- one classname describing the reusable primitive;
+- up to two clearly associated name or group slots when one is insufficient;
+- up to two target slots for ordinary success, failure, alternate, or completion routing;
+- spawnflags for a small number of boolean starting conditions or overrides;
+- the established broad numeric fields such as `count`, `wait`, `delay`, `speed`, `health`, and `style` where their meaning is natural and documented.
+
+Most mapper-facing primitives should fit within that vocabulary. Do not create `special_terminal_for_core_room`-style classnames when a generic terminal or interaction plus a name, target, flag, or JSON consequence expresses the difference.
+
+Field names and project terms must remain associated with their ordinary meanings. A `target` routes activation; a `name` or `group` identifies something; a `count` counts; a `wait` represents time. Do not use a familiar broad field for a surprising unrelated meaning merely to avoid adding one necessary key.
+
+A second slot should extend the same concept: `name` / `name2`, `target` / `target2`, or another already established pair. Do not proliferate synonyms such as `link`, `route`, `destination`, `receiver`, and `output` for the same target relationship.
+
+Add a bespoke mapper key only when the common fields cannot express a stable, reusable concept without ambiguity. Add a bespoke classname only when the entity has a genuinely different primitive lifecycle or engine behaviour—not merely a different encounter role, label, destination, presentation, or JSON consequence.
+
+Runtime storage may reuse generic `edict_t` members across different entity types. The actual restriction is that two simultaneously active meanings must not overwrite or reinterpret the same live state. The malformed terminal crossed that line by using Raid Hat HUD state while both presentations could coexist; that was a collision, not an argument against ordinary Quake field reuse.
+
+Before adding mapper-facing vocabulary, check:
+
+1. Can an existing primitive plus `name`, `name2`, `target`, `target2`, or spawnflags express it?
+2. Should encounter JSON supply the bespoke consequence instead?
+3. Does the proposed term already exist under another spelling?
+4. Is a new classname describing real engine behaviour, or only one map's role?
+5. Will the field keep the same broad meaning everywhere it is exposed?
+
+## 7. Entity policy
 
 - `trigger_raid_interaction` is the canonical generic interaction volume.
 - `trigger_raid_terminal` is a deprecated compatibility alias.
@@ -73,7 +103,7 @@ Exceptional initial conditions use positive, explicit names such as `START_CHARG
 - `fgd/q2raid.fgd` is the only hand-maintained mapper definition.
 - Other FGDs are upstream inputs, generated distributions, or archived snapshots. Never repair a Q2Raid entity in more than one FGD by hand.
 
-## 7. Lifecycle pairing
+## 8. Lifecycle pairing
 
 Every operation that acquires state must have a safe inverse:
 
@@ -87,7 +117,7 @@ Every operation that acquires state must have a safe inverse:
 
 Cleanup must be idempotent and safe during death, disconnect, wipe, map transition, and partial activation.
 
-## 8. Terminology review
+## 9. Terminology review
 
 Before adding a new identifier:
 
@@ -97,7 +127,7 @@ Before adding a new identifier:
 4. If the meaning differs, document the distinction in hardened definitions before implementing it.
 5. Add validation and one narrow proof asset.
 
-## 9. Commit and test discipline
+## 10. Commit and test discipline
 
 - Integration commits reconcile history without mixing behavioural cleanup.
 - Behavioural changes and documentation must agree in the same reviewed batch.
@@ -105,6 +135,6 @@ Before adding a new identifier:
 - Runtime claims require testing the exact built commit.
 - Rejected builds remain rejected even if later commits appear related.
 
-## 10. Archived guidance
+## 11. Archived guidance
 
 Superseded documents are retained under `raid/archive/` with names that identify them as historical. Archived files are evidence, not active requirements.

@@ -2,6 +2,7 @@
 #include "m_insane.h"
 #include "raid_downed.h"
 #include "raid_thirdperson.h"
+#include "raid_ui.h"
 
 #include <array>
 
@@ -17,6 +18,7 @@ struct downed_state_t
     gtime_t damage_grace_until;
     gtime_t bleedout_at;
     gtime_t next_pain_sound;
+    bool bleedout_death = false;
 };
 
 downed_state_t states[MAX_CLIENTS];
@@ -38,6 +40,7 @@ void EnterDowned(edict_t *player)
     downed_state_t &state = State(player);
     if (state.downed || player->deadflag)
         return;
+    RaidUI_Close(player);
     state.downed = true;
     state.saved_health = std::max(1, player->max_health / 4);
     state.damage_buffer = std::max(0, downed_buffer->integer);
@@ -46,7 +49,8 @@ void EnterDowned(edict_t *player)
     // Shotguns and similar attacks arrive as several T_Damage calls. Keep the
     // rest of the attack that caused the down from instantly finishing it.
     state.damage_grace_until = level.time + FRAME_TIME_S;
-    state.bleedout_at = level.time + gtime_t::from_sec(std::clamp(bleedout->value, 3.0f, 300.0f));
+    const float bleedout_seconds = std::clamp(bleedout->value, 3.0f, 30.0f);
+    state.bleedout_at = level.time + gtime_t::from_sec(bleedout_seconds);
     state.next_pain_sound = level.time + gtime_t::from_sec(frandom(1.5f, 3.0f));
     player->health = 1;
     player->client->buttons &= ~BUTTON_ATTACK;
@@ -72,6 +76,11 @@ void LeaveDowned(edict_t *player, bool restore_health)
 bool RaidDowned_IsDown(edict_t *player)
 {
     return ValidPlayer(player) && State(player).downed;
+}
+
+bool RaidDowned_IsBleedoutDeath(edict_t *player)
+{
+    return ValidPlayer(player) && State(player).downed && State(player).bleedout_death;
 }
 
 bool RaidDowned_InterceptFatalDamage(edict_t *player)
@@ -135,14 +144,12 @@ void RaidDowned_Update(edict_t *player)
     downed_state_t &state = State(player);
     if (level.time >= state.bleedout_at)
     {
-        // Let the normal death callback leave the downed presentation so the
-        // replacement model/camera cannot survive into respawn.  A small
-        // lethal hit produces an ordinary corpse instead of gibbing the player.
-        // Downed crawling uses the crouched player flag; clear it before
-        // player_die chooses an animation so bleedout uses one of the normal
-        // standing death sequences rather than the crouch-death pose.
+        // Let the normal death callback clean up the downed presentation and
+        // create the ordinary player corpse. player_die recognizes this as a
+        // bleedout and lands directly on a corpse pose: no stand-up/fall
+        // sequence and no gib-class damage.
         state.damage_buffer = 0;
-        player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
+        state.bleedout_death = true;
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
         return;

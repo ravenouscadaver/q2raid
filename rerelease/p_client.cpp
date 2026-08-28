@@ -9,7 +9,7 @@
 #include "raid_downed.h"
 #include "raid_reconstruction.h"
 #include "raid_bots.h"
-#include "raid_terminal.h"
+#include "raid_ui.h"
 
 void SP_misc_teleporter_dest(edict_t *ent);
 
@@ -540,6 +540,8 @@ player_die
 */
 DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t &point, const mod_t &mod) -> void
 {
+	const bool raid_bleedout_corpse = RaidDowned_IsBleedoutDeath(self);
+	RaidUI_Close(self);
 	if (!self->deadflag)
 		RaidReconstruction_OnDeath(self);
 	RaidDowned_OnDeath(self);
@@ -692,7 +694,16 @@ DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 		{
 			// start a death animation
 			self->client->anim_priority = ANIM_DEATH;
-			if (self->client->ps.pmove.pm_flags & PMF_DUCKED)
+			if (raid_bleedout_corpse)
+			{
+				switch (irandom(3))
+				{
+				case 0: self->s.frame = self->client->anim_end = FRAME_death106; break;
+				case 1: self->s.frame = self->client->anim_end = FRAME_death206; break;
+				case 2: self->s.frame = self->client->anim_end = FRAME_death308; break;
+				}
+			}
+			else if (self->client->ps.pmove.pm_flags & PMF_DUCKED)
 			{
 				self->s.frame = FRAME_crdeath1 - 1;
 				self->client->anim_end = FRAME_crdeath5;
@@ -2957,7 +2968,7 @@ void ClientDisconnect(edict_t *ent)
 	RaidDirector_OnClientDisconnect(ent);
 	RaidDowned_Disconnect(ent);
 	RaidReconstruction_OnDisconnect(ent);
-	RaidTerminal_Disconnect(ent);
+	RaidUI_Disconnect(ent);
 	if (!ent->client)
 		return;
 
@@ -3267,6 +3278,8 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
 	level.current_entity = ent;
 	client = ent->client;
+	client->menu_suppressed_buttons &= ucmd->buttons;
+	ucmd->buttons &= ~client->menu_suppressed_buttons;
 
 	// [Paril-KEX] pass buttons through even if we are in intermission or
 	// chasing.
@@ -3275,8 +3288,20 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 	client->latched_buttons |= client->buttons & ~client->oldbuttons;
 	client->cmd = *ucmd;
 
-	if (RaidTerminal_HandleInput(ent, ucmd))
+	if (RaidUI_HandleInput(ent, ucmd))
 		return;
+
+	if (client->menu && ent->movetype != MOVETYPE_NOCLIP)
+	{
+		client->ps.pmove.pm_type = PM_FREEZE;
+		ent->velocity = {};
+		HandleMenuMovement(ent, ucmd);
+		ucmd->forwardmove = 0;
+		ucmd->sidemove = 0;
+		ucmd->buttons = BUTTON_NONE;
+		client->latched_buttons = BUTTON_NONE;
+		return;
+	}
 
 	if ((ucmd->buttons & BUTTON_CROUCH) && pm_config.n64_physics)
 	{

@@ -2,8 +2,14 @@
 
 #include <array>
 
-namespace raid_terminal_ui
+namespace raid_ui
 {
+enum screen_t : int
+{
+    SCREEN_NONE = 0,
+    SCREEN_ONBOARDING_TERMINAL = 1
+};
+
 struct key_t
 {
     const char *label;
@@ -14,9 +20,6 @@ struct key_t
     float height;
 };
 
-// Provisional normalized rectangles aligned to the current terminal art. The
-// production manifest will replace these values after the per-key alpha-mask
-// surgery without changing terminal puzzle logic.
 inline constexpr std::array<key_t, 4> onboarding_keys = {{
     { "P", 'P', 147.0f / 1224.0f, 872.0f / 1285.0f, 54.0f / 1224.0f, 49.0f / 1285.0f },
     { "A", 'A', 205.0f / 1224.0f, 872.0f / 1285.0f, 51.0f / 1224.0f, 49.0f / 1285.0f },

@@ -14,6 +14,7 @@ struct raid_thirdperson_state_t
     int32_t held_model_spawn_count = 0;
     std::string held_model_name;
     float held_model_scale = 0.0f;
+    bool held_item_charged = false;
     uint8_t saved_instance_bits = 0;
     vec3_t previous_camera;
     bool previous_camera_valid = false;
@@ -169,6 +170,9 @@ void UpdateHeldModel(edict_t *player)
         held->s.scale = state.held_model_scale;
     }
 
+    held->s.sound = state.held_item_charged ? gi.soundindex("weapons/rg_hum.wav") : 0;
+    held->s.loop_attenuation = ATTN_NORM;
+    held->s.loop_volume = state.held_item_charged ? 0.7f : 0.0f;
     held->s.origin = RaidCarry_HeldOrigin(player);
     held->s.angles = { 0, player->client->v_angle[YAW] + 90.0f, 0 };
     gi.linkentity(held);
@@ -204,9 +208,17 @@ void RaidThirdPerson_SetCarry(edict_t *player, bool carrying, const char *model,
         DestroyHeldModel(player);
         state.held_model_name.clear();
         state.held_model_scale = 0.0f;
+        state.held_item_charged = false;
         state.previous_camera_valid = false;
         RestoreFirstPersonWeapon(player);
     }
+}
+
+void RaidThirdPerson_SetCarryCharged(edict_t *player, bool charged)
+{
+    if (!player || !player->client || player->s.number < 1 || player->s.number > MAX_CLIENTS)
+        return;
+    StateFor(player).held_item_charged = charged;
 }
 
 void RaidThirdPerson_Toggle(edict_t *player)
