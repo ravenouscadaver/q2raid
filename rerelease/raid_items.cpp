@@ -292,7 +292,10 @@ void UpdateCharging(edict_t *player, edict_t *item)
     if (!trigger)
     {
         if (carry.charge_trigger_number)
+        {
             RaidDirector_NotifyEntityEvent(item, "charge_cancelled", player);
+            gi.LocClient_Print(player, PRINT_HIGH, "CORE CHARGE INTERRUPTED\n");
+        }
         carry.charge_trigger_number = 0;
         carry.charge_trigger_spawn_count = 0;
         carry.charge_started = 0_ms;
@@ -307,6 +310,7 @@ void UpdateCharging(edict_t *player, edict_t *item)
         carry.charge_started = level.time;
         RaidDirector_NotifyEntityEvent(item, "charge_begin", player);
         RaidDirector_NotifyEntityEvent(trigger, "charge_begin", player);
+        gi.LocClient_Print(player, PRINT_HIGH, "CORE CHARGING\n");
     }
 
     const float charge_time = trigger->delay > 0.0f ? trigger->delay : 1.0f;

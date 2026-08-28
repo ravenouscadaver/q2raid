@@ -121,6 +121,13 @@ TOUCH(raid_interaction_touch) (edict_t *self, edict_t *other, const trace_t &, b
 
     RaidTerminal_Open(other, NamedEntity(self->target));
 }
+
+TOUCH(raid_terminal_touch) (edict_t *self, edict_t *other, const trace_t &trace, bool other_touching_self) -> void
+{
+    raid_interaction_touch(self, other, trace, other_touching_self);
+    if (other && other->client && !RaidTerminal_IsActive(other))
+        RaidTerminal_Open(other, NamedEntity(self->target));
+}
 }
 
 void SP_trigger_raid_interaction(edict_t *ent)
@@ -132,7 +139,9 @@ void SP_trigger_raid_interaction(edict_t *ent)
 
 void SP_trigger_raid_terminal(edict_t *ent)
 {
-    SP_trigger_raid_interaction(ent);
+    InitTrigger(ent);
+    ent->touch = raid_terminal_touch;
+    gi.linkentity(ent);
 }
 
 bool RaidTerminal_Open(edict_t *player, edict_t *terminal)
@@ -154,6 +163,18 @@ bool RaidTerminal_Open(edict_t *player, edict_t *terminal)
 bool RaidTerminal_IsActive(edict_t *player)
 {
     return player && player->client && State(player).active;
+}
+
+void RaidTerminal_UpdateHUD(edict_t *player)
+{
+    if (!RaidTerminal_IsActive(player))
+        return;
+    terminal_state_t &state = State(player);
+    player->client->ps.stats[STAT_RAID_TERMINAL_MODE] = 1;
+    player->client->ps.stats[STAT_RAID_TERMINAL_CURSOR_X] = static_cast<int16_t>(state.cursor_x * 1000.0f);
+    player->client->ps.stats[STAT_RAID_TERMINAL_CURSOR_Y] = static_cast<int16_t>(state.cursor_y * 1000.0f);
+    player->client->ps.stats[STAT_RAID_TERMINAL_STATE] = static_cast<int16_t>(
+        (state.puzzle_progress & 0x0f) | ((state.last_key + 1) << 4));
 }
 
 bool RaidTerminal_HandleInput(edict_t *player, usercmd_t *cmd)

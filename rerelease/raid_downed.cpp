@@ -46,14 +46,16 @@ void EnterDowned(edict_t *player)
     // Shotguns and similar attacks arrive as several T_Damage calls. Keep the
     // rest of the attack that caused the down from instantly finishing it.
     state.damage_grace_until = level.time + FRAME_TIME_S;
-    state.bleedout_at = level.time + gtime_t::from_sec(std::clamp(bleedout->value, 3.0f, 300.0f));
+    const float bleedout_seconds = std::clamp(bleedout->value, 3.0f, 30.0f);
+    state.bleedout_at = level.time + gtime_t::from_sec(bleedout_seconds);
     state.next_pain_sound = level.time + gtime_t::from_sec(frandom(1.5f, 3.0f));
     player->health = 1;
     player->client->buttons &= ~BUTTON_ATTACK;
     player->client->latched_buttons &= ~BUTTON_ATTACK;
     player->client->ps.gunindex = 0;
     RaidThirdPerson_SetPresentation(player, true, "models/monsters/insane/tris.md2", state.frame);
-    gi.LocClient_Print(player, PRINT_HIGH, "MARINE DOWN - CRAWL TO COVER\n");
+    gi.LocClient_Print(player, PRINT_HIGH, "MARINE DOWN - BLEEDOUT {} SECONDS\n",
+        static_cast<int>(bleedout_seconds));
 }
 
 void LeaveDowned(edict_t *player, bool restore_health)
@@ -145,6 +147,13 @@ void RaidDowned_Update(edict_t *player)
         player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
+        if (player->deadflag)
+        {
+            player->client->anim_priority = ANIM_DEATH;
+            player->s.frame = FRAME_death101;
+            player->client->anim_end = FRAME_death106;
+            player->client->anim_time = level.time + 100_ms;
+        }
         return;
     }
     const bool moving = std::abs(player->client->cmd.forwardmove) > 1.0f ||
