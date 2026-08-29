@@ -303,69 +303,7 @@ static void Weapon_RunThink(edict_t *ent)
 		is_silenced = MZ_SILENCED;
 	else
 		is_silenced = MZ_NONE;
-	const bool quick_grenade = ent->client->raid_quick_grenade_active &&
-		ent->client->pers.weapon->id == IT_AMMO_GRENADES;
-	const button_t saved_buttons = ent->client->buttons;
-	if (quick_grenade)
-	{
-		const bool hold_native_attack = !ent->client->raid_quick_grenade_throw_completed &&
-			(!ent->client->raid_quick_grenade_attack_started ||
-			 !ent->client->raid_quick_grenade_release_requested);
-		if (hold_native_attack)
-			ent->client->buttons |= BUTTON_ATTACK;
-		else
-			ent->client->buttons &= ~BUTTON_ATTACK;
-	}
 	ent->client->pers.weapon->weaponthink(ent);
-	ent->client->buttons = saved_buttons;
-	if (quick_grenade && ent->client->weaponstate == WEAPON_FIRING)
-		ent->client->raid_quick_grenade_attack_started = true;
-	if (quick_grenade && ent->client->grenade_finished_time > level.time)
-		ent->client->raid_quick_grenade_throw_completed = true;
-	if (quick_grenade && ent->client->raid_quick_grenade_throw_completed &&
-		ent->client->weaponstate == WEAPON_READY && !ent->client->grenade_time &&
-		!ent->client->grenade_finished_time)
-	{
-		const item_id_t return_weapon = ent->client->raid_quick_grenade_return_weapon;
-		ent->client->raid_quick_grenade_active = false;
-		ent->client->raid_quick_grenade_release_requested = false;
-		ent->client->raid_quick_grenade_attack_started = false;
-		ent->client->raid_quick_grenade_throw_completed = false;
-		ent->client->raid_quick_grenade_return_weapon = IT_NULL;
-		if (return_weapon != IT_NULL && ent->client->pers.inventory[return_weapon] > 0)
-			ent->client->newweapon = &itemlist[return_weapon];
-		else
-			NoAmmoWeaponChange(ent, false);
-	}
-}
-
-bool RaidQuickGrenade_Start(edict_t *ent)
-{
-	if (!ent || !ent->client || !ent->client->pers.weapon ||
-		ent->client->raid_quick_grenade_active || ent->client->grenade_time ||
-		ent->client->grenade_finished_time > level.time)
-		return false;
-	if (ent->client->pers.inventory[IT_AMMO_GRENADES] <= 0)
-	{
-		gi.LocClient_Print(ent, PRINT_HIGH, "No grenades.\n");
-		return false;
-	}
-	if (RaidCarry_BlocksWeapons(ent) && !RaidCarry_Drop(ent))
-		return false;
-	ent->client->raid_quick_grenade_active = true;
-	ent->client->raid_quick_grenade_release_requested = false;
-	ent->client->raid_quick_grenade_attack_started = false;
-	ent->client->raid_quick_grenade_throw_completed = false;
-	ent->client->raid_quick_grenade_return_weapon = ent->client->pers.weapon->id;
-	ent->client->newweapon = &itemlist[IT_AMMO_GRENADES];
-	return true;
-}
-
-void RaidQuickGrenade_Release(edict_t *ent)
-{
-	if (!ent || !ent->client || !ent->client->raid_quick_grenade_active)
-		return;
-	ent->client->raid_quick_grenade_release_requested = true;
 }
 
 /*
@@ -1277,8 +1215,7 @@ void Throw_Generic(edict_t *ent, int FRAME_FIRE_LAST, int FRAME_IDLE_LAST, int F
 				// Paril: if we ran out of the throwable, switch
 				// so we don't appear to be holding one that we
 				// can't throw
-				if (!ent->client->pers.inventory[ent->client->pers.weapon->ammo] &&
-					!ent->client->raid_quick_grenade_active)
+				if (!ent->client->pers.inventory[ent->client->pers.weapon->ammo])
 				{
 					NoAmmoWeaponChange(ent, false);
 					ChangeWeapon(ent);

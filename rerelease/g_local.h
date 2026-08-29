@@ -2021,8 +2021,6 @@ gitem_t	*FindItemByClassname(const char *classname);
 edict_t	*Drop_Item(edict_t *ent, gitem_t *item);
 void	  SetRespawn(edict_t *ent, gtime_t delay, bool hide_self = true);
 void	  ChangeWeapon(edict_t *ent);
-bool      RaidQuickGrenade_Start(edict_t *ent);
-void      RaidQuickGrenade_Release(edict_t *ent);
 void	  SpawnItem(edict_t *ent, gitem_t *item);
 void	  Think_Weapon(edict_t *ent);
 item_id_t ArmorIndex(edict_t *ent);
@@ -2918,11 +2916,6 @@ struct gclient_t
 
 	bool	grenade_blew_up;
 	gtime_t grenade_time, grenade_finished_time;
-	bool raid_quick_grenade_active;
-	bool raid_quick_grenade_release_requested;
-	bool raid_quick_grenade_attack_started;
-	bool raid_quick_grenade_throw_completed;
-	item_id_t raid_quick_grenade_return_weapon = IT_NULL;
 	// RAFAEL
 	gtime_t quadfire_time;
 	// RAFAEL

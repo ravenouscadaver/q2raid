@@ -5,6 +5,7 @@
 #include "raid_thirdperson.h"
 #include "raid_items.h"
 #include "raid_downed.h"
+#include "raid_grenade.h"
 
 void SelectNextItem(edict_t *ent, item_flags_t itflags, bool menu = true)
 {
@@ -1607,30 +1608,6 @@ static void Cmd_ListMonsters_f(edict_t *ent)
 
 /*
 =================
-Cmd_RaidGrenadeDown_f
-
-Begin the temporary native hand-grenade weapon cycle. Key release is handled
-by Cmd_RaidGrenadeUp_f so the native fuse can be cooked.
-=================
-*/
-static void Cmd_RaidGrenadeDown_f(edict_t *ent)
-{
-	if (!ent->client || ent->deadflag || ent->health <= 0 || ent->client->resp.spectator)
-		return;
-
-	if (RaidDowned_IsDown(ent))
-		return;
-
-	RaidQuickGrenade_Start(ent);
-}
-
-static void Cmd_RaidGrenadeUp_f(edict_t *ent)
-{
-	RaidQuickGrenade_Release(ent);
-}
-
-/*
-=================
 ClientCommand
 =================
 */
@@ -1754,12 +1731,12 @@ void ClientCommand(edict_t *ent)
 		Cmd_PlayerList_f(ent);
 	else if (Q_strcasecmp(cmd, "raid_thirdperson") == 0)
 		RaidThirdPerson_Toggle(ent);
-	else if (Q_strcasecmp(cmd, "+raid_grenade") == 0)
-		Cmd_RaidGrenadeDown_f(ent);
-	else if (Q_strcasecmp(cmd, "-raid_grenade") == 0)
-		Cmd_RaidGrenadeUp_f(ent);
 	else if (Q_strcasecmp(cmd, "raid_downed_test") == 0)
 		RaidDowned_ToggleTest(ent);
+	else if (Q_strcasecmp(cmd, "raid_grenade_press") == 0)
+		RaidGrenade_Press(ent);
+	else if (Q_strcasecmp(cmd, "raid_grenade_release") == 0)
+		RaidGrenade_Release(ent);
 	// ZOID
 	else if (Q_strcasecmp(cmd, "team") == 0)
 		CTFTeam_f(ent);

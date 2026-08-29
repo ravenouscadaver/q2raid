@@ -45,6 +45,7 @@
     <ClInclude Include="raid_ui.h" />
     <ClInclude Include="raid_ui_shared.h" />
     <ClInclude Include="cg_raid_ui.h" />
+    <ClInclude Include="raid_grenade.h" />
     <ClInclude Include="bots\bot_debug.h">
       <Filter>bots</Filter>
     </ClInclude>
@@ -154,6 +155,7 @@
     <ClCompile Include="raid_ui.cpp" />
     <ClCompile Include="raid_hats.cpp" />
     <ClCompile Include="raid_downed.cpp" />
+    <ClCompile Include="raid_grenade.cpp" />
     <ClCompile Include="bots\bot_debug.cpp">
       <Filter>bots</Filter>
     </ClCompile>
