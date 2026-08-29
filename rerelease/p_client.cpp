@@ -541,6 +541,7 @@ player_die
 */
 DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t &point, const mod_t &mod) -> void
 {
+	RaidTerminal_Cancel(self);
 	RaidGrenade_OnDeath(self);
 	if (!self->deadflag)
 		RaidReconstruction_OnDeath(self);

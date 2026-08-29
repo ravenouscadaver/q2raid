@@ -22,6 +22,7 @@ struct terminal_state_t
     vec3_t return_origin;
     vec3_t return_angles;
     gvec3_t last_cmd_angles;
+    button_t previous_buttons = BUTTON_NONE;
     float cursor_x = 0.5f;
     float cursor_y = 0.5f;
     int puzzle_progress = 0;
@@ -78,6 +79,17 @@ void Close(edict_t *player, bool completed)
     }
 }
 
+void SuppressGameplayInput(edict_t *player, usercmd_t *cmd)
+{
+    cmd->buttons = BUTTON_NONE;
+    cmd->forwardmove = 0.0f;
+    cmd->sidemove = 0.0f;
+    cmd->upmove = 0.0f;
+    player->client->buttons = BUTTON_NONE;
+    player->client->latched_buttons = BUTTON_NONE;
+    player->client->weapon_fire_buffered = false;
+}
+
 void OpenTerminal(edict_t *player, edict_t *gadget)
 {
     terminal_state_t &state = State(player);
@@ -91,6 +103,7 @@ void OpenTerminal(edict_t *player, edict_t *gadget)
     state.return_origin = player->s.origin;
     state.return_angles = player->client->v_angle;
     state.last_cmd_angles = player->client->cmd.angles;
+    state.previous_buttons = player->client->buttons;
 
     if (edict_t *camera = NamedEntity(gadget->combattarget))
     {
@@ -109,7 +122,9 @@ void OpenTerminal(edict_t *player, edict_t *gadget)
 TOUCH(raid_interaction_touch) (edict_t *self, edict_t *other, const trace_t &, bool) -> void
 {
     if (!other->client || other->health <= 0 || RaidDowned_IsDown(other) ||
-        level.time < self->touch_debounce_time)
+        level.time < self->touch_debounce_time ||
+        !(other->client->buttons & BUTTON_USE) ||
+        (other->client->oldbuttons & BUTTON_USE))
         return;
     self->touch_debounce_time = level.time + gtime_t::from_sec(self->wait > 0.0f ? self->wait : 0.5f);
     // Compatibility wrapper only. Canonical terminals emit an interaction and
@@ -169,6 +184,10 @@ bool RaidTerminal_HandleInput(edict_t *player, usercmd_t *cmd)
         return false;
     }
 
+    const button_t buttons = cmd->buttons;
+    const button_t pressed = buttons & ~state.previous_buttons;
+    state.previous_buttons = buttons;
+
     const auto angle_delta = [](float current, float previous) {
         float delta = current - previous;
         while (delta > 180.0f) delta -= 360.0f;
@@ -190,7 +209,7 @@ bool RaidTerminal_HandleInput(edict_t *player, usercmd_t *cmd)
     player->client->ps.stats[STAT_RAID_TERMINAL_STATE] = static_cast<int16_t>(
         (state.puzzle_progress & 0x0f) | ((state.last_key + 1) << 4));
 
-    const bool click = (cmd->buttons & BUTTON_ATTACK) && !(player->client->oldbuttons & BUTTON_ATTACK);
+    const bool click = !!(pressed & BUTTON_ATTACK);
     if (click)
     {
         for (size_t key_index = 0; key_index < raid_terminal_ui::onboarding_keys.size(); ++key_index)
@@ -223,13 +242,23 @@ bool RaidTerminal_HandleInput(edict_t *player, usercmd_t *cmd)
             if (state.puzzle_progress == raid_terminal_ui::onboarding_answer_length)
             {
                 Close(player, true);
+                SuppressGameplayInput(player, cmd);
                 return true;
             }
             state.puzzle_progress = 0;
         }
     }
-    if ((cmd->buttons & BUTTON_USE) && !(player->client->oldbuttons & BUTTON_USE))
+    if (pressed & BUTTON_USE)
         Close(player, false);
+    SuppressGameplayInput(player, cmd);
+    return true;
+}
+
+bool RaidTerminal_Cancel(edict_t *player)
+{
+    if (!player || !player->client || !State(player).active)
+        return false;
+    Close(player, false);
     return true;
 }
 
