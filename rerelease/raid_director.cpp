@@ -7,6 +7,7 @@
 #include "raid_monsters.h"
 #include "raid_hats.h"
 #include "raid_downed.h"
+#include "raid_grenade.h"
 #include "raid_reconstruction.h"
 #include "raid_bots.h"
 #include "raid_terminal.h"
@@ -379,6 +380,7 @@ void RaidDirector_ClearDocument()
     RaidMonsters_Reset();
     RaidHats_Reset();
     RaidDowned_ResetAll();
+    RaidGrenade_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
     RaidTerminal_Reset();
@@ -1077,6 +1079,7 @@ void RaidDirector_ResetForMap(const char *mapname)
     RaidMonsters_ClearMap();
     RaidHats_ClearMap();
     RaidDowned_ResetAll();
+    RaidGrenade_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
     RaidTerminal_Reset();
@@ -1355,6 +1358,7 @@ bool RaidDirector_ResetEncounter()
     RaidMonsters_Reset();
     RaidHats_Reset();
     RaidDowned_ResetAll();
+    RaidGrenade_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
     RaidTerminal_Reset();

@@ -7,6 +7,7 @@
 #include "raid_thirdperson.h"
 #include "raid_items.h"
 #include "raid_downed.h"
+#include "raid_grenade.h"
 #include "raid_reconstruction.h"
 #include "raid_bots.h"
 #include "raid_terminal.h"
@@ -540,6 +541,7 @@ player_die
 */
 DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t &point, const mod_t &mod) -> void
 {
+	RaidGrenade_OnDeath(self);
 	if (!self->deadflag)
 		RaidReconstruction_OnDeath(self);
 	RaidDowned_OnDeath(self);
@@ -2954,6 +2956,7 @@ Will not be called between levels.
 */
 void ClientDisconnect(edict_t *ent)
 {
+	RaidGrenade_Disconnect(ent);
 	RaidDirector_OnClientDisconnect(ent);
 	RaidDowned_Disconnect(ent);
 	RaidReconstruction_OnDisconnect(ent);
@@ -3267,6 +3270,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
 	level.current_entity = ent;
 	client = ent->client;
+	RaidGrenade_FilterCommand(ent, *ucmd);
 
 	// [Paril-KEX] pass buttons through even if we are in intermission or
 	// chasing.
@@ -3933,6 +3937,7 @@ void ClientBeginServerFrame(edict_t *ent)
 		Think_Weapon(ent);
 	else
 		client->weapon_thunk = false;
+	RaidGrenade_Update(ent);
 
 	if (ent->deadflag)
 	{

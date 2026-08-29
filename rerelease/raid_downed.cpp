@@ -1,5 +1,6 @@
 #include "g_local.h"
 #include "m_insane.h"
+#include "m_player.h"
 #include "raid_downed.h"
 #include "raid_thirdperson.h"
 
@@ -145,6 +146,19 @@ void RaidDowned_Update(edict_t *player)
         player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
+        if (player->deadflag && player->s.modelindex != 0)
+        {
+            player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
+            player->s.modelindex = MODELINDEX_PLAYER;
+            player->s.frame = FRAME_death308;
+            player->s.old_frame = FRAME_death308;
+            player->client->anim_priority = ANIM_DEATH;
+            player->client->anim_end = FRAME_death308;
+            player->client->anim_duck = false;
+            player->client->anim_run = false;
+            player->client->anim_time = level.time;
+            gi.linkentity(player);
+        }
         return;
     }
     const bool moving = std::abs(player->client->cmd.forwardmove) > 1.0f ||
