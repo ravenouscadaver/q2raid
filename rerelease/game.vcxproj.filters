@@ -44,7 +44,6 @@
     <ClInclude Include="raid_terminal.h" />
     <ClInclude Include="raid_terminal_shared.h" />
     <ClInclude Include="raid_grenade.h" />
-    <ClInclude Include="raid_player_pose.h" />
     <ClInclude Include="bots\bot_debug.h">
       <Filter>bots</Filter>
     </ClInclude>
@@ -153,7 +152,6 @@
     <ClCompile Include="raid_hats.cpp" />
     <ClCompile Include="raid_downed.cpp" />
     <ClCompile Include="raid_grenade.cpp" />
-    <ClCompile Include="raid_player_pose.cpp" />
     <ClCompile Include="bots\bot_debug.cpp">
       <Filter>bots</Filter>
     </ClCompile>

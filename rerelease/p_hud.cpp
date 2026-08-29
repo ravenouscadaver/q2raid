@@ -1031,8 +1031,6 @@ void G_SetStats(edict_t *ent)
 		ent->client->ps.stats[STAT_HELPICON] = 0;
 
 	ent->client->ps.stats[STAT_SPECTATOR] = 0;
-	if (!RaidTerminal_IsActive(ent))
-		RaidHats_UpdateHUD(ent);
 
 	// set & run the health bar stuff
 	for (size_t i = 0; i < MAX_HEALTH_BARS; i++)
@@ -1091,6 +1089,11 @@ void G_SetStats(edict_t *ent)
 	// ZOID
 	SetCTFStats(ent);
 	// ZOID
+
+	// Raid uses otherwise-idle CTF stat slots.  CTF must finish first so it
+	// cannot erase the rank/shield payload or terminal state later this frame.
+	RaidHats_UpdateHUD(ent);
+	RaidTerminal_UpdateHUD(ent);
 }
 
 /*

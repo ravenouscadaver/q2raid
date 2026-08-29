@@ -151,7 +151,6 @@
     <ClInclude Include="raid_terminal.h" />
     <ClInclude Include="raid_terminal_shared.h" />
     <ClInclude Include="raid_grenade.h" />
-    <ClInclude Include="raid_player_pose.h" />
     <ClInclude Include="rogue\m_rogue_carrier.h" />
     <ClInclude Include="rogue\m_rogue_stalker.h" />
     <ClInclude Include="rogue\m_rogue_turret.h" />
@@ -230,7 +229,6 @@
     <ClCompile Include="raid_hats.cpp" />
     <ClCompile Include="raid_downed.cpp" />
     <ClCompile Include="raid_grenade.cpp" />
-    <ClCompile Include="raid_player_pose.cpp" />
     <ClCompile Include="q_std.cpp" />
     <ClCompile Include="rogue\g_rogue_combat.cpp" />
     <ClCompile Include="rogue\g_rogue_func.cpp" />

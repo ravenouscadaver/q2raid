@@ -541,6 +541,9 @@ player_die
 */
 DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t &point, const mod_t &mod) -> void
 {
+	const bool raid_bleedout_death = RaidDowned_IsBleedoutDeath(self);
+	if (!self->deadflag)
+		RaidDirector_NotifyEntityEvent(self, "player_death", attacker);
 	RaidTerminal_Cancel(self);
 	RaidGrenade_OnDeath(self);
 	if (!self->deadflag)
@@ -695,7 +698,19 @@ DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 		{
 			// start a death animation
 			self->client->anim_priority = ANIM_DEATH;
-			if (self->client->ps.pmove.pm_flags & PMF_DUCKED)
+			if (raid_bleedout_death)
+			{
+				// Bleedout already spent its visible time crawling.  Enter the
+				// ordinary third death pose directly and keep the corpse there.
+				self->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
+				self->s.modelindex = MODELINDEX_PLAYER;
+				self->s.frame = FRAME_death308;
+				self->s.old_frame = FRAME_death308;
+				self->client->anim_end = FRAME_death308;
+				self->client->anim_duck = false;
+				self->client->anim_run = false;
+			}
+			else if (self->client->ps.pmove.pm_flags & PMF_DUCKED)
 			{
 				self->s.frame = FRAME_crdeath1 - 1;
 				self->client->anim_end = FRAME_crdeath5;
