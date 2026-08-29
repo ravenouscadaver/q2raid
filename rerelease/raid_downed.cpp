@@ -10,6 +10,7 @@ namespace
 struct downed_state_t
 {
     bool downed = false;
+    bool bleedout_death = false;
     int saved_health = 1;
     int damage_buffer = 0;
     int frame = FRAME_crawl1;
@@ -72,6 +73,11 @@ void LeaveDowned(edict_t *player, bool restore_health)
 bool RaidDowned_IsDown(edict_t *player)
 {
     return ValidPlayer(player) && State(player).downed;
+}
+
+bool RaidDowned_IsBleedoutDeath(edict_t *player)
+{
+    return ValidPlayer(player) && State(player).bleedout_death;
 }
 
 bool RaidDowned_InterceptFatalDamage(edict_t *player)
@@ -142,6 +148,7 @@ void RaidDowned_Update(edict_t *player)
         // player_die chooses an animation so bleedout uses one of the normal
         // standing death sequences rather than the crouch-death pose.
         state.damage_buffer = 0;
+        state.bleedout_death = true;
         player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);

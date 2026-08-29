@@ -7,6 +7,7 @@
 #include "raid_monsters.h"
 #include "raid_hats.h"
 #include "raid_downed.h"
+#include "raid_grenade.h"
 #include "raid_reconstruction.h"
 #include "raid_bots.h"
 #include "raid_terminal.h"
@@ -131,12 +132,156 @@ int raid_message_priority = 0;
 struct queued_raid_event_t
 {
     std::string source;
+    std::string source_tag;
     std::string signal;
+    std::string subject;
+    std::string subject_tag;
     uint32_t activator_number = 0;
     int32_t activator_spawn_count = 0;
 };
 std::deque<queued_raid_event_t> queued_events;
 bool dispatching_events = false;
+
+struct raid_entity_event_metadata_t
+{
+    uint32_t entity_number = 0;
+    int32_t spawn_count = 0;
+    std::string alert_emit;
+    std::string alert_tag;
+    std::string arrival_target;
+    std::string arrival_tag;
+    std::string arrival_emit;
+    float arrival_radius = 0.0f;
+    bool arrived = false;
+};
+std::vector<raid_entity_event_metadata_t> entity_event_metadata;
+
+struct raid_listener_t
+{
+    std::string event, action, source, subject, tag, edge, emit;
+    float radius = 0.0f;
+    int required_count = 1;
+    float window = 0.0f;
+    float cooldown = 0.0f;
+    bool once = false, consume = false, dedupe = false;
+    int matched_count = 0;
+    gtime_t window_started;
+    gtime_t cooldown_until;
+    bool fired = false;
+};
+
+struct raid_listener_owner_t
+{
+    uint32_t entity_number = 0;
+    int32_t spawn_count = 0;
+    std::array<raid_listener_t, 4> listeners;
+};
+std::vector<raid_listener_owner_t> listener_owners;
+
+raid_listener_owner_t *ListenerOwner(edict_t *entity, bool create = false)
+{
+    if (!entity)
+        return nullptr;
+    auto found = std::find_if(listener_owners.begin(), listener_owners.end(), [entity](const auto &owner) {
+        return owner.entity_number == entity->s.number && owner.spawn_count == entity->spawn_count;
+    });
+    if (found != listener_owners.end())
+        return &*found;
+    if (!create)
+        return nullptr;
+    listener_owners.push_back({ entity->s.number, entity->spawn_count });
+    return &listener_owners.back();
+}
+
+raid_entity_event_metadata_t *EventMetadata(edict_t *entity, bool create = false)
+{
+    if (!entity)
+        return nullptr;
+    auto found = std::find_if(entity_event_metadata.begin(), entity_event_metadata.end(), [entity](const auto &entry) {
+        return entry.entity_number == entity->s.number && entry.spawn_count == entity->spawn_count;
+    });
+    if (found != entity_event_metadata.end())
+        return &*found;
+    if (!create)
+        return nullptr;
+    entity_event_metadata.push_back({ entity->s.number, entity->spawn_count });
+    return &entity_event_metadata.back();
+}
+
+std::string EventEntityName(edict_t *entity)
+{
+    if (!entity)
+        return {};
+    if (entity->targetname && *entity->targetname)
+        return entity->targetname;
+    return entity->classname ? entity->classname : "";
+}
+
+std::string EventEntityTag(edict_t *entity)
+{
+    if (auto *metadata = EventMetadata(entity))
+        return !metadata->alert_tag.empty() ? metadata->alert_tag : metadata->arrival_tag;
+    return {};
+}
+
+bool ListenerMatches(const raid_listener_t &listener, edict_t *owner, const queued_raid_event_t &event, edict_t *source)
+{
+    const std::string expected = !listener.event.empty() ? listener.event : listener.action;
+    if (expected.empty() || expected != event.signal)
+        return false;
+    if (!listener.source.empty() && listener.source != "*" && listener.source != event.source)
+        return false;
+    if (!listener.subject.empty() && listener.subject != "*" && listener.subject != event.subject)
+        return false;
+    if (!listener.tag.empty() && listener.tag != event.source_tag && listener.tag != event.subject_tag)
+        return false;
+    if (listener.radius > 0.0f && source && owner &&
+        (source->s.origin - owner->s.origin).length() > listener.radius)
+        return false;
+    if (!listener.edge.empty() && listener.edge != event.signal)
+        return false;
+    return true;
+}
+
+void QueueMapperListenerOutputs(const queued_raid_event_t &input, edict_t *source)
+{
+    std::vector<std::string> deduped;
+    for (raid_listener_owner_t &owner_state : listener_owners)
+    {
+        if (!owner_state.entity_number || owner_state.entity_number >= globals.num_edicts)
+            continue;
+        edict_t *owner = &g_edicts[owner_state.entity_number];
+        if (!owner->inuse || owner->spawn_count != owner_state.spawn_count)
+            continue;
+        for (raid_listener_t &listener : owner_state.listeners)
+        {
+            if (listener.emit.empty() || listener.fired || level.time < listener.cooldown_until ||
+                !ListenerMatches(listener, owner, input, source))
+                continue;
+            if (listener.window > 0.0f && (!listener.window_started ||
+                level.time > listener.window_started + gtime_t::from_sec(listener.window)))
+            {
+                listener.window_started = level.time;
+                listener.matched_count = 0;
+            }
+            if (++listener.matched_count < std::max(1, listener.required_count))
+                continue;
+            listener.matched_count = 0;
+            listener.window_started = 0_ms;
+            listener.cooldown_until = level.time + gtime_t::from_sec(std::max(0.0f, listener.cooldown));
+            listener.fired = listener.once;
+            const std::string output_key = fmt::format("{}:{}", EventEntityName(owner), listener.emit);
+            if (listener.dedupe && std::find(deduped.begin(), deduped.end(), output_key) != deduped.end())
+                continue;
+            if (listener.dedupe)
+                deduped.push_back(output_key);
+            queued_events.push_back({ EventEntityName(owner), EventEntityTag(owner), listener.emit,
+                input.subject, input.subject_tag, input.activator_number, input.activator_spawn_count });
+            if (listener.consume)
+                return;
+        }
+    }
+}
 
 void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::string &context, edict_t *activator);
 void RaidDirector_ClearStatusHUD(edict_t *player);
@@ -247,6 +392,8 @@ void RaidDirector_CaptureEntityBaseline()
 {
     entity_snapshots.clear();
     player_snapshots.clear();
+    entity_event_metadata.clear();
+    listener_owners.clear();
     // Player corpses live in Quake II's fixed body queue. Leave that queue out
     // of encounter restoration so failed fireteams can remain as world history;
     // the engine naturally cycles the oldest corpse after BODY_QUEUE_SIZE deaths.
@@ -379,6 +526,7 @@ void RaidDirector_ClearDocument()
     RaidMonsters_Reset();
     RaidHats_Reset();
     RaidDowned_ResetAll();
+    RaidGrenade_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
     RaidTerminal_Reset();
@@ -1077,6 +1225,7 @@ void RaidDirector_ResetForMap(const char *mapname)
     RaidMonsters_ClearMap();
     RaidHats_ClearMap();
     RaidDowned_ResetAll();
+    RaidGrenade_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
     RaidTerminal_Reset();
@@ -1116,6 +1265,24 @@ void RaidDirector_RunFrame()
 {
     RaidHover_RunFrame();
     RaidItems_RunFrame();
+    for (raid_entity_event_metadata_t &metadata : entity_event_metadata)
+    {
+        if (metadata.arrived || metadata.arrival_target.empty() || !metadata.entity_number ||
+            metadata.entity_number >= globals.num_edicts)
+            continue;
+        edict_t *monster = &g_edicts[metadata.entity_number];
+        if (!monster->inuse || monster->spawn_count != metadata.spawn_count || monster->deadflag)
+            continue;
+        edict_t *destination = G_FindByString<&edict_t::targetname>(nullptr, metadata.arrival_target.c_str());
+        if (!destination)
+            continue;
+        const float radius = metadata.arrival_radius > 0.0f ? metadata.arrival_radius : 64.0f;
+        if ((monster->s.origin - destination->s.origin).length() > radius)
+            continue;
+        metadata.arrived = true;
+        RaidDirector_NotifyEntityEvent(monster,
+            metadata.arrival_emit.empty() ? "monster_arrived" : metadata.arrival_emit.c_str(), destination);
+    }
     if (director.loaded)
         RaidDirector_CaptureNewPlayers();
     if (director.wipe_pending && level.time >= director.wipe_reset_at)
@@ -1204,11 +1371,14 @@ void RaidDirector_RunFrame()
 
 void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t *activator)
 {
-    if (!director.loaded || !source || !source->targetname || !signal)
+    if (!director.loaded || !source || !signal || !*signal)
         return;
 
-    queued_events.push_back({ source->targetname, signal,
-        activator ? activator->s.number : 0, activator ? activator->spawn_count : 0 });
+    queued_raid_event_t input { EventEntityName(source), EventEntityTag(source), signal,
+        EventEntityName(activator), EventEntityTag(activator),
+        activator ? activator->s.number : 0, activator ? activator->spawn_count : 0 };
+    queued_events.push_back(input);
+    QueueMapperListenerOutputs(input, source);
     if (dispatching_events)
         return;
 
@@ -1232,7 +1402,16 @@ void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t
 
         for (const Json::Value &event : events)
         {
-            if (event.get("source", "").asString() != queued.source || event.get("signal", "activate").asString() != queued.signal)
+            const std::string event_source = event.get("source", "*").asString();
+            if ((!event_source.empty() && event_source != "*" && event_source != queued.source) ||
+                event.get("signal", "activate").asString() != queued.signal)
+                continue;
+            const std::string source_tag = event.get("source_tag", "").asString();
+            const std::string subject = event.get("subject", "").asString();
+            const std::string subject_tag = event.get("subject_tag", "").asString();
+            if ((!source_tag.empty() && source_tag != queued.source_tag) ||
+                (!subject.empty() && subject != "*" && subject != queued.subject) ||
+                (!subject_tag.empty() && subject_tag != queued.subject_tag))
                 continue;
 
             const std::string from_state = event.get("from_state", "").asString();
@@ -1264,6 +1443,49 @@ void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t
         queued_events.clear();
     }
     dispatching_events = false;
+}
+
+void RaidDirector_NotifyMonsterAlerted(edict_t *monster, edict_t *player)
+{
+    raid_entity_event_metadata_t *metadata = EventMetadata(monster);
+    RaidDirector_NotifyEntityEvent(monster,
+        metadata && !metadata->alert_emit.empty() ? metadata->alert_emit.c_str() : "monster_alerted", player);
+}
+
+void RaidDirector_SetEntityEventField(edict_t *entity, const char *field, const char *value)
+{
+    if (!entity || !field)
+        return;
+    raid_entity_event_metadata_t *metadata = EventMetadata(entity, true);
+    const std::string text = value ? value : "";
+    if (!Q_strcasecmp(field, "raid_alert_emit")) metadata->alert_emit = text;
+    else if (!Q_strcasecmp(field, "raid_alert_tag")) metadata->alert_tag = text;
+    else if (!Q_strcasecmp(field, "raid_arrival_target")) { metadata->arrival_target = text; metadata->arrived = false; }
+    else if (!Q_strcasecmp(field, "raid_arrival_tag")) metadata->arrival_tag = text;
+    else if (!Q_strcasecmp(field, "raid_arrival_radius")) metadata->arrival_radius = std::max(0.0f, static_cast<float>(atof(text.c_str())));
+    else if (!Q_strcasecmp(field, "raid_arrival_emit")) metadata->arrival_emit = text;
+}
+
+void RaidDirector_SetListenerField(edict_t *entity, int listener_number, const char *field, const char *value)
+{
+    if (!entity || listener_number < 1 || listener_number > 4 || !field)
+        return;
+    raid_listener_t &listener = ListenerOwner(entity, true)->listeners[listener_number - 1];
+    const std::string text = value ? value : "";
+    if (!Q_strcasecmp(field, "event")) listener.event = text;
+    else if (!Q_strcasecmp(field, "action")) listener.action = text;
+    else if (!Q_strcasecmp(field, "source")) listener.source = text;
+    else if (!Q_strcasecmp(field, "subject")) listener.subject = text;
+    else if (!Q_strcasecmp(field, "tag")) listener.tag = text;
+    else if (!Q_strcasecmp(field, "radius")) listener.radius = std::max(0.0f, static_cast<float>(atof(text.c_str())));
+    else if (!Q_strcasecmp(field, "edge")) listener.edge = text;
+    else if (!Q_strcasecmp(field, "count")) listener.required_count = std::max(1, atoi(text.c_str()));
+    else if (!Q_strcasecmp(field, "window")) listener.window = std::max(0.0f, static_cast<float>(atof(text.c_str())));
+    else if (!Q_strcasecmp(field, "cooldown")) listener.cooldown = std::max(0.0f, static_cast<float>(atof(text.c_str())));
+    else if (!Q_strcasecmp(field, "once")) listener.once = atoi(text.c_str()) != 0;
+    else if (!Q_strcasecmp(field, "consume")) listener.consume = atoi(text.c_str()) != 0;
+    else if (!Q_strcasecmp(field, "dedupe")) listener.dedupe = atoi(text.c_str()) != 0;
+    else if (!Q_strcasecmp(field, "emit")) listener.emit = text;
 }
 
 bool RaidDirector_Load(const char *path)
@@ -1355,11 +1577,22 @@ bool RaidDirector_ResetEncounter()
     RaidMonsters_Reset();
     RaidHats_Reset();
     RaidDowned_ResetAll();
+    RaidGrenade_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
     RaidTerminal_Reset();
     RaidDirector_RestorePlayers();
     RaidDirector_ClearTransientState();
+    for (raid_entity_event_metadata_t &metadata : entity_event_metadata)
+        metadata.arrived = false;
+    for (raid_listener_owner_t &owner : listener_owners)
+        for (raid_listener_t &listener : owner.listeners)
+        {
+            listener.matched_count = 0;
+            listener.window_started = 0_ms;
+            listener.cooldown_until = 0_ms;
+            listener.fired = false;
+        }
     director.state = director.document["initial_state"].asString();
     RaidDirector_ExecuteOperations(director.document["reset"], "encounter reset", nullptr);
     RaidDirector_ExecuteEnter(director.state, nullptr);

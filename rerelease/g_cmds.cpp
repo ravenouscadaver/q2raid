@@ -5,6 +5,8 @@
 #include "raid_thirdperson.h"
 #include "raid_items.h"
 #include "raid_downed.h"
+#include "raid_grenade.h"
+#include "raid_terminal.h"
 
 void SelectNextItem(edict_t *ent, item_flags_t itflags, bool menu = true)
 {
@@ -1607,51 +1609,6 @@ static void Cmd_ListMonsters_f(edict_t *ent)
 
 /*
 =================
-Cmd_RaidGrenade_f
-
-Destiny-style quick grenade: throw immediately without changing the equipped
-weapon. The native hand-grenade timers are shared deliberately so this cannot
-overlap a grenade already being primed or bypass its recovery time.
-=================
-*/
-static void Cmd_RaidGrenade_f(edict_t *ent)
-{
-	if (!ent->client || ent->deadflag || ent->health <= 0 || ent->client->resp.spectator)
-		return;
-
-	if (RaidDowned_IsDown(ent) || RaidCarry_BlocksWeapons(ent))
-		return;
-
-	if (ent->client->grenade_time || ent->client->grenade_finished_time > level.time)
-		return;
-
-	if (ent->client->pers.inventory[IT_AMMO_GRENADES] <= 0)
-	{
-		gi.LocClient_Print(ent, PRINT_HIGH, "No grenades.\n");
-		return;
-	}
-
-	constexpr int damage = 125;
-	constexpr float radius = damage + 40.f;
-	constexpr gtime_t fuse = 2500_ms;
-	constexpr gtime_t recovery = 1_sec;
-
-	vec3_t start, dir;
-	P_ProjectSource(ent,
-		{ max(-62.5f, ent->client->v_angle[0]), ent->client->v_angle[1], ent->client->v_angle[2] },
-		{ 2, 0, -14 }, start, dir);
-
-	const int modified_damage = damage * P_DamageModifier(ent);
-	fire_grenade2(ent, start, dir, modified_damage, static_cast<int>(GRENADE_MAXSPEED), fuse, radius, false);
-
-	if (!G_CheckInfiniteAmmo(&itemlist[IT_AMMO_GRENADES]))
-		ent->client->pers.inventory[IT_AMMO_GRENADES]--;
-
-	ent->client->grenade_finished_time = level.time + recovery;
-}
-
-/*
-=================
 ClientCommand
 =================
 */
@@ -1775,10 +1732,18 @@ void ClientCommand(edict_t *ent)
 		Cmd_PlayerList_f(ent);
 	else if (Q_strcasecmp(cmd, "raid_thirdperson") == 0)
 		RaidThirdPerson_Toggle(ent);
-	else if (Q_strcasecmp(cmd, "raid_grenade") == 0)
-		Cmd_RaidGrenade_f(ent);
 	else if (Q_strcasecmp(cmd, "raid_downed_test") == 0)
 		RaidDowned_ToggleTest(ent);
+	else if (Q_strcasecmp(cmd, "raid_grenade_press") == 0)
+		RaidGrenade_Press(ent);
+	else if (Q_strcasecmp(cmd, "raid_grenade_release") == 0)
+		RaidGrenade_Release(ent);
+	else if (Q_strcasecmp(cmd, "raid_interact_press") == 0)
+		RaidTerminal_Interact(ent, true);
+	else if (Q_strcasecmp(cmd, "raid_interact_release") == 0)
+		RaidTerminal_Interact(ent, false);
+	else if (Q_strcasecmp(cmd, "raid_terminal_cancel") == 0)
+		RaidTerminal_Cancel(ent);
 	// ZOID
 	else if (Q_strcasecmp(cmd, "team") == 0)
 		CTFTeam_f(ent);
