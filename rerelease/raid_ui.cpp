@@ -1,3 +1,10 @@
+// Q2RAID MODIFIED
+// RAID_STATUS: IMPLEMENTED_UNBUILT
+// RAID_STATUS_DATE: 2026-08-29
+// RAID_FEATURE: terminal_mouse_input
+// RAID_EVIDENCE: user runtime report after build 88
+// RAID_PROTECTION: READ_ONLY_UNLESS_USER_AUTHORIZED
+
 #include "g_local.h"
 #include "raid_downed.h"
 #include "raid_director.h"
@@ -107,7 +114,6 @@ void ConsumeInput(edict_t *player, usercmd_t *cmd)
     cmd->buttons = BUTTON_NONE;
     player->client->latched_buttons = BUTTON_NONE;
     player->velocity = {};
-    player->client->ps.pmove.pm_type = PM_FREEZE;
 }
 
 float AngleDelta(float current, float previous)

@@ -1,3 +1,10 @@
+// Q2RAID MODIFIED
+// RAID_STATUS: IMPLEMENTED_UNBUILT
+// RAID_STATUS_DATE: 2026-08-29
+// RAID_FEATURE: terminal_asset_free_layout
+// RAID_EVIDENCE: user runtime screenshot after build 88
+// RAID_PROTECTION: READ_ONLY_UNLESS_USER_AUTHORIZED
+
 #pragma once
 
 #include <array>
@@ -21,18 +28,18 @@ struct key_t
 };
 
 inline constexpr std::array<key_t, 4> onboarding_keys = {{
-    { "P", 'P', 147.0f / 1224.0f, 872.0f / 1285.0f, 54.0f / 1224.0f, 49.0f / 1285.0f },
-    { "A", 'A', 205.0f / 1224.0f, 872.0f / 1285.0f, 51.0f / 1224.0f, 49.0f / 1285.0f },
-    { "H", 'H', 260.0f / 1224.0f, 872.0f / 1285.0f, 51.0f / 1224.0f, 49.0f / 1285.0f },
-    { "L", 'L', 316.0f / 1224.0f, 872.0f / 1285.0f, 51.0f / 1224.0f, 49.0f / 1285.0f }
+    { "P", 'P', 0.25f, 0.66f, 0.09f, 0.08f },
+    { "A", 'A', 0.37f, 0.66f, 0.09f, 0.08f },
+    { "H", 'H', 0.49f, 0.66f, 0.09f, 0.08f },
+    { "L", 'L', 0.61f, 0.66f, 0.09f, 0.08f }
 }};
 
 inline constexpr key_t clear_key = {
-    "CLEAR", 0, 1072.0f / 1224.0f, 872.0f / 1285.0f, 61.0f / 1224.0f, 127.0f / 1285.0f
+    "CLEAR", 0, 0.25f, 0.79f, 0.20f, 0.08f
 };
 
 inline constexpr key_t submit_key = {
-    "ENTER", 0, 1072.0f / 1224.0f, 1010.0f / 1285.0f, 61.0f / 1224.0f, 127.0f / 1285.0f
+    "ENTER", 0, 0.55f, 0.79f, 0.20f, 0.08f
 };
 
 inline constexpr char onboarding_answer[] = "ALPHA";
