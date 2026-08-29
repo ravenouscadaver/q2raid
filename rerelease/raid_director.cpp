@@ -9,7 +9,7 @@
 #include "raid_downed.h"
 #include "raid_reconstruction.h"
 #include "raid_bots.h"
-#include "raid_terminal.h"
+#include "raid_ui.h"
 
 #include "json/json.h"
 
@@ -100,6 +100,10 @@ struct raid_entity_snapshot_t
     gtime_t nextthink;
     save_think_t think;
     int32_t health = 0, max_health = 0, count = 0;
+    item_id_t power_armor_type = IT_NULL;
+    int32_t power_armor_power = 0;
+    item_id_t initial_power_armor_type = IT_NULL;
+    int32_t max_power_armor_power = 0;
     bool deadflag = false, takedamage = false;
     effects_t effects;
     renderfx_t renderfx;
@@ -196,6 +200,10 @@ void RaidDirector_SnapshotEntity(edict_t *entity)
     snapshot.health = entity->health;
     snapshot.max_health = entity->max_health;
     snapshot.count = entity->count;
+    snapshot.power_armor_type = entity->monsterinfo.power_armor_type;
+    snapshot.power_armor_power = entity->monsterinfo.power_armor_power;
+    snapshot.initial_power_armor_type = entity->monsterinfo.initial_power_armor_type;
+    snapshot.max_power_armor_power = entity->monsterinfo.max_power_armor_power;
     snapshot.deadflag = entity->deadflag;
     snapshot.takedamage = entity->takedamage;
     snapshot.effects = entity->s.effects;
@@ -320,6 +328,10 @@ void RaidDirector_RestoreEntitySnapshots()
         entity->health = snapshot.health;
         entity->max_health = snapshot.max_health;
         entity->count = snapshot.count;
+        entity->monsterinfo.power_armor_type = snapshot.power_armor_type;
+        entity->monsterinfo.power_armor_power = snapshot.power_armor_power;
+        entity->monsterinfo.initial_power_armor_type = snapshot.initial_power_armor_type;
+        entity->monsterinfo.max_power_armor_power = snapshot.max_power_armor_power;
         entity->item_picked_up_by = snapshot.item_picked_up_by;
         entity->deadflag = snapshot.deadflag;
         entity->takedamage = snapshot.takedamage;
@@ -381,7 +393,7 @@ void RaidDirector_ClearDocument()
     RaidDowned_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
-    RaidTerminal_Reset();
+    RaidUI_Reset();
     RaidDirector_ClearTransientState();
 
     director.loaded = false;
@@ -651,7 +663,7 @@ void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::st
             edict_t *terminal = target.empty()
                 ? nullptr
                 : G_FindByString<&edict_t::targetname>(nullptr, target.c_str());
-            if (!RaidTerminal_Open(activator, terminal))
+            if (!RaidUI_Open(activator, terminal))
                 gi.Com_PrintFmt("[raid] open_terminal could not open '{}' for its activator\n", target);
         }
         else if (op == "bot_move_to")
@@ -1079,7 +1091,7 @@ void RaidDirector_ResetForMap(const char *mapname)
     RaidDowned_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
-    RaidTerminal_Reset();
+    RaidUI_Reset();
     RaidDirector_ClearTransientState();
     entity_snapshots.clear();
     player_snapshots.clear();
@@ -1357,7 +1369,7 @@ bool RaidDirector_ResetEncounter()
     RaidDowned_ResetAll();
     RaidReconstruction_Reset();
     RaidBots_Reset();
-    RaidTerminal_Reset();
+    RaidUI_Reset();
     RaidDirector_RestorePlayers();
     RaidDirector_ClearTransientState();
     director.state = director.document["initial_state"].asString();

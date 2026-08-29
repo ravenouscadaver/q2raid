@@ -3,7 +3,7 @@
 #include "g_local.h"
 #include "raid_downed.h"
 #include "raid_hats.h"
-#include "raid_terminal.h"
+#include "raid_ui.h"
 #include "g_statusbar.h"
 
 /*
@@ -1031,8 +1031,6 @@ void G_SetStats(edict_t *ent)
 		ent->client->ps.stats[STAT_HELPICON] = 0;
 
 	ent->client->ps.stats[STAT_SPECTATOR] = 0;
-	if (!RaidTerminal_IsActive(ent))
-		RaidHats_UpdateHUD(ent);
 
 	// set & run the health bar stuff
 	for (size_t i = 0; i < MAX_HEALTH_BARS; i++)
@@ -1091,6 +1089,10 @@ void G_SetStats(edict_t *ent)
 	// ZOID
 	SetCTFStats(ent);
 	// ZOID
+	// Raid presentation deliberately owns its aliased stat slots after CTF has
+	// finished clearing/updating them.
+	RaidHats_UpdateHUD(ent);
+	RaidUI_UpdateHUD(ent);
 }
 
 /*

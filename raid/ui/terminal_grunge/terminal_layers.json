@@ -1,0 +1,87 @@
+{
+  "canvas": [
+    1224,
+    1285
+  ],
+  "regions": {
+    "screen": [
+      [
+        210,
+        160
+      ],
+      [
+        1018,
+        160
+      ],
+      [
+        1050,
+        195
+      ],
+      [
+        1050,
+        682
+      ],
+      [
+        1015,
+        720
+      ],
+      [
+        210,
+        720
+      ],
+      [
+        180,
+        685
+      ],
+      [
+        180,
+        195
+      ]
+    ],
+    "keyboard": [
+      [
+        91,
+        870
+      ],
+      [
+        839,
+        870
+      ],
+      [
+        839,
+        1148
+      ],
+      [
+        91,
+        1148
+      ]
+    ],
+    "keypad": [
+      [
+        895,
+        870
+      ],
+      [
+        1138,
+        870
+      ],
+      [
+        1138,
+        1148
+      ],
+      [
+        895,
+        1148
+      ]
+    ]
+  },
+  "notes": {
+    "stack_order": [
+      "terminal_chassis.png",
+      "terminal_screen.png",
+      "terminal_controls_puzzle_v2.png"
+    ],
+    "screen_can_be_replaced": "Render Raid UI into the screen polygon or use it as an alpha/UV mask; do not move the player to simulate a camera feed.",
+    "controls": "Darken individual key rectangles at runtime within the controls layer; all layers share identical canvas coordinates."
+  }
+}

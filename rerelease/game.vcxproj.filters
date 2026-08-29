@@ -42,7 +42,9 @@
     <ClInclude Include="raid_reconstruction.h" />
     <ClInclude Include="raid_bots.h" />
     <ClInclude Include="raid_terminal.h" />
-    <ClInclude Include="raid_terminal_shared.h" />
+    <ClInclude Include="raid_ui.h" />
+    <ClInclude Include="raid_ui_shared.h" />
+    <ClInclude Include="cg_raid_ui.h" />
     <ClInclude Include="bots\bot_debug.h">
       <Filter>bots</Filter>
     </ClInclude>
@@ -89,6 +91,7 @@
   <ItemGroup>
     <ClCompile Include="cg_main.cpp" />
     <ClCompile Include="cg_screen.cpp" />
+    <ClCompile Include="cg_raid_ui.cpp" />
     <ClCompile Include="g_ai.cpp" />
     <ClCompile Include="g_chase.cpp" />
     <ClCompile Include="g_cmds.cpp" />
@@ -148,6 +151,7 @@
     <ClCompile Include="raid_reconstruction.cpp" />
     <ClCompile Include="raid_bots.cpp" />
     <ClCompile Include="raid_terminal.cpp" />
+    <ClCompile Include="raid_ui.cpp" />
     <ClCompile Include="raid_hats.cpp" />
     <ClCompile Include="raid_downed.cpp" />
     <ClCompile Include="bots\bot_debug.cpp">

@@ -35,7 +35,7 @@ Only the exact phrase **`go go gadget`** authorizes a compile or push.
 | `4f92ad6` | Local, unbuilt | Downed players cannot pick up raid items. |
 | `c500b28` | Local, unbuilt | Core phase JSON and preloaded-core proof files. |
 | `fa5e500` | Local, unbuilt | Latest accepted rank colours, shield overlay, and ordinary corpse correction. |
-| `41c5428` | Local HEAD, unbuilt | One-button `raid_grenade` implementation. |
+| `41c5428` | Historical incorrect implementation | One-button offhand projectile; superseded by the paired native-weapon contract below. |
 
 ## Latest accepted fixes
 
@@ -55,49 +55,54 @@ also corrupt, while screen/controls are valid. Local post-review work relocates
 rank and dedicated terminal state into valid unused CTF HUD slots and adds a
 safe composite fallback; this remains unbuilt.
 
-Latest accepted remediation, not yet implemented:
+Current local replacement, unbuilt:
 
-1. Flatten the approved terminal artwork into one lower-resolution runtime
-   texture.
-2. Check availability/renderer constraints before drawing it.
-3. Fall back to safe rectangle/text presentation if unavailable.
-4. Package required runtime assets beside the DLL.
-5. Give terminal presentation dedicated ownership instead of borrowing Raid Hat
-   stat slots.
-6. Generic interaction emits an event; JSON issues `open_terminal`. Direct
-   `trigger_raid_terminal` is deprecated proof code, not the target design.
+1. PMenu owns per-client open/close and input capture.
+2. `raid_ui` owns the session, cursor, source gadget, completion and cleanup.
+3. `cg_raid_ui` owns graphical composition and performs layer availability
+   checks with a safe chassis fallback.
+4. Dedicated `STAT_RAID_UI_*` names use valid coop-only protocol slots; Raid Hat
+   state remains independent.
+5. Generic interaction emits an event; JSON may issue `open_terminal`. Direct
+   `trigger_raid_terminal` remains compatibility proof wiring.
+6. Terminal operation does not teleport the player or change solidity.
 
-The approved controls artwork is `terminal_controls.png`. Rejected or duplicate
-variants must not silently become canonical.
+The approved controls artwork for the onboarding proof is
+`terminal_controls_puzzle_v2.png`. Variants must not silently replace it.
 
 ### Raid Hat name, health, and shield
 
 Latest accepted presentation is in `fa5e500`, unbuilt:
 
 - Name tag retains independent rank colours: white, red, blue, purple.
-- Shield is a separate cyan font batch of 15 periods.
+- Shield is a separate cyan font batch of 45 periods, centered across roughly
+  the full health-bar width.
 - It is drawn directly over/in front of the health bar, not above it.
 - Empty capacity is dim cyan; current shield is bright cyan.
 - Shield colour must never recolour the name tag.
+- Runtime feedback accepted the centered shield/name/health presentation. The
+  final local polish widens the shield from 15 to 45 periods.
 
 Earlier tiny, malformed, name-coloured, or name-attached shield variants are
 rejected.
 
 ### Quick grenade
 
-Latest accepted implementation is `41c5428`, unbuilt:
+Commit `41c5428` implemented the wrong mechanic: an immediate offhand projectile
+that bypassed the native grenade weapon. Documentation describing that version
+as accepted is superseded.
 
-- Client command: `raid_grenade`.
-- Recommended binding: `bind g raid_grenade`.
-- Throws immediately without changing the equipped weapon.
-- Consumes one grenade unless infinite ammo is enabled.
-- Blocked while dead, spectating, downed, carrying a weapon-blocking heavy item,
-  or already priming/recovering a hand grenade.
-- Current constants: 125 base damage, 800 speed, 2.5-second fuse, one-second
-  recovery.
+Locked contract:
 
-This was a confirmed Destiny-like checklist requirement. Earlier statements
-that the entire list was implemented while it was absent were false.
+- Recommended binding: `bind g +raid_grenade`.
+- `+raid_grenade` remembers the current weapon, ejects a weapon-blocking heavy
+  raid item, equips native hand grenades, and begins the native prime.
+- Holding G retains the native grenade and cooks its native fuse.
+- `-raid_grenade` releases native attack so the native throw occurs.
+- Native damage, ammo use, animations, variable throw speed, in-hand explosion,
+  and recovery remain authoritative.
+- The remembered weapon is restored after native throw/recovery completes.
+- Dead, spectating, and downed players cannot begin the sequence.
 
 ### Downed, bleedout, corpse, and respawn
 
@@ -106,8 +111,8 @@ Accepted corrections currently in local lineage:
 - Downed players cannot collect raid items.
 - Bleedout retains downed ownership until ordinary death cleanup runs.
 - Bleedout uses a small lethal hit, not `100000` gib damage.
-- `PMF_DUCKED` is cleared before lethal damage so `player_die` selects a normal
-  standing death sequence rather than the crouched corpse sequence.
+- Bleedout uses small lethal damage and lands directly on a normal final player
+  corpse pose. It does not clear crouch and play a stand-up/fall sequence.
 - Third-person replacement state and view weapon must be restored on every exit.
 - Downed audio should rotate appropriate pain/help sounds and exclude the
   counter-intuitive “kill me” line.
@@ -138,13 +143,18 @@ Accepted ordinary semantics:
 
 `core_phase_progression_test.json` proves the intended state sequence on paper:
 three deposits advance phases, phase 3 applies Doomsday, and completion clears
-it. `preloaded_core_test.map` is a physical proof asset, but initial socket
-occupancy is not yet a formally registered runtime relationship.
+it. `preloaded_core_test.map` places a `START_CHARGED` power core at the exact
+origin of a charged-only core socket. Map-ready/reset bookkeeping registers the
+core as that socket's occupied item and releases ownership on pickup/deposit.
+This source path is implemented but not yet runtime-tested.
 
-The current interface remains malformed: charge defaults are encoded through an
-inverted spawnflag, legacy fields carry semantic data, diagnostics are weak,
-and obsolete FGDs can hide required properties. Do not treat the current clean
-entity entries as proof of clean runtime semantics.
+Ordinary cores start uncharged; `START_CHARGED` is the explicit positive map
+override. The canonical FGD exposes the same meaning. Do not treat clean source
+or mapper entries as runtime proof until the preloaded map is tested.
+
+Charged carried cores use a positional electrical hum and a three-emitter spark
+corona. While Volatile is active, the corona ramps toward six emitters and a
+faster pulse rate as the remaining duration approaches zero.
 
 ## Repeated failures and prevention
 
@@ -193,7 +203,8 @@ and the exact authorization phrase is supplied. Its minimum runtime checklist:
 - terminal opens, renders or safely falls back, completes/cancels, and restores
   movement;
 - shield periods overlay the health bar while name rank colour remains intact;
-- `bind g raid_grenade` throws once, consumes ammo, and preserves the weapon;
+- `bind g +raid_grenade` primes while held, throws on release through the native
+  grenade weapon, consumes native ammo, and restores the previous weapon;
 - third-person toggle restores the weapon model;
 - bleedout produces a normal corpse and clean respawn;
 - downed players cannot collect raid items.

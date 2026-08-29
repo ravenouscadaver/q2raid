@@ -213,8 +213,11 @@ TOUCH(raid_item_touch) (edict_t *self, edict_t *other, const trace_t &, bool) ->
         ChangeWeapon(other);
     }
     else
+    {
         RaidThirdPerson_SetCarry(other, true,
             self->combattarget && *self->combattarget ? self->combattarget : self->model, self->s.scale);
+        RaidThirdPerson_SetCarryCharged(other, ItemState(self).charged);
+    }
     if (!CanBeCharged(self) || ItemState(self).charged)
         ApplyCarryStatus(other, self);
     RaidDirector_NotifyEntityEvent(self, "pickup", other);
@@ -292,7 +295,10 @@ void UpdateCharging(edict_t *player, edict_t *item)
     if (!trigger)
     {
         if (carry.charge_trigger_number)
+        {
             RaidDirector_NotifyEntityEvent(item, "charge_cancelled", player);
+            gi.LocClient_Print(player, PRINT_HIGH, "CORE CHARGE INTERRUPTED\n");
+        }
         carry.charge_trigger_number = 0;
         carry.charge_trigger_spawn_count = 0;
         carry.charge_started = 0_ms;
@@ -307,6 +313,7 @@ void UpdateCharging(edict_t *player, edict_t *item)
         carry.charge_started = level.time;
         RaidDirector_NotifyEntityEvent(item, "charge_begin", player);
         RaidDirector_NotifyEntityEvent(trigger, "charge_begin", player);
+        gi.LocClient_Print(player, PRINT_HIGH, "CORE CHARGING\n");
     }
 
     const float charge_time = trigger->delay > 0.0f ? trigger->delay : 1.0f;
@@ -314,6 +321,7 @@ void UpdateCharging(edict_t *player, edict_t *item)
         return;
 
     ItemState(item).charged = true;
+    RaidThirdPerson_SetCarryCharged(player, true);
     carry.charge_trigger_number = 0;
     carry.charge_trigger_spawn_count = 0;
     carry.charge_started = 0_ms;
@@ -614,14 +622,37 @@ void RaidItems_RunFrame()
         if (level.time < state.next_vfx)
             continue;
         vec3_t origin = item->s.origin;
+        edict_t *carrier = nullptr;
         for (edict_t *player : active_players())
             if (CarriedItem(CarryState(player)) == item)
             {
+                carrier = player;
                 origin = RaidCarry_HeldOrigin(player);
                 break;
             }
-        SpawnDamage(TE_ELECTRIC_SPARKS, origin, { 0, 0, 1 }, 8);
-        state.next_vfx = level.time + gtime_t::from_sec(frandom(0.25f, 0.55f));
+        float volatile_progress = 0.0f;
+        if (carrier && item->timestamp > level.time && item->deathtarget &&
+            !Q_strcasecmp(item->deathtarget, "volatile"))
+        {
+            const float total_duration = item->delay > 0.0f
+                ? item->delay
+                : RaidDirector_StatusDuration(item->deathtarget, 15.0f);
+            const float remaining = (item->timestamp - level.time).seconds();
+            volatile_progress = std::clamp(1.0f - remaining / std::max(0.1f, total_duration), 0.0f, 1.0f);
+        }
+
+        // Three emitters establish the charged state. A carried Volatile core
+        // adds up to three more and pulses faster as its deadline approaches.
+        constexpr std::array<vec3_t, 6> spark_offsets = {
+            vec3_t{ 0, 0, 5 }, vec3_t{ 5, -3, 0 }, vec3_t{ -4, 4, -3 },
+            vec3_t{ 3, 5, 3 }, vec3_t{ -5, -2, 4 }, vec3_t{ 2, -5, -4 }
+        };
+        const int emitter_count = 3 + static_cast<int>(std::floor(volatile_progress * 3.0f));
+        for (int emitter = 0; emitter < emitter_count; ++emitter)
+            SpawnDamage(TE_ELECTRIC_SPARKS, origin + spark_offsets[emitter], { 0, 0, 1 }, 8);
+        const float minimum_interval = 0.25f - volatile_progress * 0.17f;
+        const float maximum_interval = 0.55f - volatile_progress * 0.39f;
+        state.next_vfx = level.time + gtime_t::from_sec(frandom(minimum_interval, maximum_interval));
     }
 }
 

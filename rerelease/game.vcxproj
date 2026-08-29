@@ -108,6 +108,7 @@
     <ClInclude Include="bots\bot_think.h" />
     <ClInclude Include="bots\bot_utils.h" />
     <ClInclude Include="cg_local.h" />
+    <ClInclude Include="cg_raid_ui.h" />
     <ClInclude Include="ctf\g_ctf.h" />
     <ClInclude Include="ctf\p_ctf_menu.h" />
     <ClInclude Include="game.h" />
@@ -149,7 +150,8 @@
     <ClInclude Include="raid_reconstruction.h" />
     <ClInclude Include="raid_bots.h" />
     <ClInclude Include="raid_terminal.h" />
-    <ClInclude Include="raid_terminal_shared.h" />
+    <ClInclude Include="raid_ui.h" />
+    <ClInclude Include="raid_ui_shared.h" />
     <ClInclude Include="rogue\m_rogue_carrier.h" />
     <ClInclude Include="rogue\m_rogue_stalker.h" />
     <ClInclude Include="rogue\m_rogue_turret.h" />
@@ -164,6 +166,7 @@
     <ClCompile Include="bots\bot_think.cpp" />
     <ClCompile Include="bots\bot_utils.cpp" />
     <ClCompile Include="cg_main.cpp" />
+    <ClCompile Include="cg_raid_ui.cpp" />
     <ClCompile Include="cg_screen.cpp" />
     <ClCompile Include="ctf\g_ctf.cpp" />
     <ClCompile Include="ctf\p_ctf_menu.cpp" />
@@ -225,6 +228,7 @@
     <ClCompile Include="raid_reconstruction.cpp" />
     <ClCompile Include="raid_bots.cpp" />
     <ClCompile Include="raid_terminal.cpp" />
+    <ClCompile Include="raid_ui.cpp" />
     <ClCompile Include="raid_hats.cpp" />
     <ClCompile Include="raid_downed.cpp" />
     <ClCompile Include="q_std.cpp" />

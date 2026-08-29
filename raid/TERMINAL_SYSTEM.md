@@ -20,8 +20,10 @@ Quake II expectations.
 
 | Layer | Responsibility |
 | --- | --- |
-| DLL | Input capture, cursor, hit testing, camera handoff, HUD composition, safe cleanup, generic terminal events |
-| Map | Physical terminal, interaction volume, optional POV camera, optional addressable systems |
+| PMenu | Per-client menu ownership, open/close lifecycle, input capture and release |
+| `raid_ui` | Active screen, cursor, hit testing, source gadget, completion/cancel and cleanup |
+| `cg_raid_ui` | Graphical terminal composition from dedicated `STAT_RAID_UI_*` state |
+| Map | Physical terminal, interaction volume and optional addressable systems |
 | Terminal JSON | Pages, labels, key layout, puzzle type/data, success/failure event names, presentation manifest |
 | Encounter JSON | Meaning of terminal events: doors, alarms, phases, hazards, rewards |
 | Art manifest | Canvas, screen aperture, layer paths, key masks/rectangles, colours and pressed treatment |
@@ -31,7 +33,7 @@ Quake II expectations.
 The terminal is redrawn every client frame. It is not limited to one canvas
 post. The intended stack is:
 
-1. Real game view, optionally moved to a mapper-authored camera.
+1. The player's unchanged real game view.
 2. Dark masking outside the terminal footprint.
 3. Chassis layer, opaque except for the CRT aperture and exterior alpha.
 4. Screen treatment: scanlines, glass, tint, noise, vignette.
@@ -40,20 +42,19 @@ post. The intended stack is:
 7. Runtime key labels and per-key dim/pressed overlays.
 8. Cursor and focus/feedback effects.
 
-The current player-camera handoff is a valid KEX solution: the player's actual
-view moves to the selected camera while the terminal overlay masks the rest of
-the world. A second scene rendered into a brush or HUD texture is not assumed;
-no suitable render-to-texture API has yet been found in the exposed game/cgame
-interface.
+Operating a terminal does not teleport the player, change solidity, or restore
+a saved position afterward. Camera feeds may be added only through a separately
+specified rendering capability; they are not implemented by moving the player's
+physical entity.
 
 ## Asset health and crash rule
 
 Current source inspection found:
 
 - `terminal_screen.png`: valid alpha PNG.
-- `terminal_controls.png`: valid alpha PNG.
-- `terminal_chassis.png`: corrupt/incomplete PNG.
-- `terminal_master.png`: corrupt/incomplete PNG.
+- `terminal_controls_puzzle_v2.png`: valid alpha PNG.
+- `terminal_chassis.png`: currently missing after the corrupt copy was removed.
+- `terminal_master.png`: untracked and excluded from runtime packaging.
 - Saved original `Grimy Military Terminal Interface.png`: valid authoritative
   source artwork.
 
@@ -62,11 +63,11 @@ invalid, or unsupported layer selects the rectangle/text fallback and prints
 one useful warning. Presentation failure must never crash or retain movement
 lock.
 
-The first implementation also placed Raid Hat rank at stat index 64 in a fixed
-64-entry array and borrowed that invalid slot for terminal cursor Y. The local
-structural correction gives terminal mode/cursor/state dedicated valid slots
-and keeps Raid Hat rank within bounds. Future additions must not append beyond
-the KEX protocol limit.
+The first implementation placed Raid Hat rank at stat index 64 in a fixed
+64-entry array and coupled terminal presentation to Raid Hat ownership. The
+replacement uses explicitly named `STAT_RAID_UI_*` aliases in valid coop-only
+CTF slots. Raid Hat state is updated independently and is never used as a Raid
+UI sentinel. Future additions must not append beyond the KEX protocol limit.
 
 Large source art remains archival. Runtime layers should be exported at one
 documented supported resolution while retaining one shared normalized canvas.
@@ -99,9 +100,9 @@ Illustrative manifest fragment:
   "runtime_canvas": [612, 643],
   "screen_polygon": [[210,160], [1018,160], [1050,195], [1050,682], [1015,720], [210,720], [180,685], [180,195]],
   "layers": {
-    "chassis": "terminal_chassis_runtime.png",
-    "screen_fx": "terminal_screen_runtime.png",
-    "controls": "terminal_controls_runtime.png"
+    "chassis": "terminal_chassis.png",
+    "screen_fx": "terminal_screen.png",
+    "controls": "terminal_controls_puzzle_v2.png"
   },
   "keys": [
     {"id":"alpha_1", "rect":[0.078,0.678,0.038,0.039], "label_anchor":[0.084,0.684], "role":"character"},
@@ -139,11 +140,9 @@ clear/submit feedback. The code is encounter data, not C++.
 
 ### Camera
 
-The terminal moves the player's real POV to a named camera and masks the full
-view with the chassis, leaving only the CRT aperture visible. Menu keys may
-cycle camera points or operate Director-defined actions. Exit always restores
-origin, view angles, solidity, movement, HUD, and weapon presentation through
-one cleanup path.
+Camera-feed applications are deferred until the exposed KEX interface provides
+or the project specifies a safe rendered-feed mechanism. A terminal must not
+simulate a feed by moving the player's origin, view angles, or solidity.
 
 ## Busy-game permutations
 
