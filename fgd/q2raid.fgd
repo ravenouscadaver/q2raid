@@ -919,9 +919,75 @@ misc_satellite_dish : "Satellite Dish"
 // Monsters!
 //
 
-@BaseClass base(EditorFlags, Targetable, Target, Scale, Alpha) color(255 128 0) size(-16 -16 -24, 16 16 32) = Monsters
+@BaseClass = RaidEventListeners
+[
+    listen_1_event(string) : "Listener 1 event"
+    listen_1_action(string) : "Listener 1 action"
+    listen_1_source(string) : "Listener 1 source name/class or *"
+    listen_1_subject(string) : "Listener 1 subject name/class or *"
+    listen_1_tag(string) : "Listener 1 source/subject tag"
+    listen_1_radius(float) : "Listener 1 maximum source distance" : 0
+    listen_1_edge(string) : "Listener 1 transition edge"
+    listen_1_count(integer) : "Listener 1 matches required" : 1
+    listen_1_window(float) : "Listener 1 count window seconds" : 0
+    listen_1_cooldown(float) : "Listener 1 cooldown seconds" : 0
+    listen_1_once(choices) : "Listener 1 fires once" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_1_consume(choices) : "Listener 1 consumes matching event" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_1_dedupe(choices) : "Listener 1 deduplicates identical output per pulse" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_1_emit(string) : "Listener 1 emitted Director signal"
+    listen_2_event(string) : "Listener 2 event"
+    listen_2_action(string) : "Listener 2 action"
+    listen_2_source(string) : "Listener 2 source name/class or *"
+    listen_2_subject(string) : "Listener 2 subject name/class or *"
+    listen_2_tag(string) : "Listener 2 source/subject tag"
+    listen_2_radius(float) : "Listener 2 maximum source distance" : 0
+    listen_2_edge(string) : "Listener 2 transition edge"
+    listen_2_count(integer) : "Listener 2 matches required" : 1
+    listen_2_window(float) : "Listener 2 count window seconds" : 0
+    listen_2_cooldown(float) : "Listener 2 cooldown seconds" : 0
+    listen_2_once(choices) : "Listener 2 fires once" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_2_consume(choices) : "Listener 2 consumes matching event" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_2_dedupe(choices) : "Listener 2 deduplicates identical output per pulse" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_2_emit(string) : "Listener 2 emitted Director signal"
+    listen_3_event(string) : "Listener 3 event"
+    listen_3_action(string) : "Listener 3 action"
+    listen_3_source(string) : "Listener 3 source name/class or *"
+    listen_3_subject(string) : "Listener 3 subject name/class or *"
+    listen_3_tag(string) : "Listener 3 source/subject tag"
+    listen_3_radius(float) : "Listener 3 maximum source distance" : 0
+    listen_3_edge(string) : "Listener 3 transition edge"
+    listen_3_count(integer) : "Listener 3 matches required" : 1
+    listen_3_window(float) : "Listener 3 count window seconds" : 0
+    listen_3_cooldown(float) : "Listener 3 cooldown seconds" : 0
+    listen_3_once(choices) : "Listener 3 fires once" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_3_consume(choices) : "Listener 3 consumes matching event" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_3_dedupe(choices) : "Listener 3 deduplicates identical output per pulse" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_3_emit(string) : "Listener 3 emitted Director signal"
+    listen_4_event(string) : "Listener 4 event"
+    listen_4_action(string) : "Listener 4 action"
+    listen_4_source(string) : "Listener 4 source name/class or *"
+    listen_4_subject(string) : "Listener 4 subject name/class or *"
+    listen_4_tag(string) : "Listener 4 source/subject tag"
+    listen_4_radius(float) : "Listener 4 maximum source distance" : 0
+    listen_4_edge(string) : "Listener 4 transition edge"
+    listen_4_count(integer) : "Listener 4 matches required" : 1
+    listen_4_window(float) : "Listener 4 count window seconds" : 0
+    listen_4_cooldown(float) : "Listener 4 cooldown seconds" : 0
+    listen_4_once(choices) : "Listener 4 fires once" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_4_consume(choices) : "Listener 4 consumes matching event" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_4_dedupe(choices) : "Listener 4 deduplicates identical output per pulse" : 0 = [ 0 : "No" 1 : "Yes" ]
+    listen_4_emit(string) : "Listener 4 emitted Director signal"
+]
+
+@BaseClass base(EditorFlags, Targetable, Target, Scale, Alpha, RaidEventListeners) color(255 128 0) size(-16 -16 -24, 16 16 32) = Monsters
 [
     raid_hat(string) : "Optional raid_hat selector; preserves targetname for monster-door roster membership"
+    raid_alert_emit(string) : "Optional signal replacing monster_alerted; blank uses monster_alerted"
+    raid_alert_tag(string) : "Optional Director source tag for monster_alerted"
+    raid_arrival_target(target_destination) : "Optional named arrival objective; blank disables arrival monitoring"
+    raid_arrival_tag(string) : "Optional Director source tag for monster_arrived"
+    raid_arrival_radius(float) : "Arrival tolerance in world units" : 64
+    raid_arrival_emit(string) : "Optional signal replacing monster_arrived; blank uses monster_arrived"
     spawnflags(Flags) =
     [
         1 : "Ambush" : 0
@@ -1981,9 +2047,14 @@ monster_gekk : "Gekk"
     charge_time(float) : "Required uninterrupted overlap seconds" : 1
 ]
 
-@SolidClass base(EditorFlags, Targetable) color(80 255 160) = trigger_raid_interaction : "Generic Director-first interaction volume"
+@SolidClass base(EditorFlags, Targetable, RaidEventListeners) color(80 255 160) = trigger_raid_interaction : "Generic Director-first interaction volume"
 [
     wait(float) : "Minimum seconds between interaction events" : 0.5
+    required_action(choices) : "Optional activation action; blank preserves overlap activation" : "" =
+    [
+        "" : "Overlap (default)"
+        "interact" : "Explicit +raid_interact press"
+    ]
 ]
 
 @SolidClass base(EditorFlags, Targetable) color(80 255 160) = trigger_raid_terminal : "Deprecated terminal interaction wrapper; prefer generic interaction -> JSON open_terminal"

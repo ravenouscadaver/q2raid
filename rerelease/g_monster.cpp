@@ -2,6 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
 #include "bots/bot_includes.h"
+#include "raid_director.h"
 #include "raid_hats.h"
 
 //
@@ -613,6 +614,7 @@ void M_MoveFrame(edict_t *self)
 
 void G_MonsterKilled(edict_t *self)
 {
+	RaidDirector_NotifyEntityEvent(self, "monster_death", self->enemy);
 	RaidHats_OnMonsterKilled(self, self->enemy);
 	level.killed_monsters++;
 

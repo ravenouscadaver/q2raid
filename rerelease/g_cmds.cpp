@@ -1738,6 +1738,10 @@ void ClientCommand(edict_t *ent)
 		RaidGrenade_Press(ent);
 	else if (Q_strcasecmp(cmd, "raid_grenade_release") == 0)
 		RaidGrenade_Release(ent);
+	else if (Q_strcasecmp(cmd, "raid_interact_press") == 0)
+		RaidTerminal_Interact(ent, true);
+	else if (Q_strcasecmp(cmd, "raid_interact_release") == 0)
+		RaidTerminal_Interact(ent, false);
 	else if (Q_strcasecmp(cmd, "raid_terminal_cancel") == 0)
 		RaidTerminal_Cancel(ent);
 	// ZOID
