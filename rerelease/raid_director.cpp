@@ -1462,7 +1462,7 @@ void RaidDirector_SetEntityEventField(edict_t *entity, const char *field, const 
     else if (!Q_strcasecmp(field, "raid_alert_tag")) metadata->alert_tag = text;
     else if (!Q_strcasecmp(field, "raid_arrival_target")) { metadata->arrival_target = text; metadata->arrived = false; }
     else if (!Q_strcasecmp(field, "raid_arrival_tag")) metadata->arrival_tag = text;
-    else if (!Q_strcasecmp(field, "raid_arrival_radius")) metadata->arrival_radius = std::max(0.0f, atof(text.c_str()));
+    else if (!Q_strcasecmp(field, "raid_arrival_radius")) metadata->arrival_radius = std::max(0.0f, static_cast<float>(atof(text.c_str())));
     else if (!Q_strcasecmp(field, "raid_arrival_emit")) metadata->arrival_emit = text;
 }
 
@@ -1477,11 +1477,11 @@ void RaidDirector_SetListenerField(edict_t *entity, int listener_number, const c
     else if (!Q_strcasecmp(field, "source")) listener.source = text;
     else if (!Q_strcasecmp(field, "subject")) listener.subject = text;
     else if (!Q_strcasecmp(field, "tag")) listener.tag = text;
-    else if (!Q_strcasecmp(field, "radius")) listener.radius = std::max(0.0f, atof(text.c_str()));
+    else if (!Q_strcasecmp(field, "radius")) listener.radius = std::max(0.0f, static_cast<float>(atof(text.c_str())));
     else if (!Q_strcasecmp(field, "edge")) listener.edge = text;
     else if (!Q_strcasecmp(field, "count")) listener.required_count = std::max(1, atoi(text.c_str()));
-    else if (!Q_strcasecmp(field, "window")) listener.window = std::max(0.0f, atof(text.c_str()));
-    else if (!Q_strcasecmp(field, "cooldown")) listener.cooldown = std::max(0.0f, atof(text.c_str()));
+    else if (!Q_strcasecmp(field, "window")) listener.window = std::max(0.0f, static_cast<float>(atof(text.c_str())));
+    else if (!Q_strcasecmp(field, "cooldown")) listener.cooldown = std::max(0.0f, static_cast<float>(atof(text.c_str())));
     else if (!Q_strcasecmp(field, "once")) listener.once = atoi(text.c_str()) != 0;
     else if (!Q_strcasecmp(field, "consume")) listener.consume = atoi(text.c_str()) != 0;
     else if (!Q_strcasecmp(field, "dedupe")) listener.dedupe = atoi(text.c_str()) != 0;
