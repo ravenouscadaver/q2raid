@@ -84,7 +84,6 @@ void SuppressGameplayInput(edict_t *player, usercmd_t *cmd)
     cmd->buttons = BUTTON_NONE;
     cmd->forwardmove = 0.0f;
     cmd->sidemove = 0.0f;
-    cmd->upmove = 0.0f;
     player->client->buttons = BUTTON_NONE;
     player->client->latched_buttons = BUTTON_NONE;
     player->client->weapon_fire_buffered = false;
