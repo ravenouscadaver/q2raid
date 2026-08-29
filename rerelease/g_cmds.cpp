@@ -1754,9 +1754,11 @@ void ClientCommand(edict_t *ent)
 		Cmd_PlayerList_f(ent);
 	else if (Q_strcasecmp(cmd, "raid_thirdperson") == 0)
 		RaidThirdPerson_Toggle(ent);
-	else if (Q_strcasecmp(cmd, "+raid_grenade") == 0)
+	else if (Q_strcasecmp(cmd, "raid_grenade_down") == 0 ||
+		Q_strcasecmp(cmd, "+raid_grenade") == 0)
 		Cmd_RaidGrenadeDown_f(ent);
-	else if (Q_strcasecmp(cmd, "-raid_grenade") == 0)
+	else if (Q_strcasecmp(cmd, "raid_grenade_up") == 0 ||
+		Q_strcasecmp(cmd, "-raid_grenade") == 0)
 		Cmd_RaidGrenadeUp_f(ent);
 	else if (Q_strcasecmp(cmd, "raid_downed_test") == 0)
 		RaidDowned_ToggleTest(ent);

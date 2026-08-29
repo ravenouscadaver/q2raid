@@ -696,12 +696,16 @@ DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 			self->client->anim_priority = ANIM_DEATH;
 			if (raid_bleedout_corpse)
 			{
+				self->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
+				self->client->anim_duck = false;
 				switch (irandom(3))
 				{
 				case 0: self->s.frame = self->client->anim_end = FRAME_death106; break;
 				case 1: self->s.frame = self->client->anim_end = FRAME_death206; break;
 				case 2: self->s.frame = self->client->anim_end = FRAME_death308; break;
 				}
+				// Do not interpolate the corpse from the stale downed crawl frame.
+				self->s.old_frame = self->s.frame;
 			}
 			else if (self->client->ps.pmove.pm_flags & PMF_DUCKED)
 			{
@@ -2509,6 +2513,14 @@ void ClientBegin(edict_t *ent)
 
 	// [Paril-KEX] we're always connected by this point...
 	ent->client->pers.connected = true;
+
+	// KEX does not forward unknown client-side +commands to ClientCommand.
+	// Install a paired client alias whose press/release halves explicitly use
+	// `cmd` to reach the game DLL. The user's actual key binding remains theirs.
+	gi.WriteByte(svc_stufftext);
+	gi.WriteString("alias +raid_grenade \"cmd raid_grenade_down\"\n"
+		"alias -raid_grenade \"cmd raid_grenade_up\"\n");
+	gi.unicast(ent, true);
 
 	if (deathmatch->integer)
 	{

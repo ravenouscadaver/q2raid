@@ -100,6 +100,10 @@ struct raid_entity_snapshot_t
     gtime_t nextthink;
     save_think_t think;
     int32_t health = 0, max_health = 0, count = 0;
+    item_id_t power_armor_type = IT_NULL;
+    int32_t power_armor_power = 0;
+    item_id_t initial_power_armor_type = IT_NULL;
+    int32_t max_power_armor_power = 0;
     bool deadflag = false, takedamage = false;
     effects_t effects;
     renderfx_t renderfx;
@@ -196,6 +200,10 @@ void RaidDirector_SnapshotEntity(edict_t *entity)
     snapshot.health = entity->health;
     snapshot.max_health = entity->max_health;
     snapshot.count = entity->count;
+    snapshot.power_armor_type = entity->monsterinfo.power_armor_type;
+    snapshot.power_armor_power = entity->monsterinfo.power_armor_power;
+    snapshot.initial_power_armor_type = entity->monsterinfo.initial_power_armor_type;
+    snapshot.max_power_armor_power = entity->monsterinfo.max_power_armor_power;
     snapshot.deadflag = entity->deadflag;
     snapshot.takedamage = entity->takedamage;
     snapshot.effects = entity->s.effects;
@@ -320,6 +328,10 @@ void RaidDirector_RestoreEntitySnapshots()
         entity->health = snapshot.health;
         entity->max_health = snapshot.max_health;
         entity->count = snapshot.count;
+        entity->monsterinfo.power_armor_type = snapshot.power_armor_type;
+        entity->monsterinfo.power_armor_power = snapshot.power_armor_power;
+        entity->monsterinfo.initial_power_armor_type = snapshot.initial_power_armor_type;
+        entity->monsterinfo.max_power_armor_power = snapshot.max_power_armor_power;
         entity->item_picked_up_by = snapshot.item_picked_up_by;
         entity->deadflag = snapshot.deadflag;
         entity->takedamage = snapshot.takedamage;

@@ -4,21 +4,6 @@
 
 namespace
 {
-constexpr const char *terminal_chassis = "/raid/ui/terminal_grunge/terminal_chassis.png";
-constexpr const char *terminal_screen = "/raid/ui/terminal_grunge/terminal_screen.png";
-constexpr const char *terminal_controls = "/raid/ui/terminal_grunge/terminal_controls_puzzle_v2.png";
-
-bool DrawLayer(float x, float y, float width, float height, const char *path)
-{
-    int source_width = 0;
-    int source_height = 0;
-    cgi.Draw_GetPicSize(&source_width, &source_height, path);
-    if (source_width <= 0 || source_height <= 0)
-        return false;
-    cgi.SCR_DrawPic(x, y, width, height, path);
-    return true;
-}
-
 void DrawFallbackChassis(float x, float y, float width, float height)
 {
     const float aperture_x = x + width * (180.0f / 1224.0f);
@@ -47,10 +32,10 @@ void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t 
     cgi.SCR_DrawColorPic(hud_vrect.x * scale, hud_vrect.y * scale,
         hud_vrect.width * scale, hud_vrect.height * scale, "_white", rgba_t{ 0, 0, 0, 185 });
 
-    if (!DrawLayer(terminal_x, terminal_y, terminal_width, terminal_height, terminal_chassis))
-        DrawFallbackChassis(terminal_x, terminal_y, terminal_width, terminal_height);
-    DrawLayer(terminal_x, terminal_y, terminal_width, terminal_height, terminal_screen);
-    DrawLayer(terminal_x, terminal_y, terminal_width, terminal_height, terminal_controls);
+    // Build the terminal entirely from engine-native primitives. No terminal
+    // PNG is queried or decoded on this path; build #88 proved that merely
+    // entering the external-image rendering path can crash inside KEX.
+    DrawFallbackChassis(terminal_x, terminal_y, terminal_width, terminal_height);
 
     const int state = std::max<int>(0, ps->stats[STAT_RAID_UI_STATE]);
     const int puzzle_progress = std::clamp(state & 0x0f, 0, raid_ui::onboarding_answer_length);
