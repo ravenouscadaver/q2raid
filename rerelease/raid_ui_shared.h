@@ -7,7 +7,8 @@ namespace raid_ui
 enum screen_t : int
 {
     SCREEN_NONE = 0,
-    SCREEN_ONBOARDING_TERMINAL = 1
+    SCREEN_ONBOARDING_TERMINAL = 1,
+    SCREEN_CARNAGE_REPORT = 2
 };
 
 struct key_t
