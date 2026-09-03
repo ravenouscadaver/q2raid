@@ -1,37 +1,51 @@
 # Qualified Raid event routing
 
-Status: IMPLEMENTED / UNBUILT
+Status: IMPLEMENTED / STATICALLY AUDITED / UNBUILT
 Date: 2026-09-04
 
-Recovered from `9dbe2a00b16bb21e9d777e488c36f583ef99b2b3` plus numeric parsing correction `e795d0ce7f8202acd6698126658ddb98cd44a976`, reconciled onto `rectify/terminal-state-director`.
+Current review target: `work-unit-3-qualified-event-bridge`.
 
-## Statically implemented routes
+## Implemented
 
-- `bind mouse2 +raid_interact` registers paired KEX aliases and forwards press/release commands to the game DLL.
-- `required_action` is optional on `trigger_raid_interaction`. Blank preserves overlap activation; `interact` requires an explicit press while overlapping.
-- Existing Director event arrays remain multi-listener collections: every matching JSON entry is evaluated in document order through the guarded dispatcher.
-- `source: "*"` subscribes globally. Optional `source_tag`, `subject`, and `subject_tag` qualify matches.
-- `monster_alerted` is published on the first native player-awareness edge in `FoundTarget`.
-- `monster_arrived` is published once when a monster with an assigned `raid_arrival_target` enters its configured radius.
-- `monster_death` is published from `G_MonsterKilled`.
-- `player_death` is published from the ordinary `player_die` cleanup path through `RaidDowned_OnDeath`; the recovered safe hook does not currently attach killer/attacker as the event subject.
+- Generic Director event dispatch uses the existing queued dispatcher.
+- `source: "*"` provides wildcard/global subscription.
+- Optional `source_tag`, `subject`, and `subject_tag` filters qualify JSON event matches.
+- `monster_alerted` is published on the first native player-awareness edge in `FoundTarget`; the hook does not alter native AI behaviour.
+- `monster_arrived` is monitored only for entities with an assigned `raid_arrival_target`, uses the configured radius (default 64), and emits once until encounter reset.
+- `monster_death` is published from `G_MonsterKilled` before the existing score/debug accounting; no death/drop/gib behaviour is changed by the hook.
+- `player_death` is published from the ordinary `player_die` cleanup path through `RaidDowned_OnDeath`.
+- `bind mouse2 +raid_interact` uses paired KEX aliases (`+raid_interact` / `-raid_interact`) routed to the game DLL.
+- `required_action` is optional on `trigger_raid_interaction`; blank preserves overlap activation and `interact` requires an explicit press while overlapping.
+- Terminal interaction delegates to the current `RaidUI` implementation; Work Unit 1 remains the terminal state/input owner.
+- Recursive events are queued while dispatch is active. The dispatcher retains its 1024-event budget.
+- Multiple matching JSON event entries are evaluated in document order.
+- Deferred activators use entity number plus spawn count internally for lifetime-safe resolution.
 
-## Optional monster fields
+## Mapper/entity registration
 
-`raid_alert_emit`, `raid_alert_tag`, `raid_arrival_target`, `raid_arrival_tag`, `raid_arrival_radius`, and `raid_arrival_emit` are optional. Blank fields preserve native AI. Arrival monitoring exists only when an objective is assigned.
+Optional monster fields:
 
-## Mapper listener fields
+`raid_alert_emit`, `raid_alert_tag`, `raid_arrival_target`, `raid_arrival_tag`, `raid_arrival_radius`, `raid_arrival_emit`.
 
-Four listener slots are statically registered through `listen_1_*` to `listen_4_*`. The recovered dispatcher contains support for `event`/`action`, `source`, `subject`, `tag`, `radius`, `edge`, `count`, `window`, `cooldown`, `once`, `consume`, `dedupe`, and `emit`.
+Four mapper listener slots are registered through `listen_1_*` to `listen_4_*`. The recovered source supports `event`/`action`, `source`, `subject`, `tag`, `radius`, `edge`, `count`, `window`, `cooldown`, `once`, `consume`, `dedupe`, and `emit`.
 
-These controls are recovered source behavior, not runtime-proofed behavior. Do not promote them to PLAYTESTED until a build and runtime artifact exists.
+These controls are source-level implementation only until compile/runtime evidence exists.
+
+## Protected reset/presentation note
+
+The Work Unit 3 branch does not change Raid Hat HUD name/health/shield drawing. Encounter reset retains the protected shield-reset behaviour by restoring monsters with configured power armour to `max_power_armor_power` and their `initial_power_armor_type` during `RaidHats_Reset`.
+
+## Not implemented / deferred
+
+- `player_death` attacker/kill-source context is **not currently preserved**: the present `RaidDowned_OnDeath` hook emits `player_death` with a null event subject. Moving the emit directly into authoritative `player_die`, where `attacker` is already available, is the minimal source fix, but that protected Work Unit 1 file was not rewritten during this static-only pass.
+- Projectile-impact normalization is not implemented.
+- Explosion context normalization is not implemented.
+- BFG-hit context normalization is not implemented.
+- Dynamic JSON arrival assignment is not implemented.
+- No additional projectile type, explosion, damage, or death-context fields should be documented as available until they exist in the dispatcher contract.
 
 ## Dispatch safety
 
-Events retain entity number plus spawn count for deferred activators. Recursively emitted events are queued until the active callback returns. A 1024-event budget prevents an unbounded recursive loop. JSON event entries do not implicitly consume one another; every matching entry is evaluated unless mapper-listener `consume` behavior terminates mapper-output routing.
-
-## Current limits
-
-Projectile-impact normalization, explosion context, BFG-hit context, and dynamic JSON arrival assignment remain deferred. They should use this event contract rather than an encounter-specific hard-coded path. Native `usercmd_t` has no M2 bit, so explicit interaction continues to use the cgame alias-to-`cmd` bridge.
+Events retain entity number plus spawn count for deferred activators. Recursively emitted events remain queued until the active callback returns. A 1024-event budget prevents an unbounded recursive loop. JSON event entries do not implicitly consume one another; mapper-listener `consume` applies only to mapper-output routing.
 
 No compile or runtime claim is made by this document.
