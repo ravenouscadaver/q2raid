@@ -134,7 +134,11 @@ void RaidDowned_FilterCommand(edict_t *player, usercmd_t &cmd)
     const float scale = std::clamp(crawl_scale->value, 0.05f, 1.0f);
     cmd.forwardmove *= scale;
     cmd.sidemove *= scale;
-    cmd.buttons &= ~BUTTON_ATTACK;
+    // Downed movement is horizontal crawl only. In Quake movement commands,
+    // positive upmove is the jump path; zero it rather than merely hiding the
+    // BUTTON_JUMP bit so the player cannot bunny-hop the crawl presentation.
+    cmd.upmove = 0;
+    cmd.buttons &= ~(BUTTON_ATTACK | BUTTON_JUMP);
 }
 
 void RaidDowned_Update(edict_t *player)
