@@ -402,6 +402,20 @@ void RaidHats_UpdateHUD(edict_t *player)
 
 void RaidHats_Reset()
 {
+    // Preserve the protected shield-reset invariant even on the recovered
+    // historical Director path, which predates monsterinfo power-armour fields
+    // in its generic entity snapshot.
+    for (uint32_t i = game.maxclients + 1; i < globals.num_edicts; ++i)
+    {
+        edict_t *monster = &g_edicts[i];
+        if (!monster->inuse || !(monster->svflags & SVF_MONSTER) ||
+            monster->monsterinfo.max_power_armor_power <= 0)
+            continue;
+        monster->monsterinfo.power_armor_power = monster->monsterinfo.max_power_armor_power;
+        if (monster->monsterinfo.initial_power_armor_type != IT_NULL)
+            monster->monsterinfo.power_armor_type = monster->monsterinfo.initial_power_armor_type;
+    }
+
     for (const applied_hat_t &applied : applied_hats)
         if (edict_t *attachment = Resolve(applied.attachment))
             G_FreeEdict(attachment);
