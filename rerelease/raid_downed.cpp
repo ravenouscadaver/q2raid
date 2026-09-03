@@ -1,6 +1,7 @@
 #include "g_local.h"
 #include "m_insane.h"
 #include "raid_downed.h"
+#include "raid_director.h"
 #include "raid_thirdperson.h"
 #include "raid_ui.h"
 
@@ -188,8 +189,11 @@ void RaidDowned_Update(edict_t *player)
 
 void RaidDowned_OnDeath(edict_t *player)
 {
-    if (ValidPlayer(player))
-        LeaveDowned(player, false);
+    if (!ValidPlayer(player))
+        return;
+    if (!player->deadflag)
+        RaidDirector_NotifyEntityEvent(player, "player_death", nullptr);
+    LeaveDowned(player, false);
 }
 
 void RaidDowned_Disconnect(edict_t *player)
