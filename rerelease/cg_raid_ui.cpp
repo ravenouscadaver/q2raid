@@ -18,11 +18,65 @@ void DrawFallbackChassis(float x, float y, float width, float height)
     cgi.SCR_DrawColorPic(x, aperture_y + aperture_h, width,
         y + height - (aperture_y + aperture_h), "_white", color);
 }
+
+void DrawCarnageReport(const player_state_t *ps, const vrect_t &hud_vrect, int32_t scale)
+{
+    const float x = hud_vrect.x * scale;
+    const float y = hud_vrect.y * scale;
+    const float width = hud_vrect.width * scale;
+    const float height = hud_vrect.height * scale;
+    const float center_x = x + width * 0.5f;
+    const uint16_t packed = static_cast<uint16_t>(ps->stats[STAT_RAID_UI_STATE]);
+    const int kills = std::max<int>(0, ps->stats[STAT_RAID_UI_CURSOR_X]);
+    const int deaths = std::max<int>(0, ps->stats[STAT_RAID_UI_CURSOR_Y]);
+    const int mechanics = packed & 0xff;
+    const int wipes = (packed >> 8) & 0x7f;
+
+    cgi.SCR_DrawColorPic(x, y, width, height, "_white", rgba_t{ 16, 5, 4, 235 });
+    cgi.SCR_DrawColorPic(x + width * 0.08f, y + height * 0.12f,
+        width * 0.84f, height * 0.76f, "_white", rgba_t{ 8, 5, 4, 225 });
+
+    cgi.SCR_DrawFontString("THE DARKNESS CONSUMES YOU", center_x, y + height * 0.19f,
+        scale, rgba_t{ 205, 55, 42, 255 }, true, text_align_t::CENTER);
+    cgi.SCR_DrawFontString("CARNAGE REPORT", center_x, y + height * 0.28f,
+        scale, rgba_t{ 230, 205, 185, 255 }, true, text_align_t::CENTER);
+
+    const float left = x + width * 0.28f;
+    const float value_x = x + width * 0.70f;
+    const float line = cgi.SCR_FontLineHeight(scale) * 2.0f;
+    float row = y + height * 0.40f;
+    const rgba_t label{ 165, 145, 130, 255 };
+    const rgba_t value{ 235, 220, 205, 255 };
+
+    const auto draw_stat = [&](const char *name, int number) {
+        const std::string text = fmt::format("{}", number);
+        cgi.SCR_DrawFontString(name, left, row, scale, label, true, text_align_t::LEFT);
+        cgi.SCR_DrawFontString(text.c_str(), value_x, row, scale, value, true, text_align_t::RIGHT);
+        row += line;
+    };
+
+    draw_stat("HOSTILES ELIMINATED", kills);
+    draw_stat("MARINE DEATHS", deaths);
+    draw_stat("MECHANIC PROGRESS", mechanics);
+    draw_stat("WIPE", wipes);
+
+    cgi.SCR_DrawFontString("FIRE / USE / JUMP TO DISMISS", center_x, y + height * 0.78f,
+        scale, rgba_t{ 130, 112, 100, 255 }, true, text_align_t::CENTER);
+}
 }
 
 void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t scale)
 {
-    if (!ps || ps->stats[STAT_RAID_UI_SCREEN] != raid_ui::SCREEN_ONBOARDING_TERMINAL)
+    if (!ps)
+        return;
+
+    if (ps->stats[STAT_RAID_UI_SCREEN] == raid_ui::SCREEN_CARNAGE_REPORT)
+    {
+        DrawCarnageReport(ps, hud_vrect, scale);
+        return;
+    }
+
+    if (ps->stats[STAT_RAID_UI_SCREEN] != raid_ui::SCREEN_ONBOARDING_TERMINAL)
         return;
 
     const float terminal_height = hud_vrect.height * 0.94f * scale;
