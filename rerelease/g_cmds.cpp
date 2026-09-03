@@ -6,6 +6,7 @@
 #include "raid_items.h"
 #include "raid_downed.h"
 #include "raid_grenade.h"
+#include "raid_terminal.h"
 
 void SelectNextItem(edict_t *ent, item_flags_t itflags, bool menu = true)
 {
@@ -1737,6 +1738,12 @@ void ClientCommand(edict_t *ent)
 		RaidGrenade_Press(ent);
 	else if (Q_strcasecmp(cmd, "raid_grenade_release") == 0)
 		RaidGrenade_Release(ent);
+	else if (Q_strcasecmp(cmd, "raid_interact_press") == 0)
+		RaidTerminal_Interact(ent, true);
+	else if (Q_strcasecmp(cmd, "raid_interact_release") == 0)
+		RaidTerminal_Interact(ent, false);
+	else if (Q_strcasecmp(cmd, "raid_terminal_cancel") == 0)
+		RaidTerminal_Cancel(ent);
 	// ZOID
 	else if (Q_strcasecmp(cmd, "team") == 0)
 		CTFTeam_f(ent);

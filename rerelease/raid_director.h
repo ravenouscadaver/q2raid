@@ -16,6 +16,9 @@ void RaidDirector_ResetForMap(const char *mapname);
 void RaidDirector_OnMapReady();
 void RaidDirector_RunFrame();
 void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t *activator);
+void RaidDirector_NotifyMonsterAlerted(edict_t *monster, edict_t *player);
+void RaidDirector_SetEntityEventField(edict_t *entity, const char *field, const char *value);
+void RaidDirector_SetListenerField(edict_t *entity, int listener, const char *field, const char *value);
 void RaidDirector_OnClientDisconnect(edict_t *player);
 // Returns true when the Director owns the wipe/reset lifecycle and the stock
 // cooperative map restart must be suppressed.

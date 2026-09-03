@@ -3,6 +3,7 @@
 // g_ai.c
 
 #include "g_local.h"
+#include "raid_director.h"
 
 bool FindTarget(edict_t *self);
 bool ai_checkattack(edict_t *self, float dist);
@@ -483,6 +484,7 @@ void HuntTarget(edict_t *self, bool animate_state)
 
 void FoundTarget(edict_t *self)
 {
+	const bool raid_first_player_alert = self->enemy && self->enemy->client && !self->monsterinfo.trail_time;
     // let other monsters see this monster for a while
     if (self->enemy->client)
     {
@@ -507,6 +509,8 @@ void FoundTarget(edict_t *self)
 
     self->monsterinfo.last_sighting = self->monsterinfo.saved_goal = self->enemy->s.origin;
     self->monsterinfo.trail_time = level.time;
+	if (raid_first_player_alert)
+		RaidDirector_NotifyMonsterAlerted(self, self->enemy);
     // ROGUE
     self->monsterinfo.blind_fire_target = self->monsterinfo.last_sighting + (self->enemy->velocity * -0.1f);
     self->monsterinfo.blind_fire_delay = 0_ms;

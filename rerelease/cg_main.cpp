@@ -24,6 +24,9 @@ static void InitCGame()
 	// aliases make `bind g +raid_grenade` deliver both key edges.
 	cgi.AddCommandString("alias +raid_grenade \"cmd raid_grenade_press\"\n");
 	cgi.AddCommandString("alias -raid_grenade \"cmd raid_grenade_release\"\n");
+	cgi.AddCommandString("alias +raid_interact \"cmd raid_interact_press\"\n");
+	cgi.AddCommandString("alias -raid_interact \"cmd raid_interact_release\"\n");
+	cgi.AddCommandString("alias raid_terminal_exit \"cmd raid_terminal_cancel\"\n");
 
 	cgame_init_time = cgi.CL_ClientRealTime();
 
