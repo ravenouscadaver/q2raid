@@ -1,6 +1,5 @@
 #include "g_local.h"
 #include "m_insane.h"
-#include "m_player.h"
 #include "raid_downed.h"
 #include "raid_thirdperson.h"
 #include "raid_ui.h"
@@ -135,10 +134,7 @@ void RaidDowned_FilterCommand(edict_t *player, usercmd_t &cmd)
     const float scale = std::clamp(crawl_scale->value, 0.05f, 1.0f);
     cmd.forwardmove *= scale;
     cmd.sidemove *= scale;
-    // Downed movement is horizontal crawl only. In Quake movement commands,
-    // positive upmove is the jump path; zero it rather than merely hiding the
-    // BUTTON_JUMP bit so the player cannot bunny-hop the crawl presentation.
-    cmd.upmove = 0;
+    // Rerelease usercmd_t represents jump as BUTTON_JUMP; there is no upmove.
     cmd.buttons &= ~(BUTTON_ATTACK | BUTTON_JUMP);
 }
 
@@ -152,33 +148,14 @@ void RaidDowned_Update(edict_t *player)
         state.damage_buffer = 0;
         state.bleedout_death = true;
 
-        // Downed owns a crouched/crawl presentation. Remove every crouch-facing
-        // animation flag before entering the ordinary death callback so the
-        // death path cannot inherit the downed pose.
+        // Remove downed crouch flags before entering the ordinary player death
+        // path. player_die remains the sole owner of final corpse frame choice.
         player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
         player->client->anim_duck = false;
         player->client->anim_run = false;
 
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
-
-        // player_die is authoritative for death state and clears the downed
-        // third-person presentation. Once it returns, lock the resulting player
-        // corpse to the known final frame from the ordinary third death sequence.
-        // G_SetClientFrame preserves ANIM_DEATH and will not replace this frame.
-        if (player->deadflag)
-        {
-            player->s.modelindex = MODELINDEX_PLAYER;
-            player->s.frame = FRAME_death308;
-            player->s.old_frame = FRAME_death308;
-            player->client->anim_priority = ANIM_DEATH;
-            player->client->anim_end = FRAME_death308;
-            player->client->anim_duck = false;
-            player->client->anim_run = false;
-            player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
-            player->client->anim_time = 0_ms;
-            gi.linkentity(player);
-        }
         return;
     }
     const bool moving = std::abs(player->client->cmd.forwardmove) > 1.0f ||
@@ -224,6 +201,7 @@ void RaidDowned_Disconnect(edict_t *player)
     if (!ValidPlayer(player))
         return;
     LeaveDowned(player, false);
+    ClearHUD(player);
     State(player) = {};
 }
 
