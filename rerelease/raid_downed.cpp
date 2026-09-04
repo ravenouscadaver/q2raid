@@ -1,5 +1,6 @@
 #include "g_local.h"
 #include "m_insane.h"
+#include "m_player.h"
 #include "raid_downed.h"
 #include "raid_thirdperson.h"
 #include "raid_ui.h"
@@ -148,14 +149,36 @@ void RaidDowned_Update(edict_t *player)
     downed_state_t &state = State(player);
     if (level.time >= state.bleedout_at)
     {
-        // Let the normal death callback clean up the downed presentation and
-        // create the ordinary player corpse. player_die recognizes this as a
-        // bleedout and lands directly on a corpse pose: no stand-up/fall
-        // sequence and no gib-class damage.
         state.damage_buffer = 0;
         state.bleedout_death = true;
+
+        // Downed owns a crouched/crawl presentation. Remove every crouch-facing
+        // animation flag before entering the ordinary death callback so the
+        // death path cannot inherit the downed pose.
+        player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
+        player->client->anim_duck = false;
+        player->client->anim_run = false;
+
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
+
+        // player_die is authoritative for death state and clears the downed
+        // third-person presentation. Once it returns, lock the resulting player
+        // corpse to the known final frame from the ordinary third death sequence.
+        // G_SetClientFrame preserves ANIM_DEATH and will not replace this frame.
+        if (player->deadflag)
+        {
+            player->s.modelindex = MODELINDEX_PLAYER;
+            player->s.frame = FRAME_death308;
+            player->s.old_frame = FRAME_death308;
+            player->client->anim_priority = ANIM_DEATH;
+            player->client->anim_end = FRAME_death308;
+            player->client->anim_duck = false;
+            player->client->anim_run = false;
+            player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
+            player->client->anim_time = 0_ms;
+            gi.linkentity(player);
+        }
         return;
     }
     const bool moving = std::abs(player->client->cmd.forwardmove) > 1.0f ||
@@ -169,6 +192,20 @@ void RaidDowned_Update(edict_t *player)
     {
         state.frame = state.frame >= FRAME_crawl9 ? FRAME_crawl1 : state.frame + 1;
         state.next_frame = level.time + 100_ms;
+    }
+    if (level.time >= state.next_pain_sound)
+    {
+        static constexpr std::array<const char *, 5> downed_sounds = {
+            "insane/insane7.wav",
+            "player/male/pain25_1.wav",
+            "player/male/pain50_1.wav",
+            "player/male/pain75_1.wav",
+            "player/male/pain100_1.wav"
+        };
+        gi.sound(player, CHAN_VOICE,
+            gi.soundindex(downed_sounds[irandom(0, static_cast<int>(downed_sounds.size() - 1))]),
+            0.8f, ATTN_NORM, 0.0f);
+        state.next_pain_sound = level.time + gtime_t::from_sec(frandom(3.5f, 6.5f));
     }
     if (level.time >= state.next_pain_sound)
     {
