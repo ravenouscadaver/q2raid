@@ -46,8 +46,6 @@ void EnterDowned(edict_t *player)
     state.damage_buffer = std::max(0, downed_buffer->integer);
     state.frame = FRAME_crawl1;
     state.next_frame = level.time + 100_ms;
-    // Shotguns and similar attacks arrive as several T_Damage calls. Keep the
-    // rest of the attack that caused the down from instantly finishing it.
     state.damage_grace_until = level.time + FRAME_TIME_S;
     const float bleedout_seconds = std::clamp(bleedout->value, 3.0f, 30.0f);
     state.bleedout_at = level.time + gtime_t::from_sec(bleedout_seconds);
@@ -94,10 +92,6 @@ bool RaidDowned_InterceptFatalDamage(edict_t *player)
             player->health = 1;
             return true;
         }
-        // Downed durability is deliberately separate from inventory armour so
-        // revival cannot grant, consume, or corrupt the player's real armour.
-        // health was one before this hit, so the negative result tells us how
-        // much of the dedicated buffer this attack consumed.
         const int damage = std::max(1, 1 - player->health);
         State(player).damage_buffer -= damage;
         if (State(player).damage_buffer > 0)
@@ -134,7 +128,6 @@ void RaidDowned_FilterCommand(edict_t *player, usercmd_t &cmd)
     const float scale = std::clamp(crawl_scale->value, 0.05f, 1.0f);
     cmd.forwardmove *= scale;
     cmd.sidemove *= scale;
-    // Rerelease usercmd_t represents jump as BUTTON_JUMP; there is no upmove.
     cmd.buttons &= ~(BUTTON_ATTACK | BUTTON_JUMP);
 }
 
@@ -147,13 +140,9 @@ void RaidDowned_Update(edict_t *player)
     {
         state.damage_buffer = 0;
         state.bleedout_death = true;
-
-        // Remove downed crouch flags before entering the ordinary player death
-        // path. player_die remains the sole owner of final corpse frame choice.
         player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
         player->client->anim_duck = false;
         player->client->anim_run = false;
-
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
         return;
@@ -201,7 +190,6 @@ void RaidDowned_Disconnect(edict_t *player)
     if (!ValidPlayer(player))
         return;
     LeaveDowned(player, false);
-    ClearHUD(player);
     State(player) = {};
 }
 
