@@ -5,7 +5,7 @@
 namespace
 {
 constexpr const char *terminal_screen_pic = "raid/ui/terminal_grunge/terminal_screen.png";
-constexpr const char *terminal_controls_pic = "raid/ui/terminal_grunge/terminal_controls_puzzle_v2.png";
+constexpr const char *terminal_controls_pic = "raid/ui/terminal_grunge/terminal_controls.png";
 
 struct terminal_pic_state_t
 {
@@ -39,7 +39,7 @@ void PreflightTerminalPics()
     if (!terminal_pics.screen)
         cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_screen.png' unavailable; using primitive fallback.\n");
     if (!terminal_pics.controls)
-        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_controls_puzzle_v2.png' unavailable; using primitive fallback.\n");
+        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_controls.png' unavailable; using primitive fallback.\n");
 }
 
 void DrawFallbackChassis(float x, float y, float width, float height)
@@ -125,7 +125,7 @@ void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t 
         hud_vrect.width * scale, hud_vrect.height * scale, "_white", rgba_t{ 0, 0, 0, 185 });
 
     // The engine-rendered chassis is always present as the safe backing. The
-    // decorative layers are optional and are registered/preflighted once before
+    // screen and keyboard layers are optional and are preflighted once before
     // they can enter the draw path; missing or unsupported images leave this
     // primitive backing visible instead of crashing or blanking the terminal.
     DrawFallbackChassis(terminal_x, terminal_y, terminal_width, terminal_height);
