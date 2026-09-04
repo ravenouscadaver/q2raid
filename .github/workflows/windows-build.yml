@@ -47,5 +47,5 @@ jobs:
             game_x64.dll
             game_x64.pdb
             raid/ui/terminal_grunge/terminal_screen.png
-            raid/ui/terminal_grunge/terminal_controls_puzzle_v2.png
+            raid/ui/terminal_grunge/terminal_controls.png
           if-no-files-found: error
