@@ -4,6 +4,44 @@
 
 namespace
 {
+constexpr const char *terminal_screen_pic = "raid/terminal_screen";
+constexpr const char *terminal_controls_pic = "raid/terminal_controls_puzzle_v2";
+
+struct terminal_pic_state_t
+{
+    bool checked = false;
+    bool screen = false;
+    bool controls = false;
+};
+
+terminal_pic_state_t terminal_pics;
+
+bool PreflightPic(const char *name)
+{
+    if (!cgi.Draw_RegisterPic(name))
+        return false;
+
+    int width = 0;
+    int height = 0;
+    cgi.Draw_GetPicSize(&width, &height, name);
+    return width > 0 && height > 0;
+}
+
+void PreflightTerminalPics()
+{
+    if (terminal_pics.checked)
+        return;
+
+    terminal_pics.checked = true;
+    terminal_pics.screen = PreflightPic(terminal_screen_pic);
+    terminal_pics.controls = PreflightPic(terminal_controls_pic);
+
+    if (!terminal_pics.screen)
+        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/terminal_screen' unavailable; using primitive fallback.\n");
+    if (!terminal_pics.controls)
+        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/terminal_controls_puzzle_v2' unavailable; using primitive fallback.\n");
+}
+
 void DrawFallbackChassis(float x, float y, float width, float height)
 {
     const float aperture_x = x + width * (180.0f / 1224.0f);
@@ -86,10 +124,16 @@ void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t 
     cgi.SCR_DrawColorPic(hud_vrect.x * scale, hud_vrect.y * scale,
         hud_vrect.width * scale, hud_vrect.height * scale, "_white", rgba_t{ 0, 0, 0, 185 });
 
-    // Build the terminal entirely from engine-native primitives. No terminal
-    // PNG is queried or decoded on this path; build #88 proved that merely
-    // entering the external-image rendering path can crash inside KEX.
+    // The engine-rendered chassis is always present as the safe backing. The
+    // decorative layers are optional and are registered/preflighted once before
+    // they can enter the draw path; missing or unsupported images leave this
+    // primitive backing visible instead of crashing or blanking the terminal.
     DrawFallbackChassis(terminal_x, terminal_y, terminal_width, terminal_height);
+    PreflightTerminalPics();
+    if (terminal_pics.screen)
+        cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height, terminal_screen_pic);
+    if (terminal_pics.controls)
+        cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height, terminal_controls_pic);
 
     const int state = std::max<int>(0, ps->stats[STAT_RAID_UI_STATE]);
     const int puzzle_progress = std::clamp(state & 0x0f, 0, raid_ui::onboarding_answer_length);
