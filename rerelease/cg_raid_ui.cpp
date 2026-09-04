@@ -4,8 +4,8 @@
 
 namespace
 {
-constexpr const char *terminal_screen_pic = "raid/terminal_screen";
-constexpr const char *terminal_controls_pic = "raid/terminal_controls_puzzle_v2";
+constexpr const char *terminal_screen_pic = "raid/ui/terminal_grunge/terminal_screen.png";
+constexpr const char *terminal_controls_pic = "raid/ui/terminal_grunge/terminal_controls_puzzle_v2.png";
 
 struct terminal_pic_state_t
 {
@@ -37,9 +37,9 @@ void PreflightTerminalPics()
     terminal_pics.controls = PreflightPic(terminal_controls_pic);
 
     if (!terminal_pics.screen)
-        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/terminal_screen' unavailable; using primitive fallback.\n");
+        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_screen.png' unavailable; using primitive fallback.\n");
     if (!terminal_pics.controls)
-        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/terminal_controls_puzzle_v2' unavailable; using primitive fallback.\n");
+        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_controls_puzzle_v2.png' unavailable; using primitive fallback.\n");
 }
 
 void DrawFallbackChassis(float x, float y, float width, float height)
