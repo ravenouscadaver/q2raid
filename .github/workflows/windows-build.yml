@@ -39,11 +39,13 @@ jobs:
             /p:VcpkgTriplet=x64-windows-static `
             /p:VcpkgInstalledDir="$env:GITHUB_WORKSPACE\vcpkg_installed\"
 
-      - name: Upload game DLL
+      - name: Upload game DLL and runtime assets
         uses: actions/upload-artifact@v4
         with:
           name: q2raid-game-x64
           path: |
             game_x64.dll
             game_x64.pdb
+            pics/raid/terminal_screen.png
+            pics/raid/terminal_controls_puzzle_v2.png
           if-no-files-found: error
