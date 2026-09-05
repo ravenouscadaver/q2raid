@@ -317,3 +317,28 @@ Encounter JSON listens for the semantic action:
 - Complete, cancel, death, disconnect, wipe, and map change all restore player
   state through the same idempotent cleanup.
 - The first-door tutorial is understandable without combat pressure.
+
+## PNG visibility proof — 2026-09-05
+
+Status: candidate source; NOT COMPILED / NOT RUNTIME TESTED.
+
+The user reports FAIL for decorative PNG visibility. The renderer now records
+each approved path, registration result and dimensions, then retries preflight
+once at first terminal draw after TouchPics. No alternate path is tried.
+
+With the existing engine `developer 1` switch, the terminal also draws
+`terminal_chassis.png` alone in an upper-left proof rectangle, after the
+composite. `developer 0` hides this temporary diagnostic. It tests the approved
+image independently of other decorative layers and terminal text.
+
+Acceptance: record exact DLL SHA and CI identity; inspect the three console
+registration results; visually confirm the actual PNG in the proof rectangle;
+then inspect the full composite. Registration alone is not a visual PASS.
+Missing art must retain the fallback without a crash. Repeat after map reload.
+Private PNG distribution and build packaging remain unchanged.
+
+Modified units: `PreflightPic`, `CG_RaidUI_Draw` and internal proof drawing.
+Rollback basis: `bac90024f63af30c701eb3b15902e84b0ae3c60a`.
+Mouse input and corpse presentation remain FAIL from the runtime report.
+Carnage appears with the correct DLL, but its image wiring still requires the
+exact approved Carnage asset identity. This proof does not resolve those bugs.

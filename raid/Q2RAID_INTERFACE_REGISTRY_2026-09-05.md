@@ -359,3 +359,10 @@ Before adding any new interface string:
 8. Reuse an existing name when meaning matches.
 9. If genuinely new, add exactly one name and document its owner in the same work unit.
 10. Never add a second spelling merely to make one implementation convenient.
+
+## PNG proof diagnostic — 2026-09-05
+
+Candidate / NOT RUNTIME TESTED: existing engine `developer` controls an isolated
+terminal chassis preview (`1` shows it; `0` hides it). No new cvar, asset path,
+mapper key or protocol slot is introduced. The approved paths remain those in
+`TERMINAL_SYSTEM.md` and `terminal_layers.json`.

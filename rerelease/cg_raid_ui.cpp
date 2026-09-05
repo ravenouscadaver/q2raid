@@ -14,19 +14,25 @@ struct terminal_pic_state_t
     bool chassis = false;
     bool screen = false;
     bool controls = false;
+    bool checked_on_open = false;
 };
 
 terminal_pic_state_t terminal_pics;
 
 bool PreflightPic(const char *name)
 {
-    if (!cgi.Draw_RegisterPic(name))
-        return false;
-
+    const bool registered = cgi.Draw_RegisterPic(name);
     int width = 0;
     int height = 0;
-    cgi.Draw_GetPicSize(&width, &height, name);
-    return width > 0 && height > 0;
+    if (registered)
+        cgi.Draw_GetPicSize(&width, &height, name);
+
+    // Loading evidence alone does not prove that the PNG is visible.
+    const std::string diagnostic = fmt::format(
+        "Q2Raid terminal pic: path='{}' registered={} dimensions={}x{}\n",
+        name, registered ? 1 : 0, width, height);
+    cgi.Com_Print(diagnostic.c_str());
+    return registered && width > 0 && height > 0;
 }
 
 void PreflightTerminalPics()
@@ -45,6 +51,25 @@ void PreflightTerminalPics()
         cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_screen.png' unavailable; using primitive backing.\n");
     if (!terminal_pics.controls)
         cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_controls_clean.png' unavailable; using primitive backing.\n");
+}
+
+// Temporary isolated draw through the existing engine developer switch.
+// Draw last so no composite layer or live terminal text can conceal the PNG.
+void DrawTerminalPicProof(const vrect_t &hud_vrect, int32_t scale)
+{
+    static cvar_t *developer = cgi.cvar("developer", "0", CVAR_NOFLAGS);
+    if (!developer->integer)
+        return;
+
+    const float height = hud_vrect.height * scale * 0.30f;
+    const float width = height * (975.0f / 1024.0f);
+    const float x = hud_vrect.x * scale + 8.0f * scale;
+    const float y = hud_vrect.y * scale + 8.0f * scale;
+    cgi.SCR_DrawColorPic(x, y, width, height, "_white", rgba_t{ 55, 55, 55, 255 });
+    if (terminal_pics.chassis)
+        cgi.SCR_DrawPic(x, y, width, height, terminal_chassis_pic);
+    cgi.SCR_DrawFontString(terminal_pics.chassis ? "CHASSIS PNG PROOF" : "CHASSIS PNG UNAVAILABLE",
+        x, y + height, scale, rgba_t{ 255, 220, 96, 255 }, true, text_align_t::LEFT);
 }
 
 void DrawFallbackChassis(float x, float y, float width, float height)
@@ -130,6 +155,15 @@ void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t 
     if (ps->stats[STAT_RAID_UI_SCREEN] != raid_ui::SCREEN_ONBOARDING_TERMINAL)
         return;
 
+    // Retry once on first use in case TouchPics ran before art was available.
+    // Never retry every frame or try an alternate asset path.
+    if (!terminal_pics.checked_on_open)
+    {
+        terminal_pics.checked = false;
+        PreflightTerminalPics();
+        terminal_pics.checked_on_open = true;
+    }
+
     const float terminal_height = hud_vrect.height * 0.94f * scale;
     const float terminal_width = terminal_height * (975.0f / 1024.0f);
     const float terminal_x = (hud_vrect.x + hud_vrect.width * 0.5f) * scale - terminal_width * 0.5f;
@@ -197,4 +231,5 @@ void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t 
         14.0f * scale, 2.0f * scale, "_white", rgba_t{ 255, 220, 96, 255 });
     cgi.SCR_DrawColorPic(cursor_x - 1.0f * scale, cursor_y - 7.0f * scale,
         2.0f * scale, 14.0f * scale, "_white", rgba_t{ 255, 220, 96, 255 });
+    DrawTerminalPicProof(hud_vrect, scale);
 }
