@@ -6,10 +6,12 @@ This is the repository-level Codex instruction router for Q2Raid. Keep it short.
 
 - Repository: `RavenousCadaver/q2raid`
 - Canonical branch: `director-scaffold`
-- Canonical GitHub source is the only implementation authority.
-- Do not implement Q2Raid C++/FGD/JSON/assets in local, scratch, recovery, evidence, Codex, or temporary workspaces and later transplant that implementation into GitHub.
-- Local files may be used for read-only analysis, exported documentation/evidence, or explicitly requested handoff artifacts; they are never implementation authority.
-- Do not treat `integration`, recovery branches, build branches, evidence refs, local worktrees, scratch directories, or newer-looking historical refs as canonical.
+- Canonical GitHub source is the only persistent implementation authority.
+- The checked-out canonical repository working tree is the authorized implementation workspace. Codex may edit that working tree in place during an authorized bounded work unit.
+- Working-tree edits are not canonical merely because they exist locally; they become canonical only after review, commit and authorized push to `director-scaffold`.
+- Do not implement Q2Raid C++/FGD/JSON/assets in a parallel scratch, recovery, evidence, alternate worktree, temporary repository or copied source tree and later transplant that implementation into GitHub.
+- Local files outside the checked-out canonical repository may be used for read-only analysis, exported documentation/evidence, or explicitly requested handoff artifacts; they are never implementation authority.
+- Do not treat `integration`, recovery branches, build branches, evidence refs, alternate local worktrees, scratch directories, or newer-looking historical refs as canonical.
 - Compare commit/tree identity and provenance before recovering off-canonical work.
 - Do not create a branch, alias, alternate path, duplicate asset tree, recovery ref, or renamed interface unless the user explicitly authorizes that exact action.
 
@@ -127,6 +129,9 @@ The historical authorization phrase is `go go gadget`.
 - If the current user request does not freshly authorize the action, do not compile, push, dispatch or rerun CI.
 - A push to `director-scaffold` triggers Windows GitHub Actions and is therefore a compile-triggering action.
 - CI success is compile evidence only, never runtime proof.
+- Every candidate DLL build must embed the exact Git SHA reported by `sv raid_dump` and ship a plain-text build manifest containing the exact commit SHA, workflow run identity and DLL SHA256.
+- Before handing a DLL to the user, report the exact changed-file set, commit SHA, CI run/result, artifact contents and DLL hash. Do not describe unverified runtime behavior as fixed.
+- Build artifacts must not silently bundle presentation/runtime assets. Assets are included only when that exact packaging contract is explicitly current and approved; approved local/private terminal PNGs are not CI artifact inputs by default.
 
 ## Branch and history safety
 
