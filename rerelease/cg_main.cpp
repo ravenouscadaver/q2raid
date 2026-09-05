@@ -20,6 +20,11 @@ static void InitCGame()
 {
 	CG_InitScreen();
 
+	// KEX only forwards explicit `cmd` traffic to the game DLL. These paired
+	// aliases make `bind g +raid_grenade` deliver both key edges.
+	cgi.AddCommandString("alias +raid_grenade \"cmd raid_grenade_press\"\n");
+	cgi.AddCommandString("alias -raid_grenade \"cmd raid_grenade_release\"\n");
+
 	cgame_init_time = cgi.CL_ClientRealTime();
 
 	pm_config.n64_physics = !!atoi(cgi.get_configstring(CONFIG_N64_PHYSICS));

@@ -1,6 +1,9 @@
 // Copyright (c) ZeniMax Media Inc.
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
+#include "raid_downed.h"
+#include "raid_hats.h"
+#include "raid_ui.h"
 #include "g_statusbar.h"
 
 /*
@@ -743,6 +746,8 @@ void G_SetStats(edict_t *ent)
 	else
 		ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
 	ent->client->ps.stats[STAT_HEALTH] = ent->health;
+	if (RaidDowned_IsDown(ent))
+		ent->client->ps.stats[STAT_HEALTH] = 0;
 
 	//
 	// weapons
@@ -1084,6 +1089,10 @@ void G_SetStats(edict_t *ent)
 	// ZOID
 	SetCTFStats(ent);
 	// ZOID
+	// Raid presentation deliberately owns its aliased stat slots after CTF has
+	// finished clearing/updating them.
+	RaidHats_UpdateHUD(ent);
+	RaidUI_UpdateHUD(ent);
 }
 
 /*

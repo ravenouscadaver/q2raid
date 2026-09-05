@@ -1,0 +1,37 @@
+{
+  "encounter": "terminal_only_test",
+  "initial_state": "awaiting_interaction",
+  "states": {
+    "awaiting_interaction": {},
+    "complete": {
+      "enter": [
+        {
+          "op": "post_encounter_message",
+          "text": "TERMINAL ACCESS GRANTED",
+          "duration": 4,
+          "priority": 10
+        }
+      ]
+    }
+  },
+  "events": [
+    {
+      "source": "terminal_interact_1",
+      "signal": "interact",
+      "from_state": "awaiting_interaction",
+      "do": [
+        {
+          "op": "open_terminal",
+          "target": "terminal_1"
+        }
+      ]
+    },
+    {
+      "source": "terminal_1",
+      "signal": "terminal_complete",
+      "from_state": "awaiting_interaction",
+      "set_state": "complete"
+    }
+  ],
+  "reset": []
+}

@@ -1,0 +1,68 @@
+{
+  "encounter": "party_bridge_test",
+  "initial_state": "idle",
+  "events": [
+    {
+      "source": "trigger",
+      "signal": "activate",
+      "from_state": "idle",
+      "set_state": "party"
+    }
+  ],
+  "states": {
+    "idle": {
+      "enter": []
+    },
+    "party": {
+      "enter": [
+        {
+          "op": "set_field",
+          "target": "door",
+          "field": "wait",
+          "value": -1
+        },
+        {
+          "op": "fire_target",
+          "target": "door"
+        },
+        {
+          "op": "fire_target",
+          "target": "light_party1"
+        },
+        {
+          "op": "fire_target",
+          "target": "light_party2"
+        },
+        {
+          "op": "fire_target",
+          "target": "light_party3"
+        },
+        {
+          "op": "fire_target",
+          "target": "light_party4"
+        },
+        {
+          "op": "color_cycle",
+          "targets": [
+            "light_party1",
+            "light_party2",
+            "light_party3",
+            "light_party4"
+          ],
+          "colors": [
+            [255, 0, 0],
+            [0, 255, 0],
+            [0, 0, 255],
+            [180, 0, 255]
+          ],
+          "step_seconds": 0.65,
+          "transition_seconds": 0.55
+        },
+        {
+          "op": "disable_entity",
+          "target": "trigger"
+        }
+      ]
+    }
+  }
+}

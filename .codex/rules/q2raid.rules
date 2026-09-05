@@ -1,0 +1,107 @@
+# Q2Raid command guardrails.
+# These supplement AGENTS.md; they do not replace fresh work-unit authorization.
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "Q2Raid pushes require fresh current-work-unit authorization; director-scaffold pushes trigger CI.",
+    match = ["git push", "git push origin director-scaffold"],
+)
+
+prefix_rule(
+    pattern = ["git", "commit"],
+    decision = "prompt",
+    justification = "Q2Raid implementation must not silently diverge into local commits; verify the current work unit and authority first.",
+    match = ["git commit -m test"],
+)
+
+prefix_rule(
+    pattern = ["git", "worktree", "add"],
+    decision = "prompt",
+    justification = "Do not create alternate Q2Raid worktrees without explicit current-work-unit authorization.",
+    match = ["git worktree add ../candidate director-scaffold"],
+)
+
+prefix_rule(
+    pattern = ["git", "checkout", "-b"],
+    decision = "prompt",
+    justification = "Do not create another Q2Raid branch without explicit current-work-unit authorization.",
+    match = ["git checkout -b candidate"],
+)
+
+prefix_rule(
+    pattern = ["git", "switch", "-c"],
+    decision = "prompt",
+    justification = "Do not create another Q2Raid branch without explicit current-work-unit authorization.",
+    match = ["git switch -c candidate"],
+)
+
+prefix_rule(
+    pattern = ["git", "merge"],
+    decision = "prompt",
+    justification = "Q2Raid history integration requires a bounded provenance-reviewed recovery plan.",
+    match = ["git merge candidate"],
+)
+
+prefix_rule(
+    pattern = ["git", "rebase"],
+    decision = "prompt",
+    justification = "Q2Raid history rewriting requires explicit provenance-reviewed authorization.",
+    match = ["git rebase director-scaffold"],
+)
+
+prefix_rule(
+    pattern = ["git", "cherry-pick"],
+    decision = "prompt",
+    justification = "Q2Raid historical recovery must use reviewed hunks rather than unexamined commit import.",
+    match = ["git cherry-pick deadbeef"],
+)
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "prompt",
+    justification = "Q2Raid destructive history/worktree changes require explicit authorization.",
+    match = ["git reset --hard HEAD"],
+)
+
+prefix_rule(
+    pattern = ["gh", "workflow", "run"],
+    decision = "prompt",
+    justification = "Q2Raid workflow dispatch is a build-triggering action and requires fresh authorization.",
+    match = ["gh workflow run windows-build.yml"],
+)
+
+prefix_rule(
+    pattern = ["gh", "run", "rerun"],
+    decision = "prompt",
+    justification = "Rerunning Q2Raid CI is build-triggering and requires fresh authorization.",
+    match = ["gh run rerun 123456"],
+)
+
+prefix_rule(
+    pattern = ["msbuild"],
+    decision = "prompt",
+    justification = "Q2Raid compilation requires fresh current-work-unit authorization.",
+    match = ["msbuild rerelease/game.sln /m /p:Configuration=Release /p:Platform=x64"],
+)
+
+prefix_rule(
+    pattern = ["dotnet", "build"],
+    decision = "prompt",
+    justification = "Q2Raid compilation requires fresh current-work-unit authorization.",
+    match = ["dotnet build"],
+)
+
+prefix_rule(
+    pattern = ["cmake", "--build"],
+    decision = "prompt",
+    justification = "Q2Raid compilation requires fresh current-work-unit authorization.",
+    match = ["cmake --build build"],
+)
+
+prefix_rule(
+    pattern = ["ninja"],
+    decision = "prompt",
+    justification = "Q2Raid compilation requires fresh current-work-unit authorization.",
+    match = ["ninja", "ninja game"],
+)

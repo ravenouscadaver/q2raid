@@ -4,6 +4,7 @@
 
 #include "g_local.h"
 #include "m_player.h"
+#include "raid_items.h"
 
 bool is_quad;
 // RAFAEL
@@ -491,6 +492,13 @@ void Think_Weapon(edict_t *ent)
 {
 	if (ent->client->resp.spectator)
 		return;
+	if (RaidCarry_BlocksWeapons(ent))
+	{
+		ent->client->weapon_fire_buffered = false;
+		ent->client->weapon_thunk = false;
+		ent->client->ps.gunindex = 0;
+		return;
+	}
 
 	// if just died, put the weapon away
 	if (ent->health < 1)
@@ -586,6 +594,11 @@ void Use_Weapon(edict_t *ent, gitem_t *item)
 {
 	gitem_t		*wanted, *root;
 	weap_switch_t result = WEAP_SWITCH_NO_WEAPON;
+
+	if (RaidCarry_IsWeaponRelic(ent) && item->id == IT_WEAPON_BFG)
+		return;
+	if (RaidCarry_IsCarrying(ent))
+		RaidCarry_Drop(ent);
 
 	// if we're switching to a weapon in this chain already,
 	// start from the weapon after this one in the chain

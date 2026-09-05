@@ -1,0 +1,47 @@
+{
+  "canvas": [
+    975,
+    1024
+  ],
+  "regions": {
+    "screen": [
+      [167,128],
+      [811,128],
+      [836,155],
+      [836,543],
+      [809,574],
+      [167,574],
+      [143,546],
+      [143,155]
+    ],
+    "keyboard": [
+      [72,693],
+      [668,693],
+      [668,915],
+      [72,915]
+    ],
+    "keypad": [
+      [713,693],
+      [906,693],
+      [906,915],
+      [713,915]
+    ]
+  },
+  "notes": {
+    "stack_order": [
+      "engine_rendered_chassis",
+      "terminal_chassis.png",
+      "terminal_screen.png",
+      "terminal_controls_clean.png"
+    ],
+    "engine_chassis": "Primitive engine-rendered backing is a permanent layer and fallback. It is distinct from, and remains underneath, terminal_chassis.png.",
+    "screen_can_be_replaced": "Render Raid UI into the screen polygon or use it as an alpha/UV mask; do not move the player to simulate a camera feed.",
+    "controls": "Darken individual key rectangles at runtime within the controls layer; all decorative layers share the identical 975x1024 canvas and destination rectangle.",
+    "asset_distribution": "Approved terminal PNG bytes are local runtime/test assets and are not required to be published in the public source repository. Runtime source must use the exact documented paths and hashes."
+  },
+  "asset_sha256": {
+    "terminal_chassis.png": "45fcd7354b3253014b37de6ac437c65d11ba787d5cb712c434ee13958240c589",
+    "terminal_screen.png": "9da32277c3ce24f404168e68aa999cfee3912cacb30a761204a48b80e2d1e457",
+    "terminal_controls_clean.png": "88e8074c17be65403b846c5bed15f294752f7566dda388dcd8e8a8fbc4161dca"
+  }
+}

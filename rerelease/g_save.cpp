@@ -10,6 +10,7 @@
 #pragma GCC diagnostic ignored "-Weverything"
 #endif
 #include "json/json.h"
+#include "raid_director.h"
 #include "json/config.h"
 #ifdef __clang__
 #pragma clang diagnostic pop
@@ -856,6 +857,11 @@ SAVE_STRUCT_START
 	FIELD_AUTO(kick.total),
 	FIELD_AUTO(kick.time),
 	FIELD_AUTO(quake_time),
+	FIELD_AUTO(raid_shake_intensity),
+	FIELD_AUTO(raid_flash_fade_at),
+	FIELD_AUTO(raid_flash_end),
+	FIELD_AUTO(raid_flash_color),
+	FIELD_AUTO(raid_flash_alpha),
 	FIELD_AUTO(v_dmg_roll),
 	FIELD_AUTO(v_dmg_pitch),
 	FIELD_AUTO(v_dmg_time),
@@ -2502,6 +2508,7 @@ char *WriteLevelJson(bool transition, size_t *out_size)
 	}
 
 	json["entities"] = std::move(entities);
+	RaidDirector_WriteSave(json["raid_director"]);
 
 	return saveJson(json, out_size);
 }
@@ -2516,6 +2523,7 @@ void ReadLevelJson(const char *jsonString)
 	gi.FreeTags(TAG_LEVEL);
 
 	Json::Value json = parseJson(jsonString);
+	RaidDirector_ReadSave(json["raid_director"]);
 
 	// wipe all the entities
 	memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));

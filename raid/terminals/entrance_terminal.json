@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "entrance_terminal",
+  "presentation": "terminal_grunge",
+  "camera": "entrance_terminal_camera",
+  "start_page": "boot",
+  "resume_policy": "reset_on_close",
+  "pages": {
+    "boot": {
+      "type": "packet_reconstruction",
+      "prompt": "ACCESS TOKEN CORRUPTED",
+      "answer": "ALPHA",
+      "available": ["P", "A", "H", "L"],
+      "shuffle": false,
+      "wrong_input": "restart_from_matching_prefix",
+      "submit_required": true,
+      "on_success": "entrance_unlock",
+      "on_failure": "clear_input"
+    }
+  }
+}
