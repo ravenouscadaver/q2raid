@@ -126,3 +126,16 @@
 - Expose separate observation timing controls: delay before movement is released after the relevant observation change, delay before freezing resumes, and an optional minimum active movement window.
 - Evaluate observation across all living players: the current rule or its inverse must use the combined fireteam view state, not only the nearest player.
 - Emit a clear event when inversion changes so JSON can synchronize lights, sound, messaging, and encounter state with the rule swap.
+
+## Deferred custom-model production
+
+Status: CONCEPT / deferred — not an active day goal.
+Date: 2026-09-05.
+
+- Possible custom model for Dr Oliver; role, appearance and required animation set remain undecided.
+- Consider a couple of bespoke Raid Hat enemy models where their presentation materially matters to gameplay.
+- The user has hard-surface modelling experience in Blender; rigging and animation are the main production bottleneck. This constraint currently favours passive implant abilities and feedback using available particles, beams and other existing presentation.
+- Contractor lead to revisit: [Iammr R / iammrromeo on Fiverr](https://www.fiverr.com/iammrromeo/create-3d-game-character-and-game-mod-with-custom-animation-for-skyrim-unity-ue). The listing advertises low-poly assets, rigging, custom animation and game-mod work. This is an unverified lead, not a vetted hire or evidence of MD2 expertise; no contact or commission has been made.
+- Proposed qualification gate, if this work is activated: review actual animation examples and agree source-file delivery, then commission a small Blender animation test before a complete character. Test fixed topology, named frame ranges, MD2 export and playback inside Q2Raid.
+- Keep editable Blender source separate from the final exported MD2. Exporter/Blender compatibility and the complete conversion pipeline remain NOT TESTED; do not treat a listing or available exporter as proof.
+- No contractor spend, asset production or implementation is authorized by recording this note.
