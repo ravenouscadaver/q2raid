@@ -1,3 +1,10 @@
+// Q2RAID MODIFIED
+// RAID_STATUS: IMPLEMENTED_UNBUILT
+// RAID_STATUS_DATE: 2026-08-29
+// RAID_FEATURE: terminal_asset_free_layout
+// RAID_EVIDENCE: user runtime screenshot after build 88
+// RAID_PROTECTION: READ_ONLY_UNLESS_USER_AUTHORIZED
+
 #include "cg_local.h"
 #include "cg_raid_ui.h"
 #include "raid_ui_shared.h"
