@@ -33,8 +33,6 @@ TOUCH(raid_terminal_touch) (edict_t *self, edict_t *other, const trace_t &trace,
     bool other_touching_self) -> void
 {
     raid_interaction_touch(self, other, trace, other_touching_self);
-    if (other && other->client && !RaidUI_IsActive(other))
-        RaidUI_Open(other, NamedEntity(self->target));
 }
 }
 
@@ -48,6 +46,7 @@ void SP_trigger_raid_interaction(edict_t *ent)
 void SP_trigger_raid_terminal(edict_t *ent)
 {
     InitTrigger(ent);
+    ent->spawnflags |= RAID_TERMINAL_LEGACY_DIRECT_OPEN;
     ent->touch = raid_terminal_touch;
     gi.linkentity(ent);
 }

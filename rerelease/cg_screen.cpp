@@ -369,7 +369,7 @@ static cl_centerprint_t &CG_QueueCenterPrint(int isplit, bool instant)
             return center;
     }
     
-    // none, so update the current one (the new end of buffer)
+    // none left, so update the current one (the new end of buffer)
     // and skip ahead
     auto &center = icl.centers[icl.center_index.value()];
     icl.center_index = (icl.center_index.value() + 1) % MAX_CENTER_PRINTS;
@@ -397,7 +397,6 @@ void CG_ParseCenterPrint (const char *str, int isplit, bool instant) // [Sam-KEX
 
     // split the string into lines
     size_t line_start = 0;
-
     std::string string(str);
 
     center.binds.clear();
@@ -1838,6 +1837,7 @@ void CG_TouchPics()
             cgi.Draw_RegisterPic(str);
 
     cgi.Draw_RegisterPic("inventory");
+    CG_RaidUI_TouchPics();
 
     font_y_offset = (cgi.SCR_FontLineHeight(1) - CONCHAR_WIDTH) / 2;
 }

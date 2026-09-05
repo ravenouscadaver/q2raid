@@ -36,7 +36,7 @@ bool ValidPlayer(edict_t *player)
 void EnterDowned(edict_t *player)
 {
     static cvar_t *downed_buffer = gi.cvar("raid_downed_damage_buffer", "25", CVAR_NOFLAGS);
-    static cvar_t *bleedout = gi.cvar("raid_downed_bleedout", "20", CVAR_NOFLAGS);
+    static cvar_t *bleedout = gi.cvar("raid_downed_bleedout", "10", CVAR_NOFLAGS);
     downed_state_t &state = State(player);
     if (state.downed || player->deadflag)
         return;
@@ -145,6 +145,22 @@ void RaidDowned_Update(edict_t *player)
         player->client->anim_run = false;
         T_Damage(player, player, player, vec3_origin, player->s.origin, vec3_origin,
             2, 0, DAMAGE_NO_PROTECTION, MOD_TRIGGER_HURT);
+        if (player->deadflag)
+        {
+            player->s.modelindex = MODELINDEX_PLAYER;
+            const int final_frame = player->client->anim_end;
+            if (final_frame > 0)
+            {
+                player->s.frame = final_frame;
+                player->s.old_frame = final_frame;
+            }
+            player->client->anim_priority = ANIM_DEATH;
+            player->client->anim_duck = false;
+            player->client->anim_run = false;
+            player->client->ps.pmove.pm_flags &= ~PMF_DUCKED;
+            player->client->anim_time = 0_ms;
+            gi.linkentity(player);
+        }
         return;
     }
     const bool moving = std::abs(player->client->cmd.forwardmove) > 1.0f ||

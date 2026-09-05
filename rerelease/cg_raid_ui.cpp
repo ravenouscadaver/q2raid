@@ -110,6 +110,12 @@ void DrawCarnageReport(const player_state_t *ps, const vrect_t &hud_vrect, int32
 }
 }
 
+void CG_RaidUI_TouchPics()
+{
+    terminal_pics = {};
+    PreflightTerminalPics();
+}
+
 void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t scale)
 {
     if (!ps)
@@ -137,7 +143,6 @@ void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t 
     // the composite. Missing images degrade to the engine backing rather than
     // becoming terminal-state failures.
     DrawFallbackChassis(terminal_x, terminal_y, terminal_width, terminal_height);
-    PreflightTerminalPics();
     if (terminal_pics.chassis)
         cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height, terminal_chassis_pic);
     if (terminal_pics.screen)

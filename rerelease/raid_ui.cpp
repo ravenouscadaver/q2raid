@@ -21,6 +21,8 @@ struct raid_ui_session_t
     int32_t source_spawn_count = 0;
     raid_ui::screen_t screen = raid_ui::SCREEN_NONE;
     gvec3_t last_cmd_angles;
+    gvec3_t held_view_angles;
+    bool had_no_angular_prediction = false;
     float cursor_x = 0.5f;
     float cursor_y = 0.5f;
     int puzzle_progress = 0;
@@ -88,7 +90,7 @@ void ResetCarnageLiveAttempt()
     carnage.deaths = 0;
     carnage.was_dead.fill(false);
     for (edict_t *player : active_players())
-        if (ValidPlayer(player) && !player->client->resp.spectator)
+        if (ValidPlayer(player) && !player->client->pers.spectator)
             carnage.was_dead[player->s.number - 1] = player->deadflag || player->health <= 0;
 }
 
@@ -124,7 +126,7 @@ void UpdateCarnageTracker()
     bool all_dead = true;
     for (edict_t *player : active_players())
     {
-        if (!ValidPlayer(player) || player->client->resp.spectator)
+        if (!ValidPlayer(player) || player->client->pers.spectator)
             continue;
         any_participant = true;
         const size_t index = player->s.number - 1;
@@ -149,7 +151,7 @@ void UpdateCarnageTracker()
 
         for (edict_t *player : active_players())
         {
-            if (!ValidPlayer(player) || player->client->resp.spectator)
+            if (!ValidPlayer(player) || player->client->pers.spectator)
                 continue;
             const size_t index = player->s.number - 1;
             carnage.report_visible[index] = true;
@@ -193,6 +195,18 @@ void UpdateCarnageHUD(edict_t *player)
     player->client->ps.stats[STAT_RAID_UI_STATE] = static_cast<int16_t>(packed);
 }
 
+void ReleaseViewOwnership(edict_t *player, const raid_ui_session_t &session)
+{
+    if (!ValidPlayer(player))
+        return;
+
+    player->client->ps.viewangles = session.held_view_angles;
+    player->client->v_angle = session.held_view_angles;
+    player->client->ps.pmove.delta_angles = session.held_view_angles - session.last_cmd_angles;
+    if (!session.had_no_angular_prediction)
+        player->client->ps.pmove.pm_flags &= ~PMF_NO_ANGULAR_PREDICTION;
+}
+
 void FinishSession(edict_t *player, pmenuhnd_t *menu)
 {
     if (!ValidPlayer(player))
@@ -204,6 +218,7 @@ void FinishSession(edict_t *player, pmenuhnd_t *menu)
     edict_t *source = Resolve(session.source_number, session.source_spawn_count);
     const bool completed = session.completing;
     ClearHUD(player);
+    ReleaseViewOwnership(player, session);
     session = {};
 
     if (completed && source)
@@ -321,10 +336,15 @@ bool RaidUI_Open(edict_t *player, edict_t *source)
     session.source_spawn_count = source->spawn_count;
     session.screen = raid_ui::SCREEN_ONBOARDING_TERMINAL;
     session.last_cmd_angles = player->client->cmd.angles;
+    session.held_view_angles = player->client->ps.viewangles;
+    session.had_no_angular_prediction =
+        !!(player->client->ps.pmove.pm_flags & PMF_NO_ANGULAR_PREDICTION);
+    player->client->ps.pmove.pm_flags |= PMF_NO_ANGULAR_PREDICTION;
 
     if (!PMenu_Open(player, raid_ui_menu, -1, static_cast<int>(std::size(raid_ui_menu)),
         nullptr, nullptr, &session, MenuClosed, false))
     {
+        ReleaseViewOwnership(player, session);
         session = {};
         return false;
     }
@@ -361,6 +381,12 @@ bool RaidUI_HandleInput(edict_t *player, usercmd_t *cmd)
     session.cursor_y = std::clamp(session.cursor_y +
         AngleDelta(cmd->angles[PITCH], session.last_cmd_angles[PITCH]) / 90.0f, 0.0f, 1.0f);
     session.last_cmd_angles = cmd->angles;
+
+    // Terminal cursor motion consumes command-angle deltas, but the visible
+    // world camera remains anchored to the view captured on entry.
+    player->client->ps.pmove.pm_flags |= PMF_NO_ANGULAR_PREDICTION;
+    player->client->ps.viewangles = session.held_view_angles;
+    player->client->v_angle = session.held_view_angles;
 
     if (session.key_feedback_until <= level.time)
         session.last_key = -1;
