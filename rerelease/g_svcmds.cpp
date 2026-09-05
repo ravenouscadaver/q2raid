@@ -2,6 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 
 #include "g_local.h"
+#include "raid_build_id.h"
 #include "raid_director.h"
 #include "raid_monsters.h"
 
@@ -306,7 +307,10 @@ void ServerCommand()
 	else if (Q_strcasecmp(cmd, "raid_reset") == 0)
 		RaidDirector_ResetEncounter();
 	else if (Q_strcasecmp(cmd, "raid_dump") == 0)
+	{
+		gi.Com_PrintFmt("[Q2RAID BUILD] {} {}\n", Q2RAID_BUILD_TAG, Q2RAID_BUILD_SHA);
 		RaidDirector_Dump();
+	}
 	else if (Q_strcasecmp(cmd, "raid_monster_dump") == 0)
 		RaidMonsters_Dump();
 	else if (Q_strcasecmp(cmd, "raid_set_state") == 0)

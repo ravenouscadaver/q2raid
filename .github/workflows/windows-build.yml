@@ -28,6 +28,15 @@ jobs:
             --x-manifest-root="$env:GITHUB_WORKSPACE\rerelease" `
             --x-install-root="$env:GITHUB_WORKSPACE\vcpkg_installed"
 
+      - name: Stamp build identity
+        shell: pwsh
+        run: |
+          @"
+          #pragma once
+          #define Q2RAID_BUILD_SHA "$env:GITHUB_SHA"
+          #define Q2RAID_BUILD_TAG "CHAIN-PROBE-20260906-A"
+          "@ | Set-Content -Path "rerelease\raid_build_id.h" -Encoding ascii
+
       - name: Build release DLL
         shell: pwsh
         run: |
