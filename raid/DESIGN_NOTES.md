@@ -139,3 +139,65 @@ Date: 2026-09-05.
 - Proposed qualification gate, if this work is activated: review actual animation examples and agree source-file delivery, then commission a small Blender animation test before a complete character. Test fixed topology, named frame ranges, MD2 export and playback inside Q2Raid.
 - Keep editable Blender source separate from the final exported MD2. Exporter/Blender compatibility and the complete conversion pipeline remain NOT TESTED; do not treat a listing or available exporter as proof.
 - No contractor spend, asset production or implementation is authorized by recording this note.
+
+## Dr Oliver — Dangling Surgical Platform — pre-variant snapshot
+
+Status: CONCEPT / preserved design return point, not implementation-ready.
+Date: 2026-09-05.
+Purpose: preserve the current design before the user's next experimental variant. Future variants do not overwrite this snapshot.
+
+### Visual reference and retrieval
+
+- Reference: the latest dark laboratory image in the Dr Oliver model/animation design conversation, immediately before the request to preserve the current state.
+- Exact generated image identifier: `exec-2236ccb0-0bc2-460c-a3f7-7b2ea726d03e.png`.
+- Image description: full-body Oliver scanning a dark industrial laboratory with a flat red optical laser plane; blue chest core, dangling human torso, surgical arms above, large hooked-under pincer beneath, two massive supporting legs.
+- The image was generated in ChatGPT and is not a repository asset. Its identifier is a retrieval aid, not a durable GitHub image URL. Retrieve that existing image from the conversation when exact visual continuity is needed; regeneration is not an identical restoration.
+- Return-point phrase: **Dr Oliver — Dangling Surgical Platform — pre-variant snapshot**.
+- Preserve both the image's composition and the written corrections below; image errors do not supersede user requirements.
+
+### User-defined anatomy and equipment
+
+- Heavily self-modified human scientist boss, nearly ten feet tall when powered. Exaggerated machinery proportions, but normal adult human skull size and mostly recognizable human face/mouth for speaking.
+- Huge bowed Strogg leg structures attach to the large bulbous upper-back weapons/machinery mass. Legs must visibly bow outward, not merely stand apart or bend backward.
+- Human pelvis may be absent. Torso is explicitly DANGLING between the leg structures, swaying independently rather than rigidly seated on a mechanical waist. Upper body remains hunched by unnatural bulk beneath stretched skin.
+- Back machinery is not entirely contained by skin. Partial stretched/harvested skin coverage, exposed machine mass and leg attachment points should remain evident.
+- Two rows of prominent metallic octagonal CYLINDRICAL implants flank the spine. Stegosaurus-like protruding prominence, not triangular plates or little flush square tiles. Vary lengths, diameters and surface appearance.
+- Implant options are mixed: plain caps, occasional LEDs, exposed unused connectors, direct flesh connections, and auxiliary hoses plugged into the SIDES of cylinders. No LED-per-implant rule.
+- Cables hang down and return upward into the abdomen/core connections. Vary thickness and texture, especially large ribbed hoses alongside braided and smooth lines.
+- Large SQUARE BLUE power core seated INSIDE split ribcage, glowing outward through the ribs. Its BIG handle protrudes slightly DOWNWARD from stomach/abdomen. The narrow yellow tube and later narrow blue rectangular cell are incorrect substitutes. Exact existing project core appearance should be referenced before further visual refinement.
+- Retain one human hand for terminal access and handling machinery/cores.
+- Other hand has ocular finger capable of probing around cover; maintain a recognizable hand and finger, not a freestanding periscope.
+- Additional ocular implants modify skull; chest/shoulder oculars remain possible.
+- Lab coat shreds hang about shoulder with Dr Oliver name badge attached.
+- Integrated combat implants include a personal missile salvo system, comparable in role to the Tank's but aesthetically distinct. A reveal view shows machinery causing the unnatural upper-back bulk.
+- Additional back-platform surgical robot armatures carry syringe/injector tools, circular bone saws and clamps.
+- One large arm mounts on the REAR of the weapons platform, hangs down and hooks back underneath, ending in a jaws-of-life-style pincer grip. It serves as a multipurpose foot/arm appendage.
+- Flamethrower was floated then explicitly deferred; not part of this snapshot's equipment.
+
+### Motion, states and planned studies
+
+- Powered: legs extend to full height, covering ground rapidly in HUGE steps, with dangling torso/cable follow-through.
+- Stunned, core destroyed, or selected other behaviour states: legs fold approximately in half, greatly lowering him while retaining a crouch-walk. This communicates state change and vulnerability. Do not shrink the leg segments.
+- Study list: powered full body; rear implant/cable view; combat-hardware reveal; core-hit stagger; low stunned crouch-walk; replacement-core extraction; separate ocular-finger search vignette.
+- Recharge: Oliver hunches over NORMAL HUMAN-SIZED equipment and extracts a replacement core to restore shield/power according to the eventual boss phase. Exact phase rules remain open.
+- Search vignette: marines hiding behind cover, ocular finger probing around it, owner's menacing shadow behind.
+- Current atmospheric direction: dark industrial laboratory, optics scanning surroundings, a FLAT RED LASER PLANE passing across the environment.
+
+### Character and encounter intent
+
+- He mostly addresses an unseen observer/new master in the darkness, calling for empowerment, curses against the marines, and rescue as he dies.
+- Marines receive little direct acknowledgement; the user's example is asking for power to smite these insects.
+- Do not harden assistant-suggested dialogue, claims that the observer ordered each surgery, or an exposition-heavy personality as approved lore.
+- Shield recharge and core-related vulnerability are design concepts; timings, attacks, exact consequences and JSON phase conditions are not specified or runtime-tested.
+
+### Known image deviations to correct
+
+- Latest image still does not establish the required outward leg bow sufficiently.
+- Installed power core is still too narrow/rectangular and not an accurate depiction of the existing square blue handled core.
+- Implant variety, visibly unused connectors and side-entry hose connections need continued attention; do not revert to uniform lit tiles.
+- Normal human head scale, substantial exposed back machinery and the precise dangling support arrangement remain explicit checks for subsequent variants.
+- Generated slogans, background branding, extra staff and incidental composition details are not accepted lore merely because they appeared in images.
+
+### Reconstruction prompt for this state
+
+Create one dark cinematic full-body view of Dr Oliver, a nearly ten-foot Strogg-modified scientist with a normal-sized recognizable human head and a hunched torso dangling loosely between enormous outward-BOWED mechanical legs. Both legs mount high onto a huge bulbous upper-back weapons and surgical machinery platform, partly covered by stretched skin but visibly exposed. Two rows of large protruding octagonal cylindrical implants flank his spine; vary their size, caps and finish, with sparse LEDs, unused connectors and thick hoses visibly plugged into their sides. Varied corrugated, braided and smooth cables hang down and loop upward into his abdomen. A large SQUARE BLUE industrial power core glows inside his split ribcage; its big handle protrudes slightly downward from the abdomen. Preserve one human hand, a separate ocular-finger hand, shoulder lab-coat scraps and name badge. Add articulated injector, circular saw and clamp tools to the platform, plus a large rear-mounted arm dropping down and hooking underneath into a jaws-of-life pincer that can brace as an auxiliary foot. Show him searching a human-scale industrial laboratory with a flat red optical scanning plane visible in haze. Keep the body dangling, the leg bow unmistakable, and the human head human-sized. No flamethrower. This restores the design direction; it does not reproduce the archived image pixel-for-pixel.
