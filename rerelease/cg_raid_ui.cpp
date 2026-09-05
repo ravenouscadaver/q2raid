@@ -4,12 +4,14 @@
 
 namespace
 {
+constexpr const char *terminal_chassis_pic = "raid/ui/terminal_grunge/terminal_chassis.png";
 constexpr const char *terminal_screen_pic = "raid/ui/terminal_grunge/terminal_screen.png";
-constexpr const char *terminal_controls_pic = "raid/ui/terminal_grunge/terminal_controls.png";
+constexpr const char *terminal_controls_pic = "raid/ui/terminal_grunge/terminal_controls_clean.png";
 
 struct terminal_pic_state_t
 {
     bool checked = false;
+    bool chassis = false;
     bool screen = false;
     bool controls = false;
 };
@@ -33,21 +35,28 @@ void PreflightTerminalPics()
         return;
 
     terminal_pics.checked = true;
+    terminal_pics.chassis = PreflightPic(terminal_chassis_pic);
     terminal_pics.screen = PreflightPic(terminal_screen_pic);
     terminal_pics.controls = PreflightPic(terminal_controls_pic);
 
+    if (!terminal_pics.chassis)
+        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_chassis.png' unavailable; using primitive backing.\n");
     if (!terminal_pics.screen)
-        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_screen.png' unavailable; using primitive fallback.\n");
+        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_screen.png' unavailable; using primitive backing.\n");
     if (!terminal_pics.controls)
-        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_controls.png' unavailable; using primitive fallback.\n");
+        cgi.Com_Print("Q2Raid terminal: runtime pic 'raid/ui/terminal_grunge/terminal_controls_clean.png' unavailable; using primitive backing.\n");
 }
 
 void DrawFallbackChassis(float x, float y, float width, float height)
 {
-    const float aperture_x = x + width * (180.0f / 1224.0f);
-    const float aperture_y = y + height * (160.0f / 1285.0f);
-    const float aperture_w = width * ((1050.0f - 180.0f) / 1224.0f);
-    const float aperture_h = height * ((720.0f - 160.0f) / 1285.0f);
+    // The primitive engine backing is a separate permanent layer beneath the
+    // decorative PNG chassis. These aperture bounds follow the approved
+    // 975x1024 terminal composition and keep the fallback coherent when any
+    // decorative image is unavailable.
+    const float aperture_x = x + width * (146.0f / 975.0f);
+    const float aperture_y = y + height * (130.0f / 1024.0f);
+    const float aperture_w = width * ((835.0f - 146.0f) / 975.0f);
+    const float aperture_h = height * ((573.0f - 130.0f) / 1024.0f);
     const rgba_t color{ 18, 20, 18, 245 };
     cgi.SCR_DrawColorPic(x, y, width, aperture_y - y, "_white", color);
     cgi.SCR_DrawColorPic(x, aperture_y, aperture_x - x, aperture_h, "_white", color);
@@ -116,18 +125,21 @@ void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t 
         return;
 
     const float terminal_height = hud_vrect.height * 0.94f * scale;
-    const float terminal_width = terminal_height * (1224.0f / 1285.0f);
+    const float terminal_width = terminal_height * (975.0f / 1024.0f);
     const float terminal_x = (hud_vrect.x + hud_vrect.width * 0.5f) * scale - terminal_width * 0.5f;
     const float terminal_y = (hud_vrect.y + hud_vrect.height * 0.5f) * scale - terminal_height * 0.5f;
     cgi.SCR_DrawColorPic(hud_vrect.x * scale, hud_vrect.y * scale,
         hud_vrect.width * scale, hud_vrect.height * scale, "_white", rgba_t{ 0, 0, 0, 185 });
 
-    // The engine-rendered chassis is always present as the safe backing. The
-    // screen and keyboard layers are optional and are preflighted once before
-    // they can enter the draw path; missing or unsupported images leave this
-    // primitive backing visible instead of crashing or blanking the terminal.
+    // Final composite order is deliberate: the engine-drawn backing remains
+    // first and independent, then the three approved decorative layers share
+    // one 975x1024 destination rectangle, then live terminal UI is drawn over
+    // the composite. Missing images degrade to the engine backing rather than
+    // becoming terminal-state failures.
     DrawFallbackChassis(terminal_x, terminal_y, terminal_width, terminal_height);
     PreflightTerminalPics();
+    if (terminal_pics.chassis)
+        cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height, terminal_chassis_pic);
     if (terminal_pics.screen)
         cgi.SCR_DrawPic(terminal_x, terminal_y, terminal_width, terminal_height, terminal_screen_pic);
     if (terminal_pics.controls)
@@ -137,7 +149,7 @@ void CG_RaidUI_Draw(const player_state_t *ps, const vrect_t &hud_vrect, int32_t 
     const int puzzle_progress = std::clamp(state & 0x0f, 0, raid_ui::onboarding_answer_length);
     const int pressed_key = ((state >> 4) & 0x0f) - 1;
     const float screen_center_x = terminal_x + terminal_width * 0.5f;
-    const float prompt_y = terminal_y + terminal_height * (260.0f / 1285.0f);
+    const float prompt_y = terminal_y + terminal_height * (207.0f / 1024.0f);
 
     cgi.SCR_DrawFontString("ACCESS TOKEN CORRUPTED", screen_center_x, prompt_y,
         scale, rgba_t{ 114, 255, 148, 255 }, true, text_align_t::CENTER);
