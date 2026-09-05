@@ -67,7 +67,6 @@ void DrawCarnageReport(const player_state_t *ps, const vrect_t &hud_vrect, int32
     const uint16_t packed = static_cast<uint16_t>(ps->stats[STAT_RAID_UI_STATE]);
     const int kills = std::max<int>(0, ps->stats[STAT_RAID_UI_CURSOR_X]);
     const int deaths = std::max<int>(0, ps->stats[STAT_RAID_UI_CURSOR_Y]);
-    const int mechanics = packed & 0xff;
     const int wipes = (packed >> 8) & 0x7f;
 
     cgi.SCR_DrawColorPic(x, y, width, height, "_white", rgba_t{ 16, 5, 4, 235 });
@@ -95,7 +94,6 @@ void DrawCarnageReport(const player_state_t *ps, const vrect_t &hud_vrect, int32
 
     draw_stat("HOSTILES ELIMINATED", kills);
     draw_stat("MARINE DEATHS", deaths);
-    draw_stat("MECHANIC PROGRESS", mechanics);
     draw_stat("WIPE", wipes);
 
     cgi.SCR_DrawFontString("FIRE / USE / JUMP TO DISMISS", center_x, y + height * 0.78f,

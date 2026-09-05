@@ -35,19 +35,17 @@ struct carnage_runtime_t
     gtime_t updated_at;
     int monster_baseline = 0;
     int deaths = 0;
-    int mechanic_progress = 0;
     int wipes = 0;
     int snapshot_kills = 0;
     int snapshot_deaths = 0;
-    int snapshot_mechanics = 0;
     int snapshot_wipes = 0;
-    std::string last_state;
     std::array<bool, MAX_CLIENTS> was_dead = {};
     std::array<bool, MAX_CLIENTS> report_visible = {};
     std::array<gtime_t, MAX_CLIENTS> dismiss_after = {};
 };
 
 std::array<raid_ui_session_t, MAX_CLIENTS> sessions;
+std::array<gtime_t, MAX_CLIENTS> terminal_reentry_after;
 carnage_runtime_t carnage;
 
 void MenuSelect(edict_t *player, pmenuhnd_t *menu);
@@ -84,12 +82,10 @@ void ClearHUD(edict_t *player)
     player->client->ps.stats[STAT_RAID_UI_STATE] = 0;
 }
 
-void ResetCarnageLiveAttempt(const std::string &state)
+void ResetCarnageLiveAttempt()
 {
     carnage.monster_baseline = level.killed_monsters;
     carnage.deaths = 0;
-    carnage.mechanic_progress = 0;
-    carnage.last_state = state;
     carnage.was_dead.fill(false);
     for (edict_t *player : active_players())
         if (ValidPlayer(player) && !player->client->resp.spectator)
@@ -110,7 +106,6 @@ void UpdateCarnageTracker()
     Json::Value director_state;
     RaidDirector_WriteSave(director_state);
     const bool loaded = director_state.get("loaded", false).asBool();
-    const std::string state = director_state.get("state", "").asString();
 
     if (!loaded)
     {
@@ -122,7 +117,7 @@ void UpdateCarnageTracker()
     if (!carnage.director_loaded)
     {
         carnage.director_loaded = true;
-        ResetCarnageLiveAttempt(state);
+        ResetCarnageLiveAttempt();
     }
 
     bool any_participant = false;
@@ -144,25 +139,12 @@ void UpdateCarnageTracker()
         all_dead = false;
 
     if (carnage.all_dead && !all_dead)
-    {
-        ResetCarnageLiveAttempt(state);
-    }
-    else if (!carnage.last_state.empty() && state != carnage.last_state &&
-        !carnage.all_dead && !all_dead && state != "wipe")
-    {
-        ++carnage.mechanic_progress;
-        carnage.last_state = state;
-    }
-    else
-    {
-        carnage.last_state = state;
-    }
+        ResetCarnageLiveAttempt();
 
     if (all_dead && !carnage.all_dead)
     {
         carnage.snapshot_kills = std::max(0, level.killed_monsters - carnage.monster_baseline);
         carnage.snapshot_deaths = carnage.deaths;
-        carnage.snapshot_mechanics = carnage.mechanic_progress;
         carnage.snapshot_wipes = ++carnage.wipes;
 
         for (edict_t *player : active_players())
@@ -207,8 +189,7 @@ void UpdateCarnageHUD(edict_t *player)
         std::clamp(carnage.snapshot_kills, 0, 32767));
     player->client->ps.stats[STAT_RAID_UI_CURSOR_Y] = static_cast<int16_t>(
         std::clamp(carnage.snapshot_deaths, 0, 32767));
-    const int packed = std::clamp(carnage.snapshot_mechanics, 0, 255) |
-        (std::clamp(carnage.snapshot_wipes, 0, 127) << 8);
+    const int packed = std::clamp(carnage.snapshot_wipes, 0, 127) << 8;
     player->client->ps.stats[STAT_RAID_UI_STATE] = static_cast<int16_t>(packed);
 }
 
@@ -229,6 +210,10 @@ void FinishSession(edict_t *player, pmenuhnd_t *menu)
     {
         source->timestamp = level.time + 1000000_sec;
         RaidDirector_NotifyEntityEvent(source, "terminal_complete", player);
+    }
+    else
+    {
+        terminal_reentry_after[player->s.number - 1] = level.time + 500_ms;
     }
 }
 
@@ -321,7 +306,8 @@ bool RaidUI_Open(edict_t *player, edict_t *source)
         !source || !source->inuse ||
         !source->classname || Q_strcasecmp(source->classname, "raid_gadget") ||
         !source->message || Q_strcasecmp(source->message, "terminal") ||
-        source->timestamp > level.time || player->client->menu)
+        source->timestamp > level.time ||
+        terminal_reentry_after[player->s.number - 1] > level.time || player->client->menu)
         return false;
 
     raid_ui_session_t &session = Session(player);
@@ -430,6 +416,7 @@ void RaidUI_Disconnect(edict_t *player)
     CloseSession(player, false);
     ClearHUD(player);
     Session(player) = {};
+    terminal_reentry_after[player->s.number - 1] = 0_ms;
     carnage.report_visible[player->s.number - 1] = false;
     carnage.was_dead[player->s.number - 1] = false;
 }
@@ -446,4 +433,5 @@ void RaidUI_Reset()
             CloseSession(player, false);
         session = {};
     }
+    terminal_reentry_after.fill(0_ms);
 }

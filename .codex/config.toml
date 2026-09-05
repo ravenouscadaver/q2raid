@@ -1,0 +1,18 @@
+# Q2Raid project-local Codex defaults.
+# Loaded only when this repository is trusted.
+
+model_reasoning_effort = "high"
+plan_mode_reasoning_effort = "high"
+
+# Q2Raid implementation authority is GitHub. Keep local repository access
+# read-only so implementation cannot quietly fork into a Codex/scratch workspace.
+approval_policy = "on-request"
+sandbox_mode = "read-only"
+
+# Reduce environment-dependent behavior.
+allow_login_shell = false
+
+# AGENTS.md is the compact router. Detailed project Markdown is read deliberately
+# instead of being injected through arbitrary fallback filenames.
+project_doc_max_bytes = 32768
+project_doc_fallback_filenames = []
