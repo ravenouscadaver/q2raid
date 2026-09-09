@@ -3,28 +3,155 @@
     975,
     1024
   ],
+  "layers": {
+    "engine_backing": "engine_rendered_chassis",
+    "chassis": "terminal_chassis.png",
+    "screen_fx": "terminal_screen.png",
+    "controls": "terminal_controls_clean.png"
+  },
   "regions": {
     "screen": [
-      [167,128],
-      [811,128],
-      [836,155],
-      [836,543],
-      [809,574],
-      [167,574],
-      [143,546],
-      [143,155]
+      [
+        167,
+        128
+      ],
+      [
+        811,
+        128
+      ],
+      [
+        836,
+        155
+      ],
+      [
+        836,
+        543
+      ],
+      [
+        809,
+        574
+      ],
+      [
+        167,
+        574
+      ],
+      [
+        143,
+        546
+      ],
+      [
+        143,
+        155
+      ]
     ],
     "keyboard": [
-      [72,693],
-      [668,693],
-      [668,915],
-      [72,915]
+      [
+        72,
+        693
+      ],
+      [
+        668,
+        693
+      ],
+      [
+        668,
+        915
+      ],
+      [
+        72,
+        915
+      ]
     ],
     "keypad": [
-      [713,693],
-      [906,693],
-      [906,915],
-      [713,915]
+      [
+        713,
+        693
+      ],
+      [
+        906,
+        693
+      ],
+      [
+        906,
+        915
+      ],
+      [
+        713,
+        915
+      ]
+    ]
+  },
+  "keyboard_map": {
+    "geometry_space": "canvas_pixels",
+    "mask_encoding": {
+      "main_row_1": "#FF0000",
+      "main_row_2": "#00FF00",
+      "main_row_3": "#0000FF",
+      "main_row_4": "#FFFF00",
+      "main_row_5": "#FF00FF",
+      "numpad_row_1": "#00FFFF",
+      "numpad_row_2": "#FF8000",
+      "numpad_row_3": "#8000FF",
+      "numpad_row_4": "#FFFFFF"
+    },
+    "pressed_overlay_rgba": [
+      5,
+      10,
+      7,
+      165
+    ],
+    "keys": [
+      {"id":"esc","label":"ESC","role":"cancel","row":"main_row_1","rect_px":[79,697,28,29]},
+      {"id":"digit_1","label":"1","role":"digit","row":"main_row_1","rect_px":[124,697,28,29],"value":"1"},
+      {"id":"digit_2","label":"2","role":"digit","row":"main_row_1","rect_px":[170,697,28,29],"value":"2"},
+      {"id":"digit_3","label":"3","role":"digit","row":"main_row_1","rect_px":[216,697,28,29],"value":"3"},
+      {"id":"digit_4","label":"4","role":"digit","row":"main_row_1","rect_px":[261,697,28,29],"value":"4"},
+      {"id":"digit_5","label":"5","role":"digit","row":"main_row_1","rect_px":[307,696,28,29],"value":"5"},
+      {"id":"digit_6","label":"6","role":"digit","row":"main_row_1","rect_px":[352,697,28,29],"value":"6"},
+      {"id":"digit_7","label":"7","role":"digit","row":"main_row_1","rect_px":[398,698,28,29],"value":"7"},
+      {"id":"digit_8","label":"8","role":"digit","row":"main_row_1","rect_px":[444,697,28,29],"value":"8"},
+      {"id":"digit_9","label":"9","role":"digit","row":"main_row_1","rect_px":[489,697,28,29],"value":"9"},
+      {"id":"digit_0","label":"0","role":"digit","row":"main_row_1","rect_px":[535,696,28,29],"value":"0"},
+      {"id":"backspace","label":"BACK","role":"back","row":"main_row_1","rect_px":[580,697,74,29]},
+      {"id":"q","label":"Q","role":"character","row":"main_row_2","rect_px":[146,741,28,29],"value":"Q"},
+      {"id":"w","label":"W","role":"character","row":"main_row_2","rect_px":[191,741,28,29],"value":"W"},
+      {"id":"e","label":"E","role":"character","row":"main_row_2","rect_px":[237,741,28,29],"value":"E"},
+      {"id":"r","label":"R","role":"character","row":"main_row_2","rect_px":[283,741,28,29],"value":"R"},
+      {"id":"t","label":"T","role":"character","row":"main_row_2","rect_px":[329,740,28,30],"value":"T"},
+      {"id":"y","label":"Y","role":"character","row":"main_row_2","rect_px":[375,742,28,29],"value":"Y"},
+      {"id":"u","label":"U","role":"character","row":"main_row_2","rect_px":[421,741,28,29],"value":"U"},
+      {"id":"i","label":"I","role":"character","row":"main_row_2","rect_px":[466,742,28,29],"value":"I"},
+      {"id":"o","label":"O","role":"character","row":"main_row_2","rect_px":[512,741,28,29],"value":"O"},
+      {"id":"p","label":"P","role":"character","row":"main_row_2","rect_px":[557,740,28,30],"value":"P"},
+      {"id":"a","label":"A","role":"character","row":"main_row_3","rect_px":[157,785,28,29],"value":"A"},
+      {"id":"s","label":"S","role":"character","row":"main_row_3","rect_px":[205,784,28,29],"value":"S"},
+      {"id":"d","label":"D","role":"character","row":"main_row_3","rect_px":[251,785,28,29],"value":"D"},
+      {"id":"f","label":"F","role":"character","row":"main_row_3","rect_px":[297,785,28,29],"value":"F"},
+      {"id":"g","label":"G","role":"character","row":"main_row_3","rect_px":[343,784,28,29],"value":"G"},
+      {"id":"h","label":"H","role":"character","row":"main_row_3","rect_px":[388,786,28,29],"value":"H"},
+      {"id":"j","label":"J","role":"character","row":"main_row_3","rect_px":[434,785,28,29],"value":"J"},
+      {"id":"k","label":"K","role":"character","row":"main_row_3","rect_px":[479,785,28,29],"value":"K"},
+      {"id":"l","label":"L","role":"character","row":"main_row_3","rect_px":[525,784,28,29],"value":"L"},
+      {"id":"enter","label":"ENTER","role":"submit","row":"main_row_3","rect_px":[570,785,83,30]},
+      {"id":"z","label":"Z","role":"character","row":"main_row_4","rect_px":[181,830,28,29],"value":"Z"},
+      {"id":"x","label":"X","role":"character","row":"main_row_4","rect_px":[226,829,28,29],"value":"X"},
+      {"id":"c","label":"C","role":"character","row":"main_row_4","rect_px":[272,830,28,29],"value":"C"},
+      {"id":"v","label":"V","role":"character","row":"main_row_4","rect_px":[319,830,28,29],"value":"V"},
+      {"id":"b","label":"B","role":"character","row":"main_row_4","rect_px":[365,830,28,29],"value":"B"},
+      {"id":"n","label":"N","role":"character","row":"main_row_4","rect_px":[410,830,28,29],"value":"N"},
+      {"id":"m","label":"M","role":"character","row":"main_row_4","rect_px":[456,829,28,29],"value":"M"},
+      {"id":"question","label":"?","role":"character","row":"main_row_4","rect_px":[501,829,28,30],"value":"?"},
+      {"id":"space","label":"SPACE","role":"character","row":"main_row_5","rect_px":[249,875,221,30],"value":" "},
+      {"id":"numpad_7","label":"7","role":"digit","row":"numpad_row_1","rect_px":[727,704,28,30],"value":"7"},
+      {"id":"numpad_8","label":"8","role":"digit","row":"numpad_row_1","rect_px":[772,705,28,29],"value":"8"},
+      {"id":"numpad_9","label":"9","role":"digit","row":"numpad_row_1","rect_px":[817,705,28,29],"value":"9"},
+      {"id":"numpad_4","label":"4","role":"digit","row":"numpad_row_2","rect_px":[728,749,28,29],"value":"4"},
+      {"id":"numpad_5","label":"5","role":"digit","row":"numpad_row_2","rect_px":[773,750,28,29],"value":"5"},
+      {"id":"numpad_6","label":"6","role":"digit","row":"numpad_row_2","rect_px":[818,750,28,29],"value":"6"},
+      {"id":"numpad_1","label":"1","role":"digit","row":"numpad_row_3","rect_px":[728,795,28,29],"value":"1"},
+      {"id":"numpad_2","label":"2","role":"digit","row":"numpad_row_3","rect_px":[773,796,28,29],"value":"2"},
+      {"id":"numpad_3","label":"3","role":"digit","row":"numpad_row_3","rect_px":[818,796,28,29],"value":"3"},
+      {"id":"numpad_0","label":"0","role":"digit","row":"numpad_row_4","rect_px":[727,839,28,36],"value":"0"}
     ]
   },
   "notes": {
@@ -37,6 +164,7 @@
     "engine_chassis": "Primitive engine-rendered backing is a permanent layer and fallback. It is distinct from, and remains underneath, terminal_chassis.png.",
     "screen_can_be_replaced": "Render Raid UI into the screen polygon or use it as an alpha/UV mask; do not move the player to simulate a camera feed.",
     "controls": "Darken individual key rectangles at runtime within the controls layer; all decorative layers share the identical 975x1024 canvas and destination rectangle.",
+    "keyboard_geometry": "The 51 key rectangles are derived from the approved 975x1024 colour-mask handoff. The mask is authoring input; runtime and harness hit testing consume these stable rectangles and normalize them against canvas size.",
     "asset_distribution": "Approved terminal PNG bytes are local runtime/test assets and are not required to be published in the public source repository. Runtime source must use the exact documented paths and hashes."
   },
   "asset_sha256": {

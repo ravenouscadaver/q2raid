@@ -366,3 +366,33 @@ Candidate / NOT RUNTIME TESTED: existing engine `developer` controls an isolated
 terminal chassis preview (`1` shows it; `0` hides it). No new cvar, asset path,
 mapper key or protocol slot is introduced. The approved paths remain those in
 `TERMINAL_SYSTEM.md` and `terminal_layers.json`.
+
+## Terminal authoring harness / presentation manifest — 2026-09-10
+
+The local authoring harness lives at `tools/terminal-harness/`. It consumes the
+same terminal content JSON and presentation manifest intended for the Quake
+terminal runtime; it is not a second Director schema.
+
+`raid/ui/terminal_grunge/terminal_layers.json` presentation keys added/confirmed
+for this work unit:
+
+- `layers` with `engine_backing`, `chassis`, `screen_fx`, `controls`
+- `keyboard_map`
+- `geometry_space` = `canvas_pixels`
+- `mask_encoding`
+- `pressed_overlay_rgba`
+- `keys`
+- per-key `id`, `label`, `role`, `row`, optional `value`, and `rect_px`
+
+The canonical derived keyboard table contains 51 stable regions on the existing
+`975 x 1024` canvas. The colour mask is authoring input only; runtime/harness
+code consumes the derived rectangles and normalizes them against the canvas.
+
+Harness v1 publishes only current terminal semantic events (`terminal_open`,
+`terminal_complete`). Cancellation and `on_success` / `on_failure` results are
+kept as harness-side diagnostics so this tool does not invent the currently
+undeclared `terminal_action`, generic counters, flags, timers, or operations.
+
+Custom font presentation remains behind the harness-local
+`createCustomTerminalFontAdapter()` stub. Its absence falls back to ordinary
+Canvas monospace text and adds no runtime asset path or terminal JSON field.
