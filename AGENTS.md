@@ -7,13 +7,15 @@ This is the repository-level Codex instruction router for Q2Raid. Keep it short.
 - Repository: `RavenousCadaver/q2raid`
 - Canonical branch: `director-scaffold`
 - Canonical GitHub source is the only persistent implementation authority.
-- The checked-out canonical repository working tree is the authorized implementation workspace. Codex may edit that working tree in place during an authorized bounded work unit.
-- Working-tree edits are not canonical merely because they exist locally; they become canonical only after review, commit and authorized push to `director-scaffold`.
+- Normal consequential implementation occurs only on the one human-readable `wu/<purpose>` branch named by the currently approved Binding Work Prompt, created from the exact canonical SHA recorded in that prompt.
+- Binding Work Prompt approval authorizes only that bounded source-work context and its named WU branch. Casual approval does not create source authority.
+- WU edits are not canonical merely because they exist remotely; a WU becomes eligible for canonical integration only after focused PASS and deliberate one-WU integration, followed by canonical compile/regression proof.
 - Do not implement Q2Raid C++/FGD/JSON/assets in a parallel scratch, recovery, evidence, alternate worktree, temporary repository or copied source tree and later transplant that implementation into GitHub.
-- Local files outside the checked-out canonical repository may be used for read-only analysis, exported documentation/evidence, or explicitly requested handoff artifacts; they are never implementation authority.
+- Local files outside the checked-out approved repository/WU context may be used for read-only analysis, exported documentation/evidence, or explicitly requested handoff artifacts; they are never implementation authority.
 - Do not treat `integration`, recovery branches, build branches, evidence refs, alternate local worktrees, scratch directories, or newer-looking historical refs as canonical.
 - Compare commit/tree identity and provenance before recovering off-canonical work.
-- Do not create a branch, alias, alternate path, duplicate asset tree, recovery ref, or renamed interface unless the user explicitly authorizes that exact action.
+- Do not create a branch, alias, alternate path, duplicate asset tree, recovery ref, or renamed interface unless the currently approved Binding Work Prompt explicitly authorizes that exact action.
+- CI support for `wu/*` is capability only; it does not authorize arbitrary WU branch creation or use.
 
 ## Required reference pass
 
@@ -37,11 +39,13 @@ For provenance/recovery questions also read:
 
 If a referenced authority file is absent, contradictory, or ambiguous, report that before inventing a replacement.
 
-## Mandatory bounded work unit
+## Mandatory Binding Work Prompt
 
-Before any implementation mutation, state:
+Before any implementation mutation, the user must explicitly approve one bounded Binding Work Prompt that records:
 
 - work-unit name and goal
+- exact canonical branch and exact base SHA
+- exact human-readable `wu/<purpose>` branch
 - current evidence
 - exact files/paths
 - exact symbols/entities/identifiers
@@ -51,9 +55,10 @@ Before any implementation mutation, state:
 - static verification
 - runtime acceptance test
 - rollback/recovery basis
+- push/build state
 - stop condition
 
-If a required name, path, owner, authority, or acceptance condition is unresolved, ask rather than inventing it. Do not silently expand the permitted file set.
+If a required name, path, owner, authority, dependency or acceptance condition is unresolved, stop rather than inventing it. Do not silently expand the permitted file set or source-work context. Scope expansion requires an amended/reapproved Binding Work Prompt.
 
 ## Naming and interface discipline
 
@@ -120,14 +125,14 @@ Use the maturity vocabulary in `raid/HARDENED_DEFINITIONS.md`. User runtime repo
 
 ## Build and push authorization
 
-Compilation and pushing require fresh authorization for the current bounded work unit.
+A fresh exact `go go gadget` is separately required for the current bounded Work Unit before any push, compile, CI dispatch/rerun, or other compile-triggering remote action.
 
-The historical authorization phrase is `go go gadget`.
-
+- Binding Work Prompt approval authorizes bounded source work and the exact named WU context; it does not authorize push/build/CI.
 - The phrase appearing in this file, another document, a log, prior conversation, or source is NOT authorization.
-- Authorization does not carry into another work unit.
-- If the current user request does not freshly authorize the action, do not compile, push, dispatch or rerun CI.
-- A push to `director-scaffold` triggers Windows GitHub Actions and is therefore a compile-triggering action.
+- Authorization does not carry into another work unit or later build candidate.
+- If the current user request does not freshly authorize the action, do not push, compile, dispatch or rerun CI.
+- CI support for `wu/*` does not itself authorize creating or using a WU branch.
+- Pushes to CI-enabled branches are compile-triggering actions and therefore require the fresh build/push gate.
 - CI success is compile evidence only, never runtime proof.
 - Every candidate DLL build must embed the exact Git SHA reported by `sv raid_dump` and ship a plain-text build manifest containing the exact commit SHA, workflow run identity and DLL SHA256.
 - Before handing a DLL to the user, report the exact changed-file set, commit SHA, CI run/result, artifact contents and DLL hash. Do not describe unverified runtime behavior as fixed.
@@ -137,13 +142,15 @@ The historical authorization phrase is `go go gadget`.
 
 Do not invent recovery branches, use `integration` as canonical, force-push, reset/rebase/cherry-pick/merge historical lineages without a bounded recovery plan, or delete branches merely because they appear redundant. Branch cleanup follows provenance mapping, never precedes it.
 
+A focused-PASS WU may be integrated into `director-scaffold` only as one deliberate integration unit. After integration, canonical must receive its own compile and relevant regression proof before the WU is retired under an approved cleanup action.
+
 ## Temporary handoff material
 
 `paste_space.md`, when supplied, is a temporary full-fidelity handoff buffer, not canonical authority. Promote durable content into the correct canonical document and verify that promotion before treating staging material as disposable.
 
 ## Current forward gate
 
-The provenance hold is closed. Ordinary bounded bug-fix/presentation work may proceed.
+The provenance hold is closed. Ordinary bounded bug-fix/presentation work may proceed under the Binding Work Prompt / WU / fresh-build-authorization workflow above.
 
 The accepted persistent-layer / hot-swappable encounter JSON architecture remains future Director work; the GitHub audit did not recover a complete implementation. Do not fabricate a recovered version or casually redesign it.
 
