@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - director-scaffold
+      - 'wu/**'
   workflow_dispatch:
 
 jobs:
