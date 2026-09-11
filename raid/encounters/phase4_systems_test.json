@@ -1,0 +1,156 @@
+{
+  "encounter": "phase4_systems_test",
+  "initial_state": "idle",
+  "reset": [
+    { "op": "post_encounter_message", "text": "ENCOUNTER RESET", "duration": 3, "priority": 100 }
+  ],
+  "events": [
+    {
+      "source": "trigger",
+      "signal": "activate",
+      "from_state": "idle",
+      "set_state": "party"
+    },
+    {
+      "source": "trigger_status_apply",
+      "signal": "activate",
+      "do": [
+        {
+          "op": "apply_status",
+          "status": "volatile",
+          "duration": 15,
+          "stack_policy": "refresh",
+          "expire_message": "VOLATILE EXPIRED",
+          "on_expire": [
+            { "op": "play_sound", "sound": "items/damage2.wav" },
+            { "op": "screen_shake", "duration": 1.5 },
+            { "op": "kill_player" }
+          ]
+        },
+        { "op": "post_message", "text": "VOLATILE APPLIED" },
+        { "op": "post_encounter_message", "text": "VOLATILE CHARGE DETECTED", "duration": 4, "priority": 5 }
+      ]
+    },
+    {
+      "source": "trigger_status_clear",
+      "signal": "activate",
+      "do": [
+        { "op": "clear_status", "status": "volatile" },
+        { "op": "post_message", "text": "VOLATILE CLEARED" }
+      ]
+    },
+    {
+      "source": "trigger_doomsday_apply",
+      "signal": "activate",
+      "do": [
+        {
+          "op": "apply_status",
+          "status": "doomsday",
+          "duration": 30,
+          "stack_policy": "refresh",
+          "expire_message": "DOOMSDAY",
+          "on_expire": [
+            { "op": "play_sound", "sound": "world/x_alarm.wav", "scope": "all" },
+            { "op": "screen_shake", "duration": 3, "scope": "all" },
+            { "op": "kill_player" }
+          ]
+        },
+        { "op": "post_message", "text": "DOOMSDAY APPLIED" },
+        { "op": "post_encounter_message", "text": "DOOMSDAY COUNTDOWN ACTIVE", "duration": 8, "priority": 10 }
+      ]
+    },
+    {
+      "source": "trigger_doomsday_clear",
+      "signal": "activate",
+      "do": [
+        { "op": "clear_status", "status": "doomsday" },
+        { "op": "post_message", "text": "DOOMSDAY CLEARED" }
+      ]
+    },
+    {
+      "source": "power_core_1",
+      "signal": "pickup",
+      "do": [
+        { "op": "post_message", "text": "CORE COLLECTED" },
+        { "op": "play_sound", "sound": "misc/power1.wav" }
+      ]
+    },
+    {
+      "source": "bfg_relic_1",
+      "signal": "pickup",
+      "do": [
+        { "op": "post_message", "text": "BFG RELIC ACQUIRED" },
+        { "op": "play_sound", "sound": "misc/w_pkup.wav" }
+      ]
+    },
+    {
+      "source": "bfg_relic_1",
+      "signal": "drop",
+      "do": [
+        { "op": "post_message", "text": "BFG RELIC EJECTED" },
+        { "op": "play_sound", "sound": "weapons/change.wav" }
+      ]
+    },
+    {
+      "source": "power_core_1",
+      "signal": "drop",
+      "do": [
+        { "op": "post_message", "text": "CORE DROPPED" }
+      ]
+    },
+    {
+      "source": "regulator_socket_1",
+      "signal": "deposit",
+      "do": [
+        { "op": "post_message", "text": "CORE DEPOSITED" },
+        { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" }
+      ]
+    },
+    {
+      "source": "regulator_socket_2",
+      "signal": "deposit",
+      "do": [
+        { "op": "post_message", "text": "CORE DEPOSITED" },
+        { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" }
+      ]
+    },
+    {
+      "source": "regulator_socket_3",
+      "signal": "deposit",
+      "do": [
+        { "op": "post_message", "text": "CORE DEPOSITED" },
+        { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" }
+      ]
+    }
+  ],
+  "states": {
+    "idle": {
+      "enter": []
+    },
+    "party": {
+      "enter": [
+        { "op": "set_field", "target": "door", "field": "wait", "value": -1 },
+        { "op": "fire_target", "target": "door" },
+        { "op": "fire_target", "target": "light_party1" },
+        { "op": "fire_target", "target": "light_party2" },
+        { "op": "fire_target", "target": "light_party3" },
+        { "op": "fire_target", "target": "light_party4" },
+        {
+          "op": "color_cycle",
+          "targets": ["light_party1", "light_party2", "light_party3", "light_party4"],
+          "colors": [[255, 0, 0], [0, 255, 0], [0, 0, 255], [180, 0, 255]],
+          "step_seconds": 0.65,
+          "transition_seconds": 0.55
+        },
+        { "op": "post_encounter_message", "text": "PARTY SYSTEM ONLINE", "duration": 5, "priority": 1 }
+      ],
+      "exit": [
+        { "op": "fire_target", "target": "light_party1" },
+        { "op": "fire_target", "target": "light_party2" },
+        { "op": "fire_target", "target": "light_party3" },
+        { "op": "fire_target", "target": "light_party4" },
+        { "op": "fire_target", "target": "door" }
+      ]
+    }
+  }
+}

@@ -1,0 +1,2097 @@
+//
+// Quake 2 game definition file (.fgd)
+//
+// Originally written by by autolycus
+// Special thanks to: Disruptor, Zoid, Zaphod, Imaginos, EutecTic, xaGe.
+//
+// Last updated by Paril for re-release
+
+// Includes stuff from the tools for lighting etc
+@BaseClass = EWT_base_Worldspawn
+[
+	light(float) : "Ambient light" : "0" : "Set a global minimum light level of 'n' across the whole map. This is an easy way to eliminate completely dark areas of the level, however you may lose some contrast as a result, so use with care. Default 0"
+	_minlight_color(color255) : "Minlight color R G B" : "255 255 255" : "Specify red(r), green(g) and blue(b) components for the colour of the minunlight. RGB component values are between 0 and 255 (between 0 and 1 is also accepted). Default is white light (255 255 255)"
+	_minlightMottle(choices) : "Use mottle effect on minlight surfaces" : 1 =
+	[
+		0 : "Off"
+		1 : "On"
+	]
+
+	_dist(float) : "Global light scale" : "1" : "Scales the fade distance of all lights by a factor of n. If n is more than 1 lights fade more quickly with distance and if n is less than 1, lights fade more slowly with distance and light reaches further"
+	_range(float) : "Global light range" : "0.5" : "Scales the brightness range of all lights without affecting their fade discance. Values of n more than 0.5 makes lights brighter and n less than 0.5 makes lights less bright. The same effect can be achieved on individual lights by adjusting both the 'light' and 'wait' attributes"
+	_gamma(float) : "Lightmap gamma" : "1" : "Adjust brightness of final lightmap. Default 1, >1 is brighter, <1 is darker"
+	_anglescale(float) : "Light angle scale" : "0.5" : "Sets a scaling factor for how much influence the angle of incidence of sunlight on a surface has on the brightness of the surface. n must be between 0.0 and 1.0. Smaller values mean less attenuation, with zero meaning that angle of incidence has no effect at all on the brightness. Default 0.5"
+
+	_sunlight(float) : "Sunlight" : "0" : "Set the brightness of the sunlight coming from an unseen sun in the sky. Sky brushes (or more accurately bsp leafs with sky contents) will emit sunlight at an angle specified by the _sun_mangle key. Default 0"
+	_sun_mangle(string) : "Sun mangle (Yaw pitch roll)" : "0 -90 0" : "Specifies the direction of sunlight using yaw(x), pitch(y) and roll(z) in degrees. Yaw specifies the angle around the Z-axis from 0 to 359 degrees and pitch specifies the angle from 90 (straight up) to -90 (straight down). Roll has no effect, so use any value (e.g. 0). Default is straight down (0 -90 0)"
+	_sunlight_penumbra(float) : "Sunlight penumbra in degrees" : "0" : "Specifies the penumbra width, in degrees, of sunlight. Useful values are 3-4 for a gentle soft edge, or 10-20+ for more diffuse sunlight. Default is 0"
+	_sunlight_color(color255) : "Sunlight color R G B" : "255 255 255" : "Specify red(r), green(g) and blue(b) components for the colour of the sunlight. RGB component values are between 0 and 255 (between 0 and 1 is also accepted). Default is white light (255 255 255)"
+	_sunlight2(float) : "Sunlight hemisphere brightness" : "0" : "Set the brightness of a large dome of lights positioned around the map (16K unit radius). Useful for simulating higly diffused light (e.g. cloudy skies) in outdoor areas. Default 0"
+	_sunlight2_color(color255) : "Sunlight hemisphere color R G B" : "255 255 255" : "Specifies the colour of _sunlight2, same format as _sunlight_color. Default is white light (255 255 255)"
+	_sunlight3(float) : "Sunlight ground brightness" : "0" : "Set the brightness of a large dome of lights positioned around the map (16K unit radius). Useful for simulating higly diffused light (e.g. cloudy skies) in outdoor areas. Default 0"
+	_sunlight3_color(color255) : "Sunlight ground color R G B" : "255 255 255" : "Specifies the colour of _sunlight2, same format as _sunlight_color. Default is white light (255 255 255)"
+
+	
+	
+	_dirt(choices) : "Dirt mapping (AO)" : 0 : "1 enables dirtmapping (ambient occlusion) on all lights, borrowed from q3map2. This adds shadows to corners and crevices. You can override the global setting for specific lights with the _dirt light entity key or _sunlight_dirt, _sunlight2_dirt, and _minlight_dirt worldspawn keys. Default is no dirtmapping (-1)" =
+	[
+		-1 : "Force off"
+		0  : "Compiler settings"
+		1  : "Force on"
+	]
+	_sunlight_dirt(choices) : "Sunlight dirt" : 0 : "1 enables dirtmapping (ambient occlusion) on sunlight, -1 to disable (making it illuminate the dirtmapping shadows). Default is to use the value of '_dirt'" =
+	[
+		-1 : "Force off"
+		0  : "Compiler settings"
+		1  : "Force on"
+	]
+	_sunlight2_dirt(choices) : "Sunlight 2 dirt" : 0 : "1 enables dirtmapping (ambient occlusion) on sunlight2, -1 to disable. Default is to use the value of '_dirt'" =
+	[
+		-1 : "Force off"
+		0  : "Compiler settings"
+		1  : "Force on"
+	]
+	_minlight_dirt(choices) : "Minlight dirt" : 0 : "1 enables dirtmapping (ambient occlusion) on minlight, -1 to disable. Default is to use the value of '_dirt'" =
+	[
+		-1 : "Force off"
+		0  : "Compiler settings"
+		1  : "Force on"
+	]
+	_dirtmode(choices) : "Dirt mode" : 0 : "Choose between ordered (0, default) and randomized (1) dirtmapping." = 
+	[ 
+		0 : "Ordered" 
+		1 : "Random" 
+	] 
+	_dirtdepth(float) : "Dirt depth" : "128" : "Maximum depth of occlusion checking for dirtmapping, default 128."
+	_dirtscale(float) : "Dirt scale" : "1" : "Scale factor used in dirt calculations, default 1. Lower values (e.g. 0.5) make the dirt fainter, 2.0 would create much darker shadows"
+	_dirtgain(float) : "Dirt gain" : "1" : "Exponent used in dirt calculation, default 1. Lower values (e.g. 0.5) make the shadows darker and stretch further away from corners"
+	
+	_bounce(float) : "Light bounce" : "0" 
+	_bouncescale(float) : "Light bounce scale" : "1" : "Scales brightness of bounce lighting."
+	_bouncecolorscale(float) : "Light bounce color scale" : "0" : "Weight for bounce lighting to use texture colors from the map: 0=ignore map textures (default), 1=multiply bounce light color by texture color."
+	
+]
+
+@BaseClass = EWT_base_PointLight
+[
+	light(float) : "Brightness" : "300" : "Set the light intensity. Negative values are also allowed and will cause the entity to subtract light cast by other entities."
+	_color(color255) : "Light color"
+	wait(float) : "Fade distance multiplier" : "1" : "Scale the fade distance of the light by 'n'. Values of n more than 1 make the light fade more quickly with distance, and values less than 1 make the light fade more slowly (and thus reach further)."
+	delay(choices) : "Attenuation" :  : "Select an attenuation formula for the light"  = [
+		0 : "Linear falloff (Default)"
+		1 : "Inverse distance falloff"
+		2 : "Inverse distance squared"
+		3 : "No falloff"
+		4 : "Local minlight"
+		5 : "Inverse distance 2"
+	]
+	mangle(string) : "Spotlight direction" : "0 -90 0" : "Turns the light into a spotlight and specifies the direction of light using yaw(x), pitch(y) and roll(z) in degrees. Yaw specifies the angle around the Z-axis from 0 to 359 degrees and pitch specifies the angle from 90 (straight up) to -90 (straight down). Roll has no effect, so use any value (e.g. 0). Often easier than the 'target' method"
+	angle(float) : "Spotlight cone angle" : "40" : "Specifies the angle in degrees for a spotlight cone."
+	_dirt(choices) : "Ambient occlusion (override)" : 0 : "Overrides the worldspawn setting of '_dirt' for this particular light." = [
+		0 : "Worldspawn decides"
+		-1 : "Force off"
+		1 : "Force on"
+	]
+	_dirtscale(float) : "AO scale (override)" : "1.0" : "Override the global '_dirtscale' or '_dirtgain' settings to change how this light is affected by dirtmapping (ambient occlusion). See descriptions of these keys in the worldspawn section"
+	_deviance(float) : "Deviance" : "0" : "Split up the light into a sphere of randomly positioned lights within radius 'n' (in world units). Useful to give shadows a wider penumbra. '_samples' specifies the number of lights in the sphere. The 'light' value is automatically scaled down for most lighting formulas (except linear and non-additive minlight) to attempt to keep the brightness equal. Default is 0, do not split up lights"
+	_samples(float) : "No. of Deviance lights" : "16" : "Number of lights to use for '_deviance'. Default 16 (only used if '_deviance' is set)"
+	_surface(string) : "Surface light texture name" :  : "Makes surfaces with the given texture name emit light, by using this light as a template which is copied across those surfaces. Lights are spaced about 128 units (though possibly closer due to bsp splitting) apart and positioned 2 units above the surfaces"
+	_surface_spotlight(choices) : "Surface spotlight" : 0 : "Is this surface light a spotlight? If so, orient it so it points away from the surface normal" = [
+		0 : "No"
+		1 : "Yes"
+	]
+	_surface_offset(float) : "Surface light offset" : "2" : "Controls the offset lights are placed above surfaces for '_surface'. Default 2"
+	_softangle(float) : "Spotlight soft angle" :  : "Specifies the angle in degrees for an inner spotlight cone (must be less than the 'angle' cone. Creates a softer transition between the full brightness of the inner cone to the edge of the outer cone. Default 0 (disabled)"
+	_anglescale(float) : "Light angle scale" :  : "Sets a scaling factor for how much influence the angle of incidence of light on a surface has on the brightness of the surface. n must be between 0.0 and 1.0. Smaller values mean less attenuation, with zero meaning that angle of incidence has no effect at all on the brightness. Default 0.5"
+	_project_texture(string) : "Project a texture"
+	_project_mangle(string) : "Projection texture direction"
+	_project_fov(float) : "Projection texture FOV" : "90"
+
+	_light_channel_mask(flags) = [
+		0 : "Legacy Behavior" : 1
+		1 : "Channel 1"
+		2 : "Channel 2"
+		4 : "Channel 3"
+		8 : "Channel 4"
+		16 : "Channel 5"
+		32 : "Channel 6"
+		64 : "Channel 7"
+		128 : "Channel 8"
+		256 : "Channel 9"
+		512 : "Channel 10"
+		1024 : "Channel 11"
+		2048 : "Channel 12"
+		4096 : "Channel 13"
+		8192 : "Channel 14"
+		16384 : "Channel 15"
+		32768 : "Channel 16"
+		65536 : "Channel 17"
+		131072 : "Channel 18"
+		262144 : "Channel 19"
+		524288 : "Channel 20"
+		1048576 : "Channel 21"
+		2097152 : "Channel 22"
+		4194304 : "Channel 23"
+		8388608 : "Channel 24"
+	]
+
+	_shadow_channel_mask(flags) = [
+		0 : "Legacy Behavior" : 1
+		1 : "Channel 1"
+		2 : "Channel 2"
+		4 : "Channel 3"
+		8 : "Channel 4"
+		16 : "Channel 5"
+		32 : "Channel 6"
+		64 : "Channel 7"
+		128 : "Channel 8"
+		256 : "Channel 9"
+		512 : "Channel 10"
+		1024 : "Channel 11"
+		2048 : "Channel 12"
+		4096 : "Channel 13"
+		8192 : "Channel 14"
+		16384 : "Channel 15"
+		32768 : "Channel 16"
+		65536 : "Channel 17"
+		131072 : "Channel 18"
+		262144 : "Channel 19"
+		524288 : "Channel 20"
+		1048576 : "Channel 21"
+		2097152 : "Channel 22"
+		4194304 : "Channel 23"
+		8388608 : "Channel 24"
+	]
+]
+
+@BaseClass = EWT_base_BModel
+[
+	_dirt(float) : "Dirt mapping (override)"
+	_minlight(float) : "Min light for all surface"
+	_minlight_exclude(string) : "Exclude texture from minlight"
+	_mincolor(color255) : "Min light color"
+	_shadow(choices) : "Cast Shadows" = [
+		0 : "Do Nothing"
+		1 : "Cast shadows"
+	]
+	_shadowself(choices) : "Self Shadow" = [
+		0 : "Do Nothing"
+		1 : "Cast shadows on Self"
+	]
+	_phong(choices) : "Phong shading" = [
+		0 : "Disabled"
+		1 : "Smooth shading"
+	]
+	_phong_angle(float) : "Phong smoothing angle" : "89" 
+	_mirrorinside(choices) : "Double sided faces" = [
+		0 : "Disabled"
+		1 : "Double sided"
+	]
+	_object_channel_mask(flags) = [
+		0 : "Legacy Behavior" : 1
+		1 : "Channel 1"
+		2 : "Channel 2"
+		4 : "Channel 3"
+		8 : "Channel 4"
+		16 : "Channel 5"
+		32 : "Channel 6"
+		64 : "Channel 7"
+		128 : "Channel 8"
+		256 : "Channel 9"
+		512 : "Channel 10"
+		1024 : "Channel 11"
+		2048 : "Channel 12"
+		4096 : "Channel 13"
+		8192 : "Channel 14"
+		16384 : "Channel 15"
+		32768 : "Channel 16"
+		65536 : "Channel 17"
+		131072 : "Channel 18"
+		262144 : "Channel 19"
+		524288 : "Channel 20"
+		1048576 : "Channel 21"
+		2097152 : "Channel 22"
+		4194304 : "Channel 23"
+		8388608 : "Channel 24"
+	]
+]
+
+
+@SolidClass base(EWT_base_BModel) color(0 128 204) = func_detail : "func_detail" []
+@SolidClass base(EWT_base_BModel) color(0 128 204) = func_detail_wall : "func_detail_wall" []
+@SolidClass base(EWT_base_BModel) color(0 128 204) = func_detail_illusionary : "func_detail_illusionary" []
+
+//
+// worldspawn
+//
+
+// 0302 - added "nextmap" key
+@SolidClass base(EWT_base_Worldspawn) = worldspawn : "World entity"
+[
+    sky(string) : "Environment map name"
+    skyaxis(vector) : "Vector axis for rotating sky"
+    skyrotate(string) : "Speed of rotation (degrees/second)"
+    skyautorotate(integer) : "Disable to set sky rotation manually" : 1
+    sounds(integer) : "CD Track Number" : 1
+    gravity(integer) : "Gravity" : 800
+    instantitems(integer) : "Instant Item Use" : 0
+    message(string) : "Level name"
+    nextmap(string) : "Next map (DM only)"
+    start_items(string) : "Starting items: a semi-colon delimited list of items and amounts to be given to player if they have a clear inventory."
+	achievement(string) : "If an EOU is triggered from this map, this is the achievement to give out."
+
+    fog_density(float) : "density value of fog, 0-1"
+    fog_color(color255) : "color value of fog, 3d vector with values between 0-1 (r g b)"
+    fog_sky_factor(float) : "sky factor value of fog, 0-1"
+    heightfog_falloff(float) : "falloff value of heightfog, 0-1"
+    heightfog_density(float) : "density value of heightfog, 0-1"
+    heightfog_start_color(color255) : "start color of heightfog, 3d vector with values between 0-1 (r g b)"
+    heightfog_end_color(color255) : "end color of heightfog, 3d vector with values between 0-1 (r g b)"
+    heightfog_start_dist(float) : "start distance value of heightfog, in world units"
+    heightfog_end_dist(float) : "start distance value of heightfog, in world units"
+]
+
+//
+// base marker definitions
+//
+
+// EditorFlags apply to everything - all entities should inherit it.
+@baseclass = EditorFlags [
+    spawnflags(Flags) =
+    [
+        256 : "Not in Easy" : 0
+        512 : "Not in Normal" : 0
+        1024 : "Not in Hard" : 0
+        2048 : "Not in Deathmatch" : 0
+        // Paril: Rogue
+        4096 : "Not in Coop" : 0
+        8192 : "Reserved Editor Flag" : 0
+        // Paril: Kex
+        16384 : "Coop Only" : 0
+        32768 : "Reserved Editor Flag" : 0
+    ]
+]
+
+// Entity can take angle or angles.
+@baseclass = Angleable [
+	angle(choices) : "Facing angle (yaw)" : 0 =
+	[
+		-1 : "Up"
+		-2 : "Down"
+	]
+    angles(vector) : "pitch yaw roll" : "0 0 0" : "Facing angles"
+]
+
+// Entity can be targeted by stuff.
+@baseclass = Targetable [
+	targetname(target_source) : "Name for firing"
+]
+
+// Compatibility alias used by early Q2RAID FGD drafts.
+@baseclass = Targetname [
+	targetname(target_source) : "Name for firing"
+]
+
+// Entity will call G_UseTargets
+@baseclass = UseTargets [
+	target(target_destination) : "Target to fire"
+	delay(float) : "Target delay"
+	message(string): "Message on activation"
+	killtarget(target_destination) : "Targets to fully delete"
+]
+
+// Entity supports pointing at something, but won't call G_UseTargets
+@baseclass = Target [
+	target(target_destination) : "Target to fire"
+]
+
+// Entity supports "team"
+@baseclass = Teamable [
+	team(string) : "Team identifier"
+]
+
+// Entity supports brush model animations
+@baseclass = BmodelAnim [
+	bmodel_anim_start(integer) : "Start frame of animation"
+	bmodel_anim_end(integer) : "End frame of animation"
+	bmodel_anim_style(choices) : "Animation style" : 0 =
+    [
+        0 : "Forwards"
+        1 : "Backwards"
+        2 : "Random"
+    ]
+	bmodel_anim_speed(integer) : "Animation speed, in milliseconds"
+	bmodel_anim_nowrap(integer) : "If set, frames are clamped rather than wrapping"
+
+	bmodel_anim_alt_start(integer) : "Start frame of alternate animation"
+	bmodel_anim_alt_end(integer) : "End frame of alternate animation"
+	bmodel_anim_alt_style(choices) : "Alternate animation style" : 0 =
+    [
+        0 : "Forwards"
+        1 : "Backwards"
+        2 : "Random"
+    ]
+	bmodel_anim_alt_speed(integer) : "Alternate animation speed, in milliseconds"
+	bmodel_anim_alt_nowrap(integer) : "If set, alternate frames are clamped rather than wrapping"
+]
+
+// Entity supports brush model sound modifications
+@baseclass = BmodelSounds [
+	noise_start(string) : "Noise to play on activation"
+	noise_middle(string) : "Noise to play while traveling"
+	noise_end(string) : "Noise to play on end"
+]
+
+// Entity supports noise key
+@baseclass = Noise [
+	noise(string) : "Noise to play"
+]
+
+// Entity supports alpha key
+@baseclass = Alpha [
+	alpha(float) : "Alpha"
+]
+
+// Entity supports scale key
+@baseclass = Scale [
+	scale(float) : "Scale"
+]
+
+// Includes stuff related to the kex dynamic lights
+
+
+@PointClass size(-8 -8 -8, 8 8 8) color(255 128 0) base(EditorFlags, Target, Targetable) = dynamic_light : "Dynamic KEX light" [
+	_color(color255) : "Light color"
+	shadowlightradius(float) : "Sets the radius of a dynamic shadow light. Becomes a dynamic light if this is bigger than 0" : "0"
+	shadowlightintensity(float) : "Intensity scalar for the light." : "1.0"
+	shadowlightstartfadedistance(float) : "The distance in world units (from player's view position) in which fading begins" : "0"
+	shadowlightendfadedistance(float) : "The distance in world units (from player's view position) in which the light is fully faded out and not rendered" : "0"
+	shadowlightconeangle(float) : "Sets the outer cone angle if this light is a spot light." : "45"
+	shadowlightstyle(choices) : "Appearance" : "0" = [
+		0 : "Normal"
+		10: "Fluorescent flicker"
+		2 : "Slow, strong pulse"
+		11: "Slow pulse, noblack"
+		5 : "Gentle pulse"
+		1 : "Flicker A"
+		6 : "Flicker B"
+		3 : "Candle A"
+		7 : "Candle B"
+		8 : "Candle C"
+		4 : "Fast strobe"
+		9 : "Slow strobe"
+		// New styles below here
+	]
+    spawnflags(Flags) =
+    [
+        1 : "Start Off" : 0
+    ]
+    shadowlightstyletarget(target_destination) : "Light entity to pick up style ID from"
+	shadowlightresolution(integer) : "Shadow map resolution; leave blank to automatically determine from radius"
+]
+
+@PointClass size(-8 -8 -8, 8 8 8) color(255 64 255) base(EditorFlags, Target, Targetable) = target_light : "Runtime colored point light" [
+	_color(color255) : "Runtime light color" : "255 255 255"
+	radius(float) : "Runtime light radius" : "150"
+	style(integer) : "Lightstyle index" : "0"
+	speed(float) : "Lightstyle interpolation speed" : "1"
+	spawnflags(Flags) =
+	[
+		1 : "Start On" : 0
+		2 : "No Lerp" : 0
+		4 : "Flicker" : 0
+	]
+]
+
+//
+// player start, deathmatch, coop, deathmatch intermission
+//
+
+@baseclass base(EditorFlags, Angleable) size(-16 -16 -24, 16 16 32) color(0 255 0) = PlayerClass []
+
+@PointClass base(PlayerClass) = info_player_start : "Player start" []
+@PointClass base(PlayerClass) = info_player_deathmatch : "Player deathmatch start" []
+@PointClass base(PlayerClass) = info_player_coop : "Player cooperative start" [
+    targetname(string) : "Spawn point name, to be matched to previous levels' target_changelevel"
+]
+
+@PointClass base(PlayerClass) = info_player_coop_lava : "Smart Water lava spawn point" []
+
+@PointClass base(PlayerClass, Targetable) = info_player_intermission : "Deathmatch intermission point" []
+
+@PointClass base(PlayerClass) = info_player_team1 : "CTF Red start" []
+@PointClass base(PlayerClass) = info_player_team2 : "CTF Blue start" []
+
+// Notes on the 'team' key: First of all, it's really only useful in DM because it creates a
+// random respawn pattern. Let's say that in one spot, you want to have the shotgun, Quad
+// damage and mega health item to respawn in alternance. Place all of them in approximately
+// the same location, team them and voila! The FIRST item that you place in the map will be
+// the team MASTER - the others will be SLAVES. In DM play, the Master will be the first one
+// to spawn. Once the Master is picked up, the respawn pattern becomes RANDOM: it could be
+// the same or one of the other 2. If you try to use this in a Single Player map, it's
+// pretty useless because only the team MASTER spawns and the others never appear obviously.
+// Also, in CTF, only the master appears. No idea why.
+@BaseClass base(EditorFlags, Angleable, UseTargets, Targetable) color(76 76 255) size(-15 -15 -15, 15 15 15) = Item [
+    team(string) : "Team"
+    spawnflags(Flags) =
+    [
+        1 : "Trigger Spawn" : 0
+        2 : "Disable Pickup" : 0
+        4 : "Toss Item On Spawn" : 0
+    ]
+]
+
+@BaseClass base(Item) color(76 76 255) = Ammo []
+@BaseClass base(Item) color(255 76 76) = Weapons []
+@BaseClass base(Item) color(76 255 255) size(-16 -16 -16, 16 16 16) = Items []
+@BaseClass base(Item) color(0 128 204) size(-16 -16 -16, 16 16 16) = Keys []
+
+@PointClass base(Ammo) = ammo_shells : "Shotgun ammo" []
+@PointClass base(Ammo) = ammo_bullets : "Machine/Chain gun ammo" []
+@PointClass base(Ammo) = ammo_cells : "Blaster/BFG ammo" []
+@PointClass base(Ammo) = ammo_grenades : "Grenades" []
+@PointClass base(Ammo) = ammo_rockets : "Rockets" []
+@PointClass base(Ammo) = ammo_slugs : "Rail gun ammo" []
+
+@PointClass base(Ammo) = ammo_magslug : "Phalanx ammo" []
+@PointClass base(Ammo) = ammo_flechettes : "ETF Rifle ammo" []
+@PointClass base(Ammo) = ammo_nails : "ETF Rifle ammo" []
+@PointClass base(Ammo) = ammo_prox : "Prox Launcher ammo" []
+@PointClass base(Ammo) = ammo_disruptor : "Disruptor ammo" []
+@PointClass base(Ammo) = ammo_trap : "Traps" []
+@PointClass base(Ammo) = ammo_tesla : "Teslas" []
+@PointClass base(Ammo) = ammo_nuke : "A-M Bomb (usable nuke); DM only" []
+
+@PointClass base(Weapons) = weapon_shotgun : "Shotgun" []
+@PointClass base(Weapons) = weapon_supershotgun : "Super shotgun" []
+@PointClass base(Weapons) = weapon_machinegun : "Machinegun" []
+@PointClass base(Weapons) = weapon_chaingun : "Chain gun" []
+@PointClass base(Weapons) = weapon_grenadelauncher : "Grenade launcher" []
+@PointClass base(Weapons) = weapon_rocketlauncher : "Rocket launcher" []
+@PointClass base(Weapons) = weapon_hyperblaster : "Hyperblaster" []
+@PointClass base(Weapons) = weapon_railgun : "Rail gun" []
+@PointClass base(Weapons) = weapon_bfg : "Big Freakin Gun!" []
+
+@PointClass base(Weapons) = weapon_chainfist : "Chainfist" []
+@PointClass base(Weapons) = weapon_etf_rifle : "ETF Rifle" []
+@PointClass base(Weapons) = weapon_nailgun : "ETF Rifle" []
+@PointClass base(Weapons) = weapon_proxlauncher : "Prox Launcher" []
+@PointClass base(Weapons) = weapon_boomer : "Ionripper" []
+@PointClass base(Weapons) = weapon_plasmabeam : "Plasma Beam" []
+@PointClass base(Weapons) = weapon_heatbeam : "Plasma Beam" []
+@PointClass base(Weapons) = weapon_phalanx : "Phalanx" []
+@PointClass base(Weapons) = weapon_disintegrator : "Disruptor" []
+
+@PointClass base(Items) = item_adrenaline : "+1 to max health" []
+@PointClass base(Items) = item_ancient_head : "+2 to max health" []
+@PointClass base(Items) = item_armor_body : "Body armor" []
+@PointClass base(Items) = item_armor_combat : "Combat armor" []
+@PointClass base(Items) = item_armor_jacket : "Jacket armor" []
+@PointClass base(Items) = item_armor_shard : "Armor shard" []
+@PointClass base(Items) = item_bandolier : "Equipment belt" []
+@PointClass base(Items) = item_breather : "Underwater breather" []
+@PointClass base(Items) = item_enviro : "Enviro-Suit" []
+@PointClass base(Items) = item_health : "+10 health" []
+@PointClass base(Items) = item_health_small : "+2 health" []
+@PointClass base(Items) = item_health_large : "+25 health" []
+@PointClass base(Items) = item_health_mega : "+100 health" []
+@PointClass base(Items) = item_invulnerability : "Invulnerability" []
+@PointClass base(Items) = item_pack : "Heavy backpack" []
+@PointClass base(Items) = item_power_screen : "Power screen" []
+@PointClass base(Items) = item_power_shield : "Power shield" []
+@PointClass base(Items) = item_quad : "Quad damage" []
+@PointClass base(Items) = item_silencer : "Silencer" []
+@PointClass base(Items) = item_flashlight : "Flashlight" []
+
+@PointClass base(Items) = item_quadfire : "DualFire Damage" []
+@PointClass base(Items) = item_ir_goggles : "IR Goggles" []
+@PointClass base(Items) = item_double : "Double Damage" []
+
+@PointClass base(Items) = item_sphere_vengeance : "vengeance sphere" []
+@PointClass base(Items) = item_sphere_hunter : "hunter sphere" []
+@PointClass base(Items) = item_sphere_defender : "defender sphere" []
+@PointClass base(Items) = item_doppleganger : "Doppleganger" []
+
+
+@PointClass base(Keys) = key_airstrike_target : "Tank commander's head" []
+@PointClass base(Keys) = key_blue_key : "Normal door key - blue" []
+@PointClass base(Keys) = key_commander_head : "Tank commander's head (key)" []
+@PointClass base(Keys) = key_data_cd : "Data CD key for computer centers" []
+@PointClass base(Keys) = key_data_spinner : "Data Spinner key for city computer" []
+@PointClass base(Keys) = key_pass : "Security pass for secret level" []
+
+@PointClass base(Keys) = key_power_cube : "Warehouse circuits" []
+@PointClass base(Keys) = key_pyramid : "Pyramid Key for entrance to jail3" []
+@PointClass base(Keys) = key_red_key : "normal door key - red" []
+// Expansions
+@PointClass base(Keys) = key_green_key : "normal door key - green" []
+@PointClass base(Keys) = key_nuke_container : "Antimatter Pod (nuke key part 1)" []
+@PointClass base(Keys) = key_nuke : "Antimatter Bomb (nuke key part 2)" []
+// N64
+@PointClass base(Keys) = key_explosive_charges : "Explosive Charge" []
+@PointClass base(Keys) = key_yellow_key : "Yellow Key" []
+@PointClass base(Keys) = key_power_core : "Power Core" []
+// CTF
+@PointClass base(Keys) = item_flag_team1 : "CTF Flag (red)" []
+@PointClass base(Keys) = item_flag_team2 : "CTF Flag (blue)" []
+
+
+// Keep in mind when using func_areaportal that it must
+// *completely* separate two areas.  otherwise, you will
+// get an error message and the areaportal will not work
+@SolidClass base(EditorFlags, Targetable) = func_areaportal : "Area portal (Vis blocker)" []
+
+@SolidClass base(EditorFlags, Angleable, UseTargets, Targetable, EWT_base_BModel, BmodelAnim, BmodelSounds) color(0 128 204) = func_button : "Button"
+[
+    speed(float) : "Speed" : "40"
+    wait(choices) : "Wait before reset" : 1 =
+    [
+        -1 : "Never Return"
+    ]
+    lip(float) : "Lip remaining after move" : "4"
+    health(float) : "Health (shootable)"
+    sounds(choices) : "Sounds" : 0 =
+    [
+        0 : "Audible"
+        1 : "Silent"
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(0 0 255) size(-8 -8 -8, 8 8 8) = func_clock : "Clock"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Timer Up" : 0
+        2 : "Timer Down" : 0
+        4 : "Start Off" : 0
+        8 : "Multi Use" : 0
+    ]
+    count(integer) : "Clock Count" : 3600
+    pathtarget(target_destination) : "Target to fire"
+	target(target_destination) : "Should be targeting a target_string"
+    style(choices) : "Style" : 0 =
+    [
+        0 : "xx"
+        1 : "xx:xx"
+        2 : "xx:xx:xx"
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable) color(0 0 255) size(-8 -8 -8, 8 8 8) = target_string : "func_clock holder for time string"
+[
+    team(string) : "target_characters to team with"
+]
+
+@SolidClass base(EditorFlags, Targetable, EWT_base_BModel) color(0 0 255) = target_character : "single character for target_string"
+[
+    team(string) : "Team"
+    count(integer) : "Position in the string"
+]
+
+
+@SolidClass base(Angleable, EditorFlags, Targetable, UseTargets, Teamable, EWT_base_BModel, BmodelSounds) color(0 128 204) = func_door : "Door"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start Open" : 0
+        4 : "Crusher" : 0
+        8 : "No Monsters" : 0
+        16 : "Animated" : 0
+        32 : "Toggle" : 0
+        64 : "Animated Fast" : 0
+    ]
+    health(float) : "Health (shootable)"
+    speed(float) : "Speed" : "100"
+    wait(choices) : "Wait before close" : 3 =
+    [
+        -1 : "Stay open"
+    ]
+    lip(float) : "Lip remaining after move" : "8"
+    dmg(float) : "Damage when blocked" : "2"
+    sounds(choices) : "Sounds" : 0 =
+    [
+        0 : "Audible"
+        1 : "Silent"
+    ]
+]
+
+@SolidClass base(Angleable, EditorFlags, Targetable, UseTargets, EWT_base_BModel, BmodelSounds) color(0 128 204) = func_door_rotating : "Rotating Door"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start Open" : 0
+        2 : "Reverse" : 0
+        4 : "Crusher" : 0
+        8 : "No Monsters" : 0
+        16 : "Animated" : 0
+        32 : "Toggle" : 0
+        64 : "X Axis" : 0
+        128 : "Y Axis" : 0
+        65536 : "Inactive (must be triggered)" : 0
+		131072 : "Safe Open (opens opposite dir. if activator facing 'angles')" : 0
+    ]
+    team(string) : "Team"
+    distance(float) : "Degrees of rotation" : "90"
+    health(float) : "Health (shootable)"
+    speed(float) : "Speed" : "100"
+    wait(choices) : "Wait before close" : 3 =
+    [
+        -1 : "Stay open"
+    ]
+    dmg(float) : "Damage when blocked" : "2"
+    sounds(choices) : "Sounds" : 0 =
+    [
+        0 : "Audible"
+        1 : "Silent"
+    ]
+]
+
+@SolidClass base(Angleable, EditorFlags, Targetable, UseTargets, EWT_base_BModel, BmodelSounds) color(0 128 204) = func_door_secret : "Secret Door"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Always shoot" : 0
+        2 : "1st Left" : 0
+        4 : "1st Down" : 0
+    ]
+    dmg(float) : "Damage when blocked" : "2"
+    wait(choices) : "Wait before close" : 5 =
+    [
+        -1 : "Stay open"
+    ]
+]
+
+// not visible in DM mode
+@SolidClass base(EditorFlags, Targetable, UseTargets, EWT_base_BModel) color(0 128 204) = func_explosive : "Exploding/Breakable brush"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Trigger Spawn" : 0
+        2 : "Animated" : 0
+        4 : "Animated Fast" : 0
+    ]
+    health(float) : "Health" : "100"
+    mass(float) : "Mass (debris)" : "75"
+    dmg(float) : "Damage" : "0"
+    sounds(choices) : "Sounds" : 0 =
+    [
+        0 : "Silent"
+        1 : "Glass Break"
+    ]
+]
+
+@SolidClass base(EditorFlags, Targetable) color(255 0 0) = func_killbox : "Instant death"
+[
+    spawnflags(Flags) =
+    [
+        2 : "Level Restart Required" : 0
+        4 : "Exact Trigger Collision" : 0
+    ]
+]
+
+@SolidClass base(EditorFlags, Targetable, EWT_base_BModel) color (0 128 204) = func_object : "Solid bmodel, will fall if its support is removed"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Trigger Spawn" : 0
+        2 : "Animated" : 0
+        4 : "Animated Fast" : 0
+    ]
+	dmg(float) : "Crush damage" : "100"
+]
+
+@SolidClass base(EditorFlags, Targetable, EWT_base_BModel, BmodelSounds) color(0 128 204) = func_rotating : "Rotating brush"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start On" : 0
+        2 : "Reverse" : 0
+        4 : "X Axis" : 0
+        8 : "Y Axis" : 0
+        16 : "Pain on Touch" : 0
+        32 : "Block Stops" : 0
+        64 : "Animated" : 0
+        128 : "Animated Fast" : 0
+        65536 : "Acceleration" : 0
+    ]
+    team(string) : "Team"
+    speed(float) : "Speed" : "100"
+    dmg(float) : "Damage when blocked" : "2"
+    accel(float) : "Acceleration speed, when flag is enabled" : "1"
+    decel(float) : "Deceleration speed, when flag is enabled" : "1"
+]
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(76 25 153) size(-8 -8 -8, 8 8 8) = func_timer : "Timer"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start On" : 0
+    ]
+    wait(float) : "Base wait time" : "1"
+    random(float) : "Wait variance (+/-) - should be <= wait"
+    delay(float) : "Delay before firing when used"
+    pausetime(float) : "Additional delay for START_ON timers"
+]
+
+// 0219 - added "team" key
+@SolidClass base(EditorFlags, Targetable, UseTargets, Teamable, EWT_base_BModel) color(0 128 204) = func_train : "Moving platform"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start On" : 0
+        2 : "Toggle" : 0
+        4 : "Block Stops" : 0
+        8 : "Move Teamchain" : 0
+		16 : "Fix Offset (fixes legacy -1,-1,-1 offset)" : 0
+		32 : "Use Origin" : 0
+    ]
+    pathtarget(target_destination) : "Target to fire when we reach a point"
+	target(target_destination) : "First corner to be placed at"
+    speed(float) : "Speed" : "100"
+    dmg(float) : "Damage when blocked" : "2"
+    noise(string) : "Travel noise (path/file.wav)"
+]
+
+@SolidClass base(EditorFlags, Targetable, EWT_base_BModel) color(0 128 204) = func_wall : "Solid Wall"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Trigger Spawn" : 0
+        2 : "Toggle" : 0
+        4 : "Start On" : 0
+        8 : "Animated" : 0
+        16 : "Animated Fast" : 0
+    ]
+]
+
+@SolidClass base(EditorFlags, Targetable, Teamable, EWT_base_BModel, BmodelSounds) color(0 128 204) = func_water : "Moveable water"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start Open" : 0
+        2 : "Smart Water (player position aware rising)" : 0
+    ]
+    speed(float) : "Speed" : "25"
+    wait(choices) : "Wait before return" : -1 =
+    [
+        -1 : "Toggle"
+    ]
+    lip(float) : "Lip remaining after move"
+    sounds(Choices) : "Sounds" : 1 =
+    [
+        0 : "No Sounds"
+        1 : "Water"
+        2 : "Water"
+    ]
+    accel(float) : "divisor of lowest player's distance, to determine rising speed" : "20"
+]
+
+@PointClass base(Targetable) color(128 0 0) size(-2 -2 -2, 2 2 2) = info_null : "Compiler-only target (spotlights, etc)" []
+@PointClass base(EditorFlags, Targetable) color(0 128 0) size(-4 -4 -4, 4 4 4) = info_notnull : "Game target" []
+
+// expansion
+@PointClass base(info_notnull) = info_teleport_destination : "Teleport Destination" []
+
+@PointClass base(EditorFlags, Targetable, Target, EWT_base_PointLight) color(0 255 0) size(-8 -8 -8, 8 8 8) = light : "Light"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start Off" : 0
+        2 : "Allow In Deathmatch" : 0
+    ]
+    style(Choices) : "Style" : 0 =
+    [
+        0 : "Normal"
+        1 : "Flicker #1"
+        6 : "Flicker #2"
+        2 : "Slow Strong Pulse"
+        3 : "Candle #1"
+        7 : "Candle #2"
+        8 : "Candle #3"
+        4 : "Fast Strobe"
+        5 : "Gentle Pulse #1"
+        9 : "Slow Strobe"
+        10 : "Fluorescent Flicker"
+        11 : "Slow pulse, no black"
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(0 255 0) size(-2 -2 -12, 2 2 12) = light_mine1 : "Clean fluorescent light fixture"   []
+@PointClass base(EditorFlags, Targetable, Target) color(0 255 0) size(-2 -2 -12, 2 2 12) = light_mine2 : "Dusty fluorescent light fixture"   []
+
+@PointClass base(EditorFlags) color(255 128 0) size(-4 -4 0, 4 4 246) = misc_banner : "Flowing banner" []
+@PointClass base(EditorFlags, Targetable, Scale, Alpha) color(255 128 0) size(-8 -8 -8, 8 8 8) = misc_blackhole : "Blackhole" [
+    spawnflags(Flags) =
+    [
+        1 : "Auto-Noise (N64)" : 0
+    ]
+]
+
+// Expansion
+@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-8 -8 -8, 8 8 8) = misc_nuke_core : "Nuke Core (must be targeted to appear)" []
+
+@PointClass base(EditorFlags) color(255 128 0) size(-8 -8 -8, 8 8 8) = target_orb : "Large Orb" []
+
+@PointClass base(EditorFlags) color(255 128 0) size(-8 -8 -8, 8 8 8) = target_blacklight : "Large Orb (black light)" []
+
+@PointClass base(EditorFlags) color(255 128 0) size(-16 -16 0, 16 16 16) = misc_deadsoldier : "Dead guys! 6 of em!"
+[
+    spawnflags(Flags) =
+    [
+        1 : "On Back" : 0
+        2 : "On Stomach" : 0
+        4 : "Back, Decap" : 0
+        8 : "Fetal Position" : 0
+        16 : "Sitting, Decap" : 0
+        32 : "Impaled" : 0
+    ]
+]
+
+// The following three entities are eye-candy - they don't do anything
+@PointClass base(EditorFlags) color(255 128 0) size(-32 -32 -16, 32 32 32) = misc_eastertank : "Tank sitting down. Make him a chair out of brushes." []
+@PointClass base(EditorFlags) color(255 128 0) size(-32 -32 0, 32 32 32) = misc_easterchick : "Chick #1 sitting: Place her near misc_eastertank." []
+@PointClass base(EditorFlags) color(255 128 0) size(-32 -32 0, 32 32 32) = misc_easterchick2 : "Chick #2 sitting w/ different pose. Can be placed close to misc_eastertank's for full effect." []
+
+@PointClass base(EditorFlags) color(0 128 204) size(-16 -16 0, 16 16 40) = misc_explobox : "Large exploding box"
+[
+    mass(float) : "Mass" : "100"
+    health(float) : "Health" : "80"
+    dmg(float) : "Damage" : "150"
+]
+
+// set angle for gib direction, otherwise it just drops
+@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_gib_arm : "arm gib, use with target_spawner" []
+@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_gib_head : "head gib, use with target_spawner" []
+@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_gib_leg : "leg gib, use with target_spawner" []
+
+
+@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-64 -64 0, 64 64 128) =
+misc_satellite_dish : "Satellite Dish" 
+[
+   spawnflags(Flags) =
+   [
+		32 : "(editor only) Show End Position" : 0
+   ]
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(255 128 0) size(-16 -16 0, 16 16 32) = misc_strogg_ship : "Strogg ship for flybys"
+[
+    speed(float) : "Speed" : "300"
+]
+
+@PointClass base(EditorFlags, Target) color(255 0 0) size(-32 -32 -24, 32 32 -16) = misc_teleporter : "Teleporter: To hide the teleport pads, place them units 10 units into a brush."
+[
+    spawnflags(Flags) =
+    [
+        1 : "No Sound" : 0
+        2 : "No Effect" : 0
+        4 : "N64 Effect" : 0
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-32 -32 -24, 32 32 -16) = misc_teleporter_dest : "Teleport Destination: To hide the teleport pads, place them units 10 units into a brush or use an info_notnull." []
+
+@PointClass base(EditorFlags) color(255 128 0) size(-176 -120 -24, 176 120 72) = misc_bigviper : "Large stationary Viper" []
+
+@PointClass base(misc_strogg_ship) = misc_viper : "Viper for flybys" []
+
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_viper_bomb : "Viper Bomb"
+[
+    dmg(float) : "Damage"
+]
+
+// Expansion
+@PointClass base(misc_strogg_ship) = misc_crashviper : "Viper that crashes"
+[
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_viper_missile : "Viper Missile"
+[
+    dmg(float) : "Damage" : "250"
+]
+
+@PointClass base(misc_strogg_ship) = misc_transport : "Xatrix Transport"
+[
+]
+
+
+//
+// Monsters!
+//
+
+@BaseClass base(EditorFlags, Targetable, Target, Scale, Alpha) color(255 128 0) size(-16 -16 -24, 16 16 32) = Monsters
+[
+    raid_hat(string) : "Optional raid_hat selector; preserves targetname for monster-door roster membership"
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+		4 : "Ambush Override (don't use)" : 0
+        65536 : "Spawn Dead" : 0
+        131072 : "Super Step" : 0
+		262144 : "drop to ground" : 0
+    ]
+    combattarget(target_destination) : "Point combat target"
+    deathtarget(target_destination) : "Entity to trigger at death"
+    healthtarget(target_destination) : "Entity to trigger when health hits target"
+    itemtarget(target_destination) : "Entity to trigger when item dropped by this monster is picked up"
+    killtarget(target_destination) : "Entity to remove at death"
+    item(string) : "Spawn Item"
+    health_multiplier(float) : "Set health based on multiplier of base health" : "1.0"
+	dead_frame(integer) : "Frame to spawn dead monsters on" : 0
+	power_armor_power(integer) : "Override power armor amount"
+	power_armor_type(Choices) : "Override power armor type" : 0 =
+    [
+        0 : "None"
+        1 : "Screen"
+        2 : "Shield"
+    ]
+]
+
+@PointClass base(Monsters) color(255 128 0) size(-16 -16 -24, 16 16 32) = misc_insane : "Insane Soldiers"
+[
+    spawnflags(Flags) =
+    [
+    4 : "Crawl" : 0
+    8 : "Crucified" : 0
+   16 : "Stand Ground" : 0
+   32 : "Always Stand" : 0
+   64 : "Quiet" : 0
+    ]
+]
+
+@PointClass base(Monsters) = monster_berserk : "Berserker" [
+    spawnflags(Flags) =
+    [
+        8 : "No jumping" : 0
+    ]
+]
+@PointClass base(Monsters) size(-56 -56 0, 56 56 80) = monster_boss2 : "Hornet"
+[
+    spawnflags(Flags) =
+    [
+        8 : "N64 (hyperblaster, staggered rockets)" : 0
+    ]
+]
+
+// Just fidgets in one spot and teleports away when triggered
+//
+// 0221 - removed Monsters class inheritance
+@PointClass base(EditorFlags, Targetable) size(-32 -32 0, 32 32 80) = monster_boss3_stand : "Stationnary Makron" []
+@PointClass base(Monsters) = monster_brain : "Brains"
+[
+	spawnflags(Flags) =
+	[
+		1 : "Ambush" : 0
+		2 : "Trigger Spawn" : 0
+		8 : "no laser eyes" : 0
+	]
+]
+@PointClass base(Monsters) size(-16 -16 0, 16 16 56) = monster_chick : "Iron Maiden" []
+@PointClass base(EditorFlags, Targetable) color(255 128 0) size(-32 -32 0, 32 32 48) = monster_commander_body : "Tank commander's decapitated body" []
+@PointClass base(Monsters) = monster_flipper : "Barracuda shark" []
+@PointClass base(Monsters) size(-24 -24 -24, 24 24 48) = monster_floater : "Technician"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Disguise as barrel" : 0
+    ]
+]
+@PointClass base(Monsters) = monster_flyer : "Flyer" []
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) = monster_gladiator : "Gladiator" []
+@PointClass base(Monsters) = monster_gunner : "Gunner"
+[
+    spawnflags(Flags) =
+    [
+        8 : "No jumping" : 0
+    ]
+]
+@PointClass base(Monsters) = monster_guncmdr : "Gunner Commander"
+[
+    spawnflags(Flags) =
+    [
+        8 : "No jumping" : 0
+    ]
+]
+@PointClass base(Monsters) = monster_hover : "Icarus" []
+@PointClass base(Monsters) = monster_infantry : "Infantry"
+[
+    spawnflags(Flags) =
+    [
+        8 : "No jumping" : 0
+    ]
+]
+@PointClass base(Monsters) size(-80 -80 0, 90 90 140) = monster_jorg : "Jorg" []
+
+// 0221 - this entity can only spawn once the Jorg dies ... im sure someone will change that tho
+@PointClass base(Monsters) size(-32 -32 0, 32 32 80) = monster_makron : "Makron" []
+@PointClass base(Monsters) = monster_medic : "Medic" []
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 32) =
+monster_mutant : "Mutant"
+[
+    spawnflags(Flags) =
+    [
+        8 : "No jumping" : 0
+    ]
+]
+@PointClass base(Monsters) = monster_parasite : "Parasite"
+[
+    spawnflags(Flags) =
+    [
+        8 : "No jumping" : 0
+    ]
+]
+@PointClass base(Monsters) = monster_soldier_light : "Light Soldier"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Blind" : 0
+    ]
+]
+@PointClass base(Monsters) = monster_soldier : "Soldier"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Blind" : 0
+    ]
+]
+@PointClass base(Monsters) = monster_soldier_ss : "SS Soldier"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Blind" : 0
+    ]
+]
+@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) = monster_tank : "Tank" []
+@PointClass base(Monsters) size(-32 -32 -16, 32 32 72) = monster_tank_commander : "Tank Commander"
+[
+	speed(float) : "homing missile speed" : "0.0"
+    spawnflags(Flags) =
+    [
+        8 : "N64" : 0
+		16 : "Heat-Seeking Missiles" : 0
+    ]
+]
+@PointClass base(Monsters) size(-64 -64 0, 64 64 72) = monster_supertank : "Super Tank Boss"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Power Shield" : 0
+    ]
+]
+
+// Expansions
+@PointClass base(Monsters) = monster_soldier_ripper : "Ripper Soldier"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Blind" : 0
+    ]
+]
+@PointClass base(Monsters) = monster_soldier_hypergun : "Hypergun Soldier"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Blind" : 0
+    ]
+]
+@PointClass base(Monsters) = monster_soldier_lasergun : "Lasergun Soldier"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Blind" : 0
+    ]
+]
+
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 24) = monster_fixbot : "Fixbot"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        4 : "Fix stuff" : 0
+        8 : "Takeoff" : 0
+        16 : "Landing" : 0
+    ]
+]
+
+@SolidClass base(EditorFlags, Targetable) color (0 128 204) = func_object_repair : "Fixbot repair object"
+[
+    delay(float) : "delay between sparks" : "1"
+]
+
+@PointClass base(Monsters) size(-24 -24 -24, 24 24 24) =
+monster_gekk : "Gekk"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Chanting" : 0
+        16: "No jumping" : 0
+        32: "No swimming" : 0
+    ]
+]
+@PointClass base(Monsters) size(-16 -16 0, 16 16 56) = monster_chick_heat : "Iron Maiden (heat-seeking missile)" []
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) = monster_gladb : "Gladiator (phalanx)" []
+
+@PointClass base(Monsters) size(-64 -64 0, 64 64 72) = monster_boss5 : "Super Tank Boss (power armor)" []
+
+@PointClass base(info_notnull, Target, Targetable) = hint_path : "Monster Path"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Endpoint" : 0
+    ]
+    wait(float) : "wait for this amount of time" : "0"
+]
+
+@PointClass base(Monsters) = monster_daedalus : "Daedalus" []
+
+@PointClass base(Monsters) size(-56 -56 -44, 56 56 44) = monster_carrier : "Carrier"
+[
+    reinforcements(string): "Semicolon separated list of entity classes and cost of monster to spawn" : "monster_flyer 1;monster_flyer 1;monster_flyer 1;monster_kamikaze 1"
+    monster_slots(integer) : "How many points to spend on monster spawns. Increases by up to 2x for Hard skill" : 3
+]
+
+@PointClass base(Monsters) size(-40 -40 0, 40 40 144) = monster_widow : "Black Widow (on foot)" []
+//Why is there two of these with no difference?
+//@PointClass base(Monsters) size(-70 -70 0, 70 70 144) = monster_widow : "Black Widow (spider)" []
+
+@PointClass base(Monsters) = monster_medic_commander : "Medic Commander"
+[
+    reinforcements(string): "Semicolon separated list of entity classes and cost of monster to spawn" : "monster_soldier_light 1;monster_soldier 2;monster_soldier_ss 2;monster_infantry 3;monster_gunner 4;monster_medic 5;monster_gladiator 6"
+    monster_slots(integer) : "How many points to spend on monster spawns. Increases by up to 2x for Hard skill" : 3
+]
+@PointClass base(Monsters) = monster_kamikaze : "Flyer (kamikaze)" []
+
+@PointClass base(Monsters) size(-12 -12 -12, 12 12 12) = monster_turret : "Turret Monster"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Blaster" : 0
+        16 : "Chaingun" : 0
+        32 : "Rocket" : 0
+        128: "Wall Unit (must be targeted)" : 0
+		262144 : "No Lasersight (beware)" : 0
+    ]
+]
+
+@PointClass base(Monsters) size(-28 -28 -18, 28 28 18) = monster_stalker : "Stalker"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Ambush" : 0
+        2 : "Trigger Spawn" : 0
+        8 : "Start On Roof" : 0
+		16 : "No Jumping" : 0
+    ]
+]
+
+// using a "wait" value of -1 on a path corner causes a func_train to go silent between
+// itself and the next path corner when the train is restarted. The train's sound will
+// resume as soon as it reaches a path corner with a "wait" value other than -1
+@PointClass base(EditorFlags, Targetable, UseTargets) color(128 76 0) size(-8 -8 -8, 8 8 8) = path_corner : "Path marker"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Teleport" : 0
+    ]
+    target(target_destination) : "Next path target"
+    pathtarget(target_destination) : "Event to trigger"
+    wait(choices) : "Wait" : 0 =
+    [
+        -1 : "Wait for retrigger"
+    ]
+]
+
+@PointClass base(path_corner) color(128 76 9) size(-8 -8 -8, 8 8 8) = point_combat : "Point of combat - should be the first/only target of a monster"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Hold" : 0
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable, Angleable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_blaster : "Blaster (use angles to point it)"
+[
+    spawnflags(Flags) =
+    [
+        1 : "No Trail" : 0
+        2 : "No Effects" : 0
+    ]
+    dmg(float) : "Damage" : "15"
+    speed(float) : "Speed" : "1000"
+]
+
+// set "map" value to "mapname$playername" where playername equals
+// the targetname of a corresponding info_player_start in the
+// next map.  To play a cinematic before starting the level, the
+// "map" value should be "cinemeatic.cin+mapname$playername". Note
+// that a playername is not required if the corresponding info_player_start
+// doesn't have a targetname.  If you want this to be designated as the last
+// level of a unit, place an asterix (*) before the map name.
+@PointClass base(EditorFlags, Targetable, Target) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_changelevel : "Change level"
+[
+    spawnflags(Flags) =
+    [
+        8 : "Clear Inventory" : 0
+		16 : "No End of Unit" : 0
+		32 : "Fade out" : 0
+		64 : "Immediate Leave" : 0
+    ]
+    map(string) : "Next map; append $targetname to spawn at matched targetname"
+    target(target_destination) : "Name of info_landmark in the next map to link this exit to"
+]
+
+@PointClass base(EditorFlags, Targetable) color(128 128 128) size(-8 -8 -8, 8 8 8) = target_crosslevel_trigger : "Cross-level trigger"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Trigger 1" : 0
+        2 : "Trigger 2" : 0
+        4 : "Trigger 3" : 0
+        8 : "Trigger 4" : 0
+        16 : "Trigger 5" : 0
+        32 : "Trigger 6" : 0
+        64 : "Trigger 7" : 0
+        128 : "Trigger 8" : 0
+
+		65536 : "Trigger 9" : 0
+		131072 : "Trigger 10" : 0
+		262144 : "Trigger 11" : 0
+		524288 : "Trigger 12" : 0
+		1048576 : "Trigger 13" : 0
+		2097152 : "Trigger 14" : 0
+		4194304 : "Trigger 15" : 0
+		8388608 : "Trigger 16" : 0
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(128 128 128) size(-8 -8 -8, 8 8 8) = target_crosslevel_target : "Cross-level trigger"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Trigger 1" : 0
+        2 : "Trigger 2" : 0
+        4 : "Trigger 3" : 0
+        8 : "Trigger 4" : 0
+        16 : "Trigger 5" : 0
+        32 : "Trigger 6" : 0
+        64 : "Trigger 7" : 0
+        128 : "Trigger 8" : 0
+
+		65536 : "Trigger 9" : 0
+		131072 : "Trigger 10" : 0
+		262144 : "Trigger 11" : 0
+		524288 : "Trigger 12" : 0
+		1048576 : "Trigger 13" : 0
+		2097152 : "Trigger 14" : 0
+		4194304 : "Trigger 15" : 0
+		8388608 : "Trigger 16" : 0
+    ]
+]
+
+@PointClass base(target_crosslevel_trigger) color(128 128 128) size(-8 -8 -8, 8 8 8) = target_crossunit_trigger : "Cross-unit trigger"
+[
+]
+
+@PointClass base(target_crosslevel_target) color(128 128 128) size(-8 -8 -8, 8 8 8) = target_crossunit_target : "Cross-unit target"
+[
+]
+
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_earthquake : "Level wide earthquake"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Silent" : 0
+		2 : "Toggle" : 0
+		8 : "One Shot" : 0
+    ]
+
+    speed(float) : "Severity of quake" : "200"
+    count(float) : "Duration" : "5"
+]
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_explosion : "Explosion"
+[
+    delay(float) : "Delay before explosion"
+    dmg(float) : "Radius damage" : "0"
+]
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(255 0 255) size(-8 -8 -8, 8 8 8) = target_goal : "Counts a goal completed"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Keep Music" : 0
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable) color(255 0 255) size(-8 -8 -8, 8 8 8) = target_healthbar : "Monster Health bar"
+[
+	delay(float) : "Delay before healthbar disappears after death" : "0.0"
+	message(string) : "Boss name" : ""
+	target(string): "Boss" : ""
+]
+
+@PointClass base(EditorFlags, Targetable) color(255 0 255) size(-8 -8 -8, 8 8 8) = target_help : "Computer help message"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Main Onjective" : 0
+        2 : "Set POI on use" : 0
+    ]
+    message(string) : "Computer message"
+]
+
+// if no color spawnflags are set, the laser color defaults to dim gray (and hard to see)
+// setting the damage to 0 makes it use the default damage of 1
+// setting the damage to a negative number will actually give health
+@PointClass base(EditorFlags, Targetable, Target, Angleable) color(0 128 204) size(-8 -8 -8, 8 8 8) = target_laser : "Laser"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start On" : 0
+        2 : "Red" : 0
+        4 : "Green" : 0
+        8 : "Blue" : 0
+        16 : "Yellow" : 0
+        32 : "Orange" : 0
+        64 : "Fat" : 0
+        128 : "Stop on windows" : 0
+		65536 : "Lightning" : 0
+    ]
+    dmg(float) : "Damage"
+	rgba(integer) : "Laser colors; four palette indices separated by spaces"
+]
+
+// Expansion
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_nuke : "Nuke (kill all entities)"
+[
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(0 128 204) size(-8 -8 -8, 8 8 8) = target_mal_laser : "Laser (Xatrix; Mal Laser)"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start On" : 0
+        2 : "Red" : 0
+        4 : "Green" : 0
+        8 : "Blue" : 0
+        16 : "Yellow" : 0
+        32 : "Orange" : 0
+        64 : "Fat" : 0
+    ]
+    delay(float) : "Delay" : "0.1"
+    wait(float) : "Wait" : "0.1"
+    dmg(float) : "Damage"
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(0 128 204) size(-8 -8 -8, 8 8 8) = target_lightramp : "Light ramp"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Toggle" : 0
+    ]
+    speed(float) : "Speed"
+    message(string) : "start/end light level"
+]
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(255 0 255) size(-8 -8 -8, 8 8 8) = target_secret : "Counts a secret found"
+[
+    message(string) : "Message to print"
+	noise(string) : "Noise to play" : "misc/secret.wav"
+]
+
+// set speed and angle, otherwise spawned object drops
+@PointClass base(EditorFlags, Targetable, Angleable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_spawner : "Monster/Item spawner"
+[
+    target(target_destination) : "Monster/Item to spawn"
+    speed(float) : "Speed"
+]
+
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_speaker : "Sound player"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Looped On" : 0
+        2 : "Looped Off" : 0
+        4 : "Reliable" : 0
+        8 : "No Stereo Panning" : 0
+    ]
+    noise(string) : "Sound (path/file.wav)"
+    attenuation(Choices) : "Attenuation" : 0 =
+    [
+        -1 : "None, send to whole level"
+		0 : "Default (1 for non-looped, 3 for looped)"
+        1 : "Normal fighting sounds"
+        2 : "Idle sound level"
+        3 : "Ambient sound level"
+    ]
+    volume(float) : "Volume (0.0 - 1.0)" : "1"
+]
+
+
+@PointClass base(EditorFlags) color(255 0 0) size(-8 -8 -8, 8 8 8) = misc_amb4 : "Amb4 speaker"
+[
+]
+
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_music : "Change music"
+[
+    sounds(integer) : "CD Track Number" : 1
+]
+
+
+// "sounds" values other than 1 are silent.  leaving in the other
+// options for availability to mods/fixes
+//
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_splash : "Creates a splash when used"
+[
+    sounds(choices) : "Type of splash" : 2 =
+    [
+        1 : "Sparks"
+        2 : "Blue water"
+        3 : "Brown water"
+        4 : "Slime"
+        5 : "Lava"
+        6 : "Blood"
+        7 : "N64 Sparks"
+    ]
+    count(integer) : "Number of pixels in splash (1 - 255)"
+    dmg(float) : "Radius damage"
+]
+
+// eye candy... Particles #2 (style 22) is quite cool
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_temp_entity : "Temp entity"
+[
+    style(choices) : "Style" : 22 =
+    [
+        6 : "Grenade explosion #1" 
+		8 : "Grenade explosion #2"
+		18 : "Grenade explosion #3 (underwater)"
+		20 : "Green Fireball (BFG small)"
+        21 : "Particles #1 (BFG big)"
+        22 : "Particles #2 (boss teleport)"
+		35 : "Plain explosion"
+		45 : "chainfist smoke"
+		47 : "Tracker Explosion (black particles)"
+		48 : "Teleport effect #1"
+		49 : "Teleport effect #2"
+		51 : "Nuke Blast"
+		52 : "Widow Splash"
+		58 : "Berserk Slam"
+    ]
+]
+
+@PointClass base(EditorFlags, UseTargets) color(128 128 128) size(-8 -8 -8, 8 8 8) = trigger_always : "Always triggers" []
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(128 128 128) = trigger_counter : "Counter"
+[
+    spawnflags(Flags) =
+    [
+        1 : "No Message" : 0
+    ]
+    count(integer) : "Count before trigger" : 2
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(76 25 153) = trigger_elevator : "Elevator trigger; note that whoever targets this must have a pathtarget set" []
+
+@SolidClass base(EditorFlags, Targetable) color(128 128 128) = trigger_hurt : "Hurts on touch"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start Off" : 0
+        2 : "Toggle" : 0
+        4 : "Silent" : 0
+        8 : "No Protection" : 0
+        16 : "Slow hurt" : 0
+        32 : "No Players" : 0
+        64 : "No Monsters" : 0
+		128 : "Clipped (must touch brushes, not just aabb)" : 0
+    ]
+    dmg(float) : "Damage" : "5"
+]
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(128 128 128) size(-8 -8 -8, 8 8 8) = trigger_key : "Triggers with key"
+[
+    item(string) : "Item classname" : "key_blue_key"
+]
+
+@SolidClass base(EditorFlags, Targetable) color(128 128 128) = trigger_monsterjump : "Makes monsters jump"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Toggle" : 0
+        2 : "Start Off" : 0
+        4 : "Clipped (must touch brushes, not just aabb)" : 0
+    ]
+
+    speed(float) : "Speed thrown forward" : "200"
+    height(float) : "Height thrown upward" : "200"
+]
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(128 128 128) = trigger_relay : "Relay trigger" []
+
+@SolidClass base(trigger_relay) = trigger_once : "Single fire trigger"
+[
+    spawnflags(Flags) =
+    [
+        4 : "Triggered" : 0
+        32 : "Clipped (must exactly touch brushes, not just aabb)" : 0
+    ]
+]
+
+@SolidClass base(trigger_once) = trigger_multiple : "Multiple fire trigger"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Monster" : 0
+        2 : "Not Player" : 0
+        4 : "Triggered (triggering will enable; starts off)" : 0
+        8 : "Toggled (triggering will toggle between on/off; starts off)" : 0
+        16 : "Latched (will trigger when an entity first enters & last leaves)" : 0
+        32 : "Clipped (must exactly touch brushes, not just aabb)" : 0
+    ]
+    wait(float) : "Seconds between triggers" : "0"
+]
+
+@SolidClass base(EditorFlags) color(128 128 128) = trigger_push : "Push trigger"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Push Once" : 0
+        2 : "Wait & Effect" : 0
+        4 : "Silent" : 0
+        8 : "Start Off" : 0
+        16 : "Clipped (must exactly touch brushes, not just aabb)" : 0
+    ]
+    speed(float) : "Speed of push" : "1000"
+    wait(float) : "Time to wait between pushes" : "10"
+]
+
+// Expansion
+@SolidClass base(EditorFlags) color(128 128 128) = trigger_gravity : "Gravity trigger"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Toggle" : 0
+        2 : "Start Off" : 0
+        4 : "Clipped (must exactly touch brushes, not just aabb)" : 0
+    ]
+    gravity(float) : "Gravity (standard = 1.0)" : "1"
+]
+
+@SolidClass base(EditorFlags, Targetable, Target, EWT_base_BModel, Teamable) color(128 255 128) = turret_breach : "Turret breach"
+[
+    speed(float) : "Speed" : "50"
+    dmg(float) : "Damage" : "10"
+    minpitch(float) : "Miminum pitch angle" : "-30"
+    maxpitch(float) : "Maximum pitch angle" : "30"
+    minyaw(float) : "Minimum yaw angle" : "0"
+    maxyaw(float) : "Maximum yaw angle" : "360"
+]
+
+@SolidClass base(EditorFlags, EWT_base_BModel, Teamable) color(128 255 128) = turret_base : "Turret base"
+[
+]
+
+@PointClass base(EditorFlags) color(128 255 128) size(-16 -16 -24, 16 16 32) = turret_driver : "Turret driver"   [   target(target_destination) : "Target (turret_breach)"   ]
+
+// Expansions
+@PointClass base(EditorFlags) color(128 255 128) size(-4 -4 -4, 4 4 4) = turret_invisible_brain : "Turret invisible brain"
+[
+    delay(float) : "Delay between firing; leave unset for skill ramping" : "0"
+    target(target_destination) : "Target (turret_breach)"
+    killtarget(target_destination) : "Entity to be attacked"
+]
+
+@SolidClass base(EWT_base_BModel) color(0 128 204) = func_group : "group" []
+
+// Paril: CTF
+@PointClass base(EditorFlags) color(255 128 0) size(-4 -4 0, 4 4 246) = misc_ctf_banner : "Flowing CTF banner"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Blue Team" : 0
+    ]
+]
+
+@PointClass base(EditorFlags) color(255 128 0) size(-4 -4 0, 4 4 246) = misc_ctf_small_banner : "Smaller flowing CTF banner"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Blue Team" : 0
+    ]
+]
+
+// Expansions
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_killplayers : "Nuke (kill all players)" []
+
+@PointClass base(EditorFlags, Targetable) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_anger : "Anger (make monster angry at something)"
+[
+    killtarget(target_destination) : "Target to be angry at"
+    target(target_destination) : "Target(s) to make angry"
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(255 0 0) size(-8 -8 -8, 8 8 8) = target_steam : "Steam Emitter"
+[
+    speed(float) : "velocity of particles" : "75"
+    count(integer) : "number of particles" : 32
+    sounds(integer) : "color of particles (palette index)" : 8
+    wait(float) : "seconds to run before stopping"
+]
+
+@SolidClass base(EditorFlags) color(128 128 128) = trigger_disguise : "Disguise"
+[
+    spawnflags(Flags) =
+    [
+        2 : "Start On" : 0
+        4 : "Remove" : 0
+    ]
+]
+
+@SolidClass base(EditorFlags, Targetable, Target, Angleable) color(128 128 128) = trigger_teleport : "Teleport"
+[
+    spawnflags(Flags) =
+    [
+        8 : "Start On" : 0
+    ]
+]
+
+@SolidClass base(func_door_secret) color(0 128 204) = func_door_secret2 : "Secret Door (Rogue)" []
+
+@SolidClass base(EditorFlags, Targetable, EWT_base_BModel) color(0 128 204) = func_force_wall : "Force Wall"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start On" : 0
+    ]
+    style(integer) : "Color (palette index)" : 208
+]
+
+@SolidClass base(EditorFlags, Targetable, EWT_base_BModel) color(0 128 204) = func_plat : "OG Platform"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Plat Low Trigger" : 0
+		2 : "No Monsters" : 0
+    ]
+    speed(float) : "Speed" : "200"
+    accel(float) : "Acceleration" : "50"
+    decel(float) : "Acceleration" : "50"
+    lip(float) : "Lip remaining after move" : "8"
+    height(float) : "Movement distance"
+    dmg(float) : "Damage" : "2"
+]
+
+@SolidClass base(EditorFlags, Targetable, EWT_base_BModel) color(0 128 204) = func_plat2 : "Callable Platform"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Plat Low Trigger" : 0
+        2 : "Toggle" : 0
+        4 : "Top" : 0
+		8 : "Start Enabled" : 0
+        32 : "Box Lift" : 0
+    ]
+    speed(float) : "Speed" : "200"
+    accel(float) : "Acceleration" : "50"
+    decel(float) : "Acceleration" : "50"
+    lip(float) : "Lip remaining after move" : "0"
+    height(float) : "Movement distance"
+    dmg(float) : "Damage" : "2"
+]
+
+@PointClass base(EditorFlags) = misc_flare : "(N64) Light Flare"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Red rim" : 0
+        2 : "Green rim" : 0
+        4 : "Blue rim" : 0
+        8 : "Fixed rotation" : 0
+    ]
+    image(string) : "image" : "" : "The path to a custom flare image to use instead of the default"
+    radius(float) : "1.0" : "Scale multiplier"
+    rgba(color255) : "Color" : "255 255 255 255" : "Flare color"
+    fade_start_dist(integer) : "Distance in units that fade begins, should be smaller than fade_end_dist" : 96
+    fade_end_dist(integer) : "Distance in units that fade ends, should be greater than fade_start_dist" : 384
+]
+
+@PointClass base(EditorFlags, Targetable) = target_camera : "(N64) Camera"
+[
+    speed(float) : "Speed" : "75"
+]
+
+@PointClass base(EditorFlags, Targetable) = info_landmark : "Landmark - connect one level to another with a seamless transition"
+[
+]
+
+@PointClass base(Monsters) size(-32 -32 -24, 32 32 64) = monster_shambler : "Shambler"
+[
+]
+
+@SolidClass base(EditorFlags) = trigger_flashlight : "Enable/Disable Flashlight"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Clipped (must touch brushes, not just aabb)" : 0
+    ]
+    style(choices) : "style" : 0 =
+    [
+        0 : "Default"
+        1 : "Always turn on"
+        2 : "Always turn off"
+    ]
+    angles(string) : "pitch yaw roll" : "Player traveling this direction will enable light, against it will disable."
+]
+
+@PointClass base(EditorFlags) = misc_lavaball : "(N64) Lavaball"
+[
+]
+
+@PointClass base(EditorFlags) = misc_hologram : "(N64) Ship Hologram"
+[
+]
+
+@SolidClass base(EditorFlags) = trigger_fog : "Fog Transitions"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Affect global fog" : 0
+        2 : "Affect height fog" : 0
+        4 : "Instaneous transition" : 0
+        8 : "Force use (regardless of direction)" : 0
+		16 : "Blend" : 0
+    ]
+    angles(string) : "angles" : "0 0 0" : "Direction of player travel for start/end"
+    target(target_destination) : "info_notnull target for fog params"
+    delay(float) : "Delay": "0.5" : "Time in seconds after transition starts to fully end"
+	wait(float) : "Wait" : "0.0" : "Time in seconds before a re-trigger will occur; mainly for Blend"
+    fog_density(float) : "density value of fog, 0-1"
+    fog_color(color255) : "color value of fog, 3d vector with values between 0-1 (r g b)"
+    fog_sky_factor(float) : "sky_factor value of fog, 0-1"
+    fog_density_off(float) : "transition density value of fog, 0-1"
+    fog_color_off(color255) : "transition color value of fog, 3d vector with values between 0-1 (r g b)"
+    fog_sky_factor_off(float) : "transition sky_factor value of fog, 0-1"
+
+    heightfog_falloff(float) : "falloff value of heightfog, 0-1"
+    heightfog_density(float) : "density value of heightfog, 0-1"
+    heightfog_start_color(color255) : "start color of heightfog, 3d vector with values between 0-1 (r g b)"
+    heightfog_end_color(color255) : "end color of heightfog, 3d vector with values between 0-1 (r g b)"
+    heightfog_start_dist(float) : "start distance value of heightfog, in world units"
+    heightfog_end_dist(float) : "start distance value of heightfog, in world units"
+
+    heightfog_falloff_off(float) : "transition falloff value of heightfog, 0-1"
+    heightfog_density_off(float) : "transition density value of heightfog, 0-1"
+    heightfog_start_color_off(color255) : "transition start color of heightfog, 3d vector with values between 0-1 (r g b)"
+    heightfog_end_color_off(color255) : "transition end color of heightfog, 3d vector with values between 0-1 (r g b)"
+    heightfog_start_dist_off(float) : "transition start distance value of heightfog, in world units"
+    heightfog_end_dist_off(float) : "transition start distance value of heightfog, in world units"
+]
+
+@SolidClass base(EditorFlags, Angleable, UseTargets, EWT_base_BModel) color(0 128 204) = func_eye : "Camera-like brush model"
+[
+    pathtarget(target_destination) : "point to an info_notnull (which gets freed after spawn) attached to the bmodel to automatically set the eye_position"
+    eye_position(string) : "x y z" : "Offset from the origin brush's center of the camera where the eye is located"
+    radius(float) : "512" : "detection radius for players"
+    speed(float) : "45" : "how fast, in degrees per second, we should move on each axis to reach the target"
+    vision_cone(float) : "0.5" : "how wide the cone of vision should be"
+    wait(float) : "the amount of time to wait after losing target before returning to neutral angles"
+]
+
+@SolidClass base(EditorFlags, Targetable, EWT_base_BModel, BmodelAnim) color(0 128 204) = func_animation : "Similar to func_wall, but triggering it will toggle animation state rather than going on/off."
+[
+    spawnflags(Flags) =
+    [
+        1 : "Start in Alternate" : 0
+    ]
+]
+
+@SolidClass base(EditorFlags, Targetable, UseTargets, EWT_base_BModel) color(128 128 128) = trigger_coop_relay : "Co-op relay trigger; will only fire if all entities are inside of the bounds, otherwise prints messages."
+[
+    spawnflags(Flags) =
+    [
+        1 : "Auto-Fire" : 0
+    ]
+
+    message(string) : "Trigger message to send to the triggerer"
+    message2(string) : "Trigger message to send to the players not in the bounds"
+	wait(float) : "1.0" : "Time in seconds for auto-fire triggers to check bounds"
+]
+
+@PointClass base(Monsters) size(-96 -96 -66, 96 96 62) = monster_guardian : "Guardian (PSX)" []
+@PointClass base(Monsters) size(-48 -48 -20, 48 48 48) = monster_arachnid : "Arachnid (PSX)" []
+
+@PointClass base(EditorFlags, Targetable, Teamable) color(255 0 0) size(-4 -4 -4, 4 4 4) = target_poi : "Compass POI"
+[
+    spawnflags(Flags) =
+    [
+        1 : "Pick nearest to player (teamed)" : 0
+        2 : "Dummy" : 0
+		4 : "Dynamic (teamed)" : 0
+    ]
+
+	count(integer) : "stage value; if set, will only allow activation if last stage activated is <= this value" : 0
+	style(integer) : "teamed POIs only; the lowest styled POI will take priority" : 0
+	image(string) : "Image to display at the POI" : "friend"
+]
+
+@PointClass base(Angleable, EditorFlags, Target, Targetable) color(255 255 0) size(-8 -8 -8, 8 8 8) = info_world_text : "Info_World_Text"
+[
+	spawnflags(Flags) =
+	[
+		1 : "Start Off" : 0
+		2 : "Trigger Once" : 0
+		4 : "Remove On Trigger" : 0
+	]
+	
+	angle(float) : "Direction. -3 = Track Player. -2 = Down, -1 = Up, 0 - 360 = Yaw" : "-3"
+	radius(float) : "Text Size" : "0.2"
+	sounds(integer) : "Color Of Text. 0 = White, 1 = Red, 2 = Blue, 3 = Green, 4 = Yellow, 5 = Black, 6 = Cyan, 7 = Orange" : 0
+]
+
+@PointClass base(EditorFlags, Target, Targetable) = info_nav_lock : "Flip locked flag on targeted doors"
+[
+]
+
+
+@PointClass base(EditorFlags, Targetable, UseTargets) color(128 128 128) = trigger_health_relay : "Health relay trigger"
+[
+	speed(float) : "Percent of health that must be reached to fire"
+]
+
+@PointClass base(EditorFlags, Targetable) = target_autosave : "Autosave"
+[
+]
+
+
+@PointClass base(EditorFlags, Targetable) = target_sky : "Change sky parameters"
+[
+    sky(string) : "Environment map name"
+    skyaxis(vector) : "Vector axis for rotating sky"
+    skyrotate(string) : "Speed of rotation (degrees/second)"
+    skyautorotate(integer) : "Disable to set sky rotation manually" : 1
+]
+
+@PointClass base(EditorFlags, Targetable, Angleable) color(64 192 255) size(-16 -16 -16, 16 16 16) = raid_item : "Carryable raid item"
+[
+    spawnflags(flags) =
+    [
+        1 : "START_CHARGED (explicit map override)" : 0
+    ]
+    item_type(choices) : "Item type" : "power_core" =
+    [
+        "power_core" : "Power Core"
+        "bfg_relic" : "BFG10K Weapon Relic"
+    ]
+    carry_mode(choices) : "Carry mode" : 0 =
+    [
+        0 : "Automatic from item type"
+        1 : "Heavy object (forced third person, weapons blocked)"
+        2 : "Weapon relic (first person, equipped weapon active)"
+    ]
+    weapon(string) : "Weapon classname for weapon relic" : "weapon_bfg"
+    encumber_scale(float) : "Movement scale while carried" : 0.45
+    model(studio) : "World/carried/deposited model" : "models/items/keys/power/tris.md2"
+    held_model(studio) : "Optional model shown while carried; blank uses world model" : ""
+    scale(float) : "Model scale" : 1
+    carry_status(string) : "Charged-carrier status override (charged power cores default to volatile; use none to disable)" : ""
+    status_duration(float) : "Conferred status duration; 0 uses JSON/default duration" : 0
+    status_policy(choices) : "Status reapplication policy" : "refresh" =
+    [
+        "refresh" : "Refresh"
+        "replace" : "Replace"
+        "extend" : "Extend"
+        "stack" : "Stack"
+        "ignore" : "Ignore if already present"
+    ]
+    clear_status_on_drop(choices) : "Remove conferred status when relinquished" : 1 =
+    [
+        0 : "No"
+        1 : "Yes"
+    ]
+    charged_vfx(choices) : "Effect emitted while charged" : "electric_sparks" =
+    [
+        "" : "None"
+        "electric_sparks" : "Electric sparks"
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable, Angleable) color(255 160 32) size(-8 -8 -8, 8 8 8) = raid_gadget : "Reusable raid gadget anchor"
+[
+    gadget_type(choices) : "Gadget type" : "core_socket" =
+    [
+        "core_socket" : "Core Socket"
+        "reconstruction_chamber" : "Matter Reconstruction Chamber"
+        "terminal" : "Interactive Terminal"
+    ]
+    accepts(string) : "Accepted item type" : "power_core"
+    required_state(choices) : "Required item state" : "" =
+    [
+        "" : "Automatic (charged for core/reconstruction sockets)"
+        "any" : "Any"
+        "charged" : "Charged"
+    ]
+    order(integer) : "Socket order" : 1
+    team(string) : "Socket group"
+    reconstruct_spawn(target_destination) : "Reconstruction spawn/name-tag marker"
+    spectator_camera(target_destination) : "External spectator camera marker"
+]
+
+@SolidClass base(EditorFlags, Targetable) color(255 128 32) = trigger_raid_deposit : "Deposit carried raid item"
+[
+    target(target_destination) : "Socket group (matches raid_gadget team)"
+    required_state(choices) : "Fallback required item state" : "any" =
+    [
+        "any" : "Any"
+        "charged" : "Charged"
+    ]
+]
+
+@SolidClass base(EditorFlags, Targetable) color(80 180 255) = trigger_raid_item : "Carried raid-item interaction field"
+[
+    accepts(string) : "Accepted item type" : "power_core"
+    required_state(choices) : "Required incoming state" : "uncharged" =
+    [
+        "uncharged" : "Uncharged"
+    ]
+    set_state(choices) : "Completed state" : "charged" =
+    [
+        "charged" : "Charged"
+    ]
+    charge_time(float) : "Required uninterrupted overlap seconds" : 1
+]
+
+@SolidClass base(EditorFlags, Targetable) color(80 255 160) = trigger_raid_interaction : "Generic Director-first interaction volume"
+[
+    wait(float) : "Minimum seconds between interaction events" : 0.5
+]
+
+@SolidClass base(EditorFlags, Targetable) color(80 255 160) = trigger_raid_terminal : "Deprecated terminal interaction wrapper; prefer generic interaction -> JSON open_terminal"
+[
+    spawnflags(flags) =
+    [
+        1 : "LEGACY_DIRECT_OPEN (compatibility proof only)" : 0
+    ]
+    target(target_destination) : "Legacy direct-open terminal target; JSON should own this association"
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(80 255 180) size(-6 -6 -6, 6 6 6) = raid_hovertext : "Crosshair hover message/event marker"
+[
+    text(string) : "Hover text (optional; leave empty for JSON-only events)"
+    hover_radius(float) : "Aim detection radius" : 24
+    hover_distance(float) : "Maximum view distance" : 256
+    require_los(choices) : "Require unobstructed world line of sight" : 1 =
+    [
+        0 : "No"
+        1 : "Yes"
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable, Angleable) color(80 220 255) size(-8 -8 -8, 8 8 8) = raid_bot_goal : "Named raid-helper navigation and interaction position"
+[
+    radius(float) : "Arrival tolerance" : 24
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(255 80 80) size(-12 -12 -12, 12 12 12) = raid_monster_door : "Director-controlled deployment group"
+[
+    target(string) : "Accepted roster slots: comma-separated targetnames on editor-placed monster_* templates"
+    pathtarget(target_destination) : "Optional first path_corner or point_combat after deployment"
+    deploy_interval(float) : "Seconds between releasing roster members" : 0.5
+    initial_count(integer) : "Number created when activated; 0 uses min_active, then max_active, then 1" : 0
+    min_active(integer) : "Population floor used by Maintain mode" : 0
+    max_active(integer) : "Maximum simultaneously active monsters; 0 is unlimited" : 0
+    wave_size(integer) : "Fresh monsters created per replacement wave; 0 uses max_active, then 1" : 0
+    replenish_delay(float) : "Delay before replenishment" : 3
+    replenish_mode(choices) : "Population behaviour" : 0 =
+    [
+        0 : "None: create initial deployment once"
+        1 : "Maintain min_active with fresh monsters"
+        2 : "Create replacement wave after active population is killed"
+    ]
+    leash_radius(float) : "Maximum pursuit distance; 0 disables leash" : 0
+    leash_return_radius(float) : "Distance considered returned" : 64
+    leash_grace(float) : "Seconds outside leash before return" : 1
+    wake_mode(choices) : "Released monster behaviour" : 1 =
+    [
+        0 : "Preserve mapper-authored wake behaviour"
+        1 : "Wake and seek nearest player"
+        2 : "Follow pathtarget before normal combat"
+    ]
+]
+
+@PointClass base(EditorFlags, Targetable, Target) color(255 180 40) size(-12 -12 -12, 12 12 12) = raid_hat : "Reusable raid metadata wrapper for named monster groups"
+[
+    spawnflags(flags) =
+    [
+        1 : "START_DISABLED" : 0
+    ]
+    target(target_destination) : "Monster selector: matches a monster raid_hat key, or targetname for whole-group wrapping"
+    message(string) : "Display name shown while aiming at the monster" : "RAID TARGET"
+    display_distance(float) : "Maximum name/health presentation distance" : 1024
+    rank(choices) : "Raid rank / test shell" : 0 =
+    [
+        0 : "Normal"
+        1 : "Elite (red shell)"
+        2 : "Ultra (blue shell)"
+        3 : "Boss (purple shell)"
+    ]
+    health(integer) : "Absolute health override; 0 preserves base health" : 0
+    raid_health_multiplier(float) : "Base-health multiplier when no absolute override is set" : 1
+    power_armor_power(integer) : "Shield capacity; 0 disables the segmented shield bar" : 0
+    power_armor_type(choices) : "Native shield geometry" : 2 =
+    [
+        1 : "Forward power screen"
+        2 : "Full power shield"
+    ]
+    raid_monster_scale(float) : "Physical/model scale; 0 or 1 preserves base scale" : 1
+    raid_ai_mode(choices) : "Temporary AI test mode" : 0 =
+    [
+        0 : "Normal"
+        1 : "Dunce: awake but non-hostile"
+        2 : "Dumb hat: frozen and non-hostile"
+        3 : "Observer locked: active only while unseen"
+    ]
+    start_pose(integer) : "Safe offset within the monster's standing animation" : 0
+    observer_inverted(choices) : "Observer relationship" : 0 =
+    [
+        0 : "Move while unseen (weeping)"
+        1 : "Move while watched (look-away game)"
+    ]
+    freeze_delay(float) : "Observer-lock delay before fully freezing" : 0.12
+    release_delay(float) : "Observer-lock delay before movement is released" : 0
+    minimum_move_time(float) : "Minimum movement time before another freeze" : 0
+    twitch_chance(float) : "Chance per watched second to advance one frame (0-1)" : 0.02
+    model(studio) : "Optional attached hat/head/test model"
+    attachment_offset(string) : "Model offset: forward right up" : "0 0 32"
+    attachment_angles(string) : "Model angle offset: pitch yaw roll" : "0 0 0"
+    scale(float) : "Attached model scale" : 1
+]
+
+@PointClass base(EditorFlags, Targetable) color(255 128 255) size(-16 -16 -24, 16 16 32) = misc_player_mannequin : "Player Mannequin"
+[
+  distance(integer) : "Gesture To Use When Triggered. 0 = FlipOff, 1 = Salute, 2 = Taunt, 3 = Wave, 4 = Point" : 1 
+  height(integer) : "Type Of Model To Use. 1 = Female, 2 = Male, 3 = Cyborg" : 1
+  radius(float) : "Scale To Use For Model"
+  goals(string) : "Name Of MD2 Player Weapon Model To Hold. EX: 'w_hyperblaster'"
+  image(string) : "Name Of PCX Player Skin To Use. EX: 'venus'"
+]

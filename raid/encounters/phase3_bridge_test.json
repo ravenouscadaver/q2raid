@@ -1,0 +1,96 @@
+{
+  "encounter": "phase3_bridge_test",
+  "initial_state": "idle",
+  "events": [
+    {
+      "source": "trigger",
+      "signal": "activate",
+      "from_state": "idle",
+      "set_state": "party"
+    },
+    {
+      "source": "trigger_status_apply",
+      "signal": "activate",
+      "do": [
+        {
+          "op": "apply_status",
+          "status": "volatile",
+          "duration": 15,
+          "expire_message": "VOLATILE EXPIRED"
+        },
+        {
+          "op": "post_message",
+          "scope": "activator",
+          "text": "VOLATILE APPLIED"
+        }
+      ]
+    },
+    {
+      "source": "trigger_status_clear",
+      "signal": "activate",
+      "do": [
+        {
+          "op": "clear_status",
+          "status": "volatile"
+        },
+        {
+          "op": "post_message",
+          "scope": "activator",
+          "text": "VOLATILE CLEARED"
+        }
+      ]
+    }
+  ],
+  "states": {
+    "idle": {
+      "enter": []
+    },
+    "party": {
+      "enter": [
+        {
+          "op": "set_field",
+          "target": "door",
+          "field": "wait",
+          "value": -1
+        },
+        {
+          "op": "fire_target",
+          "target": "door"
+        },
+        {
+          "op": "fire_target",
+          "target": "light_party1"
+        },
+        {
+          "op": "fire_target",
+          "target": "light_party2"
+        },
+        {
+          "op": "fire_target",
+          "target": "light_party3"
+        },
+        {
+          "op": "fire_target",
+          "target": "light_party4"
+        },
+        {
+          "op": "color_cycle",
+          "targets": [
+            "light_party1",
+            "light_party2",
+            "light_party3",
+            "light_party4"
+          ],
+          "colors": [
+            [255, 0, 0],
+            [0, 255, 0],
+            [0, 0, 255],
+            [180, 0, 255]
+          ],
+          "step_seconds": 0.65,
+          "transition_seconds": 0.55
+        }
+      ]
+    }
+  }
+}

@@ -2393,6 +2393,7 @@ constexpr spawnflags_t SPAWNFLAG_CHANGELEVEL_FADE_OUT = 32_spawnflag;
 constexpr spawnflags_t SPAWNFLAG_CHANGELEVEL_IMMEDIATE_LEAVE = 64_spawnflag;
 
 void respawn(edict_t *ent);
+void RaidRespawnAt(edict_t *ent, const vec3_t &origin, const vec3_t &angles);
 void BeginIntermission(edict_t *targ);
 void PutClientInServer(edict_t *ent);
 void InitClientPersistant(edict_t *ent, gclient_t *client);
@@ -2839,6 +2840,7 @@ struct gclient_t
 	button_t buttons;
 	button_t oldbuttons;
 	button_t latched_buttons;
+	button_t menu_suppressed_buttons;
 	usercmd_t cmd; // last CMD send
 
 	// weapon cannot fire until this time is up
@@ -2872,6 +2874,11 @@ struct gclient_t
 		gtime_t	time, total;
 	} kick;
 	gtime_t		  quake_time;
+	float             raid_shake_intensity;
+	gtime_t           raid_flash_fade_at;
+	gtime_t           raid_flash_end;
+	vec3_t            raid_flash_color;
+	float             raid_flash_alpha;
 	vec3_t		  kick_origin;
 	float		  v_dmg_roll, v_dmg_pitch;
 	gtime_t		  v_dmg_time; // damage kicks
@@ -3540,7 +3547,7 @@ struct fmt::formatter<edict_t>
 	}
 
     template<typename FormatContext>
-    auto format(const edict_t &p, FormatContext &ctx) -> decltype(ctx.out())
+    auto format(const edict_t &p, FormatContext &ctx) const -> decltype(ctx.out())
     {
 		if (p.linked)
 			return fmt::format_to(ctx.out(), FMT_STRING("{} @ {}"), p.classname, (p.absmax + p.absmin) * 0.5f);

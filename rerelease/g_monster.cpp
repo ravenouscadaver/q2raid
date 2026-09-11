@@ -2,6 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
 #include "bots/bot_includes.h"
+#include "raid_hats.h"
 
 //
 // monster weapons
@@ -612,6 +613,7 @@ void M_MoveFrame(edict_t *self)
 
 void G_MonsterKilled(edict_t *self)
 {
+	RaidHats_OnMonsterKilled(self, self->enemy);
 	level.killed_monsters++;
 
 	if (coop->integer && self->enemy && self->enemy->client)

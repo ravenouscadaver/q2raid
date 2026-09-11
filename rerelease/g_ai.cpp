@@ -1228,7 +1228,15 @@ bool ai_checkattack(edict_t *self, float dist)
 
         if (self->monsterinfo.aiflags & AI_SOUND_TARGET)
         {
-            if ((level.time - self->enemy->teleport_time) > 5_sec)
+            // Sound targets can disappear while a monster is following a
+            // combat/path goal. Never retain a flag that implies a live enemy.
+            if (!self->enemy || !self->enemy->inuse)
+            {
+                self->monsterinfo.aiflags &= ~AI_SOUND_TARGET;
+                if (!self->goalentity || !self->goalentity->inuse)
+                    self->goalentity = self->movetarget && self->movetarget->inuse ? self->movetarget : nullptr;
+            }
+            else if ((level.time - self->enemy->teleport_time) > 5_sec)
             {
                 if (self->goalentity == self->enemy)
                 {
