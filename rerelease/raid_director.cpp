@@ -1961,11 +1961,18 @@ bool RaidDirector_Load(const char *path)
 
     Json::CharReaderBuilder reader;
     reader["collectComments"] = false;
+    reader["failIfExtra"] = true;
     Json::Value root;
     JSONCPP_STRING parse_error;
     if (!Json::parseFromStream(reader, stream, &root, &parse_error))
     {
         gi.Com_PrintFmt("[raid] Couldn't parse encounter JSON '{}': {}\n", resolved.string(), parse_error);
+        return false;
+    }
+
+    if (!root.isObject())
+    {
+        gi.Com_PrintFmt("[raid] Invalid encounter JSON '{}': root must be an object\n", resolved.string());
         return false;
     }
 
