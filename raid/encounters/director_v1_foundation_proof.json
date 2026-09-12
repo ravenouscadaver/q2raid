@@ -1,0 +1,62 @@
+{
+  "schema": "q2raid.director.v1",
+  "encounter": "director_v1_foundation_proof",
+  "description": "Synthetic Proof 1: native activate fact -> Working Memory -> condition -> transition -> exit -> state change -> enter -> fire_target.",
+  "initial_state": "idle",
+  "memory": {
+    "activation_count": {"type": "number", "default": 0},
+    "exit_count": {"type": "number", "default": 0},
+    "reset_count": {"type": "number", "default": 0}
+  },
+  "sequences": {},
+  "item_profiles": {},
+  "gadget_profiles": {},
+  "bindings": [],
+  "states": {
+    "idle": {
+      "enter": [],
+      "exit": [
+        {"mutate": "add", "memory": "exit_count", "value": 1}
+      ]
+    },
+    "complete": {
+      "enter": [
+        {
+          "if": {
+            "and": [
+              {"eq": [{"director": "state"}, "complete"]},
+              {"eq": [{"mem": "exit_count"}, 1]}
+            ]
+          },
+          "then": [
+            {"op": "fire_target", "target": {"target": "door"}}
+          ],
+          "else": []
+        }
+      ],
+      "exit": []
+    }
+  },
+  "events": [
+    {
+      "event": "activate",
+      "source": {"entity": "trigger"},
+      "from_state": "idle",
+      "when": {"gte": [{"mem": "activation_count"}, 0]},
+      "do": [
+        {"mutate": "add", "memory": "activation_count", "value": 1},
+        {
+          "if": {"gte": [{"mem": "activation_count"}, 1]},
+          "then": [
+            {"transition": "complete"},
+            {"mutate": "add", "memory": "activation_count", "value": 100}
+          ],
+          "else": []
+        }
+      ]
+    }
+  ],
+  "reset": [
+    {"mutate": "add", "memory": "reset_count", "value": 1}
+  ]
+}

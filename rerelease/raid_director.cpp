@@ -27,15 +27,41 @@
 
 namespace
 {
+enum class raid_director_dialect_t
+{
+    none,
+    legacy,
+    v1
+};
+
+struct raid_director_v1_ref_t
+{
+    bool        valid = false;
+    uint32_t    entity_number = 0;
+    int32_t     spawn_count = 0;
+    std::string targetname;
+};
+
+struct raid_director_v1_event_t
+{
+    std::string            event;
+    raid_director_v1_ref_t source;
+    raid_director_v1_ref_t actor;
+    raid_director_v1_ref_t player;
+    vec3_t                 position = {};
+};
+
 struct raid_director_runtime_t
 {
     bool        initialized = false;
     bool        loaded = false;
+    raid_director_dialect_t dialect = raid_director_dialect_t::none;
     std::string mapname;
     std::string script_path;
     std::string encounter_name;
     std::string state;
     Json::Value document;
+    Json::Value memory = Json::Value(Json::objectValue);
     bool        wipe_pending = false;
     gtime_t     wipe_reset_at;
 };
@@ -139,12 +165,28 @@ struct queued_raid_event_t
     std::string signal;
     uint32_t activator_number = 0;
     int32_t activator_spawn_count = 0;
+    raid_director_v1_event_t v1;
 };
 std::deque<queued_raid_event_t> queued_events;
 bool dispatching_events = false;
 
 void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::string &context, edict_t *activator);
 void RaidDirector_ClearStatusHUD(edict_t *player);
+bool RaidDirectorV1_IsIdentifier(const std::string &value);
+bool RaidDirectorV1_IsDocument(const Json::Value &root);
+bool RaidDirectorV1_Validate(const Json::Value &root, std::string &error);
+bool RaidDirectorV1_ValidateMemory(const Json::Value &root, std::string &error);
+bool RaidDirectorV1_ValidateExpression(const Json::Value &expression, const Json::Value &root, const std::string &context, std::string &error);
+bool RaidDirectorV1_ValidateConsequences(const Json::Value &consequences, const Json::Value &root, const std::string &context, std::string &error);
+void RaidDirectorV1_InitializeMemory();
+void RaidDirectorV1_ResetMemory();
+Json::Value RaidDirectorV1_EvaluateExpression(const Json::Value &expression, const raid_director_v1_event_t *event);
+bool RaidDirectorV1_ExecuteConsequences(const Json::Value &consequences, const raid_director_v1_event_t *event);
+bool RaidDirectorV1_Transition(const std::string &state_name);
+bool RaidDirectorV1_MatchListener(const Json::Value &listener, const raid_director_v1_event_t &event);
+void RaidDirectorV1_DispatchEvent(const raid_director_v1_event_t &event);
+void RaidDirectorV1_FireTarget(const Json::Value &target, const raid_director_v1_event_t *event);
+void RaidDirectorV1_DumpMemory();
 
 void RaidDirector_SnapshotEntity(edict_t *entity)
 {
@@ -384,7 +426,12 @@ void RaidDirector_ClearStatusHUD(edict_t *player)
 void RaidDirector_ClearDocument()
 {
     if (director.loaded && director.document["states"].isMember(director.state))
-        RaidDirector_ExecuteOperations(director.document["states"][director.state]["exit"], fmt::format("state '{}' exit", director.state), nullptr);
+    {
+        if (director.dialect == raid_director_dialect_t::v1)
+            RaidDirectorV1_ExecuteConsequences(director.document["states"][director.state]["exit"], nullptr);
+        else
+            RaidDirector_ExecuteOperations(director.document["states"][director.state]["exit"], fmt::format("state '{}' exit", director.state), nullptr);
+    }
 
     RaidDirector_RestoreEntitySnapshots();
     RaidCarry_ResetAll();
@@ -403,6 +450,8 @@ void RaidDirector_ClearDocument()
     director.encounter_name.clear();
     director.state.clear();
     director.document = Json::Value();
+    director.memory = Json::Value(Json::objectValue);
+    director.dialect = raid_director_dialect_t::none;
 }
 
 void RaidDirector_PostMessage(edict_t *activator, const std::string &message, bool broadcast)
@@ -1014,6 +1063,590 @@ bool RaidDirector_Validate(const Json::Value &root, std::string &error)
     return true;
 }
 
+bool RaidDirectorV1_IsIdentifier(const std::string &value)
+{
+    if (value.empty() || value[0] < 'a' || value[0] > 'z')
+        return false;
+
+    for (char c : value)
+    {
+        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')
+            continue;
+        return false;
+    }
+    return true;
+}
+
+bool RaidDirectorV1_IsDocument(const Json::Value &root)
+{
+    return root.isObject() && root["schema"].isString() && root["schema"].asString() == "q2raid.director.v1";
+}
+
+bool RaidDirectorV1_ValidateMemory(const Json::Value &root, std::string &error)
+{
+    const Json::Value &memory = root["memory"];
+    if (memory.isNull())
+        return true;
+    if (!memory.isObject())
+    {
+        error = "memory must be an object";
+        return false;
+    }
+
+    for (const std::string &name : memory.getMemberNames())
+    {
+        if (!RaidDirectorV1_IsIdentifier(name))
+        {
+            error = fmt::format("memory id '{}' is not a V1 identifier", name);
+            return false;
+        }
+
+        const Json::Value &declaration = memory[name];
+        if (!declaration.isObject() || !declaration["type"].isString())
+        {
+            error = fmt::format("memory '{}' requires an object declaration with string type", name);
+            return false;
+        }
+        for (const std::string &field : declaration.getMemberNames())
+        {
+            if (field != "type" && field != "default")
+            {
+                error = fmt::format("memory '{}'.{} is not implemented by Runtime Foundation Proof 1", name, field);
+                return false;
+            }
+        }
+
+        const std::string type = declaration["type"].asString();
+        if (type != "number")
+        {
+            static const std::vector<std::string> closed_v1_types = {
+                "bool", "value", "player_ref", "entity_ref", "destination_ref",
+                "list", "set", "relation", "timer", "timer_family"
+            };
+            if (std::find(closed_v1_types.begin(), closed_v1_types.end(), type) != closed_v1_types.end())
+                error = fmt::format("memory '{}' uses valid V1 type '{}' not implemented by Runtime Foundation Proof 1", name, type);
+            else
+                error = fmt::format("memory '{}' uses unknown V1 type '{}'", name, type);
+            return false;
+        }
+        if (!declaration.isMember("default") || !declaration["default"].isNumeric() || !std::isfinite(declaration["default"].asDouble()))
+        {
+            error = fmt::format("memory '{}' number default must be finite numeric", name);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool RaidDirectorV1_ValidateExpression(const Json::Value &expression, const Json::Value &root, const std::string &context, std::string &error)
+{
+    if (expression.isNull() || expression.isBool() || expression.isNumeric() || expression.isString())
+        return true;
+    if (!expression.isObject() || expression.size() != 1)
+    {
+        error = fmt::format("{} must be a V1 literal or single-token expression", context);
+        return false;
+    }
+
+    if (expression.isMember("mem"))
+    {
+        if (!expression["mem"].isString())
+        {
+            error = fmt::format("{}.mem must be a string id", context);
+            return false;
+        }
+        const std::string name = expression["mem"].asString();
+        if (!root["memory"].isObject() || !root["memory"].isMember(name))
+        {
+            error = fmt::format("{} references undeclared Working Memory '{}'", context, name);
+            return false;
+        }
+        return true;
+    }
+
+    if (expression.isMember("director"))
+    {
+        if (!expression["director"].isString() || expression["director"].asString() != "state")
+        {
+            error = fmt::format("{}.director supports only 'state' in Runtime Foundation Proof 1", context);
+            return false;
+        }
+        return true;
+    }
+
+    if (expression.isMember("gte") || expression.isMember("eq"))
+    {
+        const char *op = expression.isMember("gte") ? "gte" : "eq";
+        const Json::Value &operands = expression[op];
+        if (!operands.isArray() || operands.size() != 2)
+        {
+            error = fmt::format("{}.{} requires exactly two operands", context, op);
+            return false;
+        }
+        return RaidDirectorV1_ValidateExpression(operands[0], root, fmt::format("{}.{}[0]", context, op), error) &&
+            RaidDirectorV1_ValidateExpression(operands[1], root, fmt::format("{}.{}[1]", context, op), error);
+    }
+
+    if (expression.isMember("and"))
+    {
+        const Json::Value &operands = expression["and"];
+        if (!operands.isArray() || operands.empty())
+        {
+            error = fmt::format("{}.and requires a non-empty operand array", context);
+            return false;
+        }
+        for (Json::ArrayIndex i = 0; i < operands.size(); ++i)
+            if (!RaidDirectorV1_ValidateExpression(operands[i], root, fmt::format("{}.and[{}]", context, i), error))
+                return false;
+        return true;
+    }
+
+    error = fmt::format("{} uses a valid-or-future V1 expression not implemented by Runtime Foundation Proof 1", context);
+    return false;
+}
+
+bool RaidDirectorV1_ValidateConsequences(const Json::Value &consequences, const Json::Value &root, const std::string &context, std::string &error)
+{
+    if (!consequences.isArray())
+    {
+        error = fmt::format("{} must be an array", context);
+        return false;
+    }
+
+    for (Json::ArrayIndex i = 0; i < consequences.size(); ++i)
+    {
+        const Json::Value &consequence = consequences[i];
+        const std::string item_context = fmt::format("{}[{}]", context, i);
+        if (!consequence.isObject())
+        {
+            error = fmt::format("{} must be an object", item_context);
+            return false;
+        }
+
+        if (consequence.isMember("mutate"))
+        {
+            for (const std::string &field : consequence.getMemberNames())
+                if (field != "mutate" && field != "memory" && field != "value")
+                {
+                    error = fmt::format("{}.{} is not valid for V1 mutate in Runtime Foundation Proof 1", item_context, field);
+                    return false;
+                }
+            if (!consequence["mutate"].isString() || consequence["mutate"].asString() != "add")
+            {
+                error = fmt::format("{}.mutate supports only 'add' in Runtime Foundation Proof 1", item_context);
+                return false;
+            }
+            if (!consequence["memory"].isString())
+            {
+                error = fmt::format("{}.memory must name declared Working Memory", item_context);
+                return false;
+            }
+            const std::string memory_name = consequence["memory"].asString();
+            if (!root["memory"].isObject() || !root["memory"].isMember(memory_name))
+            {
+                error = fmt::format("{} mutates undeclared Working Memory '{}'", item_context, memory_name);
+                return false;
+            }
+            if (!consequence.isMember("value") ||
+                !RaidDirectorV1_ValidateExpression(consequence["value"], root, item_context + ".value", error))
+                return false;
+            continue;
+        }
+
+        if (consequence.isMember("if"))
+        {
+            for (const std::string &field : consequence.getMemberNames())
+                if (field != "if" && field != "then" && field != "else")
+                {
+                    error = fmt::format("{}.{} is not valid for V1 if in Runtime Foundation Proof 1", item_context, field);
+                    return false;
+                }
+            if (!RaidDirectorV1_ValidateExpression(consequence["if"], root, item_context + ".if", error))
+                return false;
+            if (!consequence["then"].isArray())
+            {
+                error = item_context + ".then must be an array";
+                return false;
+            }
+            if (!RaidDirectorV1_ValidateConsequences(consequence["then"], root, item_context + ".then", error))
+                return false;
+            if (consequence.isMember("else") && !RaidDirectorV1_ValidateConsequences(consequence["else"], root, item_context + ".else", error))
+                return false;
+            continue;
+        }
+
+        if (consequence.isMember("transition"))
+        {
+            if (consequence.size() != 1 || !consequence["transition"].isString() ||
+                !root["states"].isMember(consequence["transition"].asString()))
+            {
+                error = fmt::format("{}.transition must name a defined V1 state", item_context);
+                return false;
+            }
+            continue;
+        }
+
+        if (consequence.isMember("op"))
+        {
+            if (!consequence["op"].isString())
+            {
+                error = item_context + ".op must be a string";
+                return false;
+            }
+            const std::string op = consequence["op"].asString();
+            if (op != "fire_target")
+            {
+                if (op == "set_field")
+                    error = fmt::format("{} V1 op 'set_field' is rejected legacy/raw authoring", item_context);
+                else
+                    error = fmt::format("{} V1 op '{}' is not implemented by Runtime Foundation Proof 1", item_context, op);
+                return false;
+            }
+            for (const std::string &field : consequence.getMemberNames())
+                if (field != "op" && field != "target")
+                {
+                    error = fmt::format("{}.{} is not valid for V1 fire_target", item_context, field);
+                    return false;
+                }
+            const Json::Value &target = consequence["target"];
+            if (!target.isObject() || target.size() != 1 || !target["target"].isString() || target["target"].asString().empty())
+            {
+                error = fmt::format("{}.target must be {{\"target\": \"<name>\"}}", item_context);
+                return false;
+            }
+            continue;
+        }
+
+        error = fmt::format("{} does not contain a Runtime Foundation Proof 1 V1 consequence", item_context);
+        return false;
+    }
+    return true;
+}
+
+bool RaidDirectorV1_Validate(const Json::Value &root, std::string &error)
+{
+    if (!root.isObject())
+    {
+        error = "V1 root must be an object";
+        return false;
+    }
+    if (!RaidDirectorV1_IsDocument(root))
+    {
+        error = "schema must equal 'q2raid.director.v1'";
+        return false;
+    }
+
+    static const std::vector<std::string> root_keys = {
+        "schema", "encounter", "description", "initial_state", "memory", "sequences",
+        "item_profiles", "gadget_profiles", "bindings", "states", "events", "reset"
+    };
+    for (const std::string &field : root.getMemberNames())
+    {
+        if (std::find(root_keys.begin(), root_keys.end(), field) == root_keys.end())
+        {
+            error = fmt::format("V1 root field '{}' is not in the closed schema", field);
+            return false;
+        }
+    }
+
+    if (!root["encounter"].isString() || !RaidDirectorV1_IsIdentifier(root["encounter"].asString()))
+    {
+        error = "encounter must be a V1 identifier";
+        return false;
+    }
+    if (root.isMember("description") && !root["description"].isString())
+    {
+        error = "description must be a string";
+        return false;
+    }
+    if (!root["initial_state"].isString() || !RaidDirectorV1_IsIdentifier(root["initial_state"].asString()))
+    {
+        error = "initial_state must be a V1 identifier";
+        return false;
+    }
+    if (!root["states"].isObject() || root["states"].empty())
+    {
+        error = "states must be a non-empty object";
+        return false;
+    }
+    if (!root["states"].isMember(root["initial_state"].asString()))
+    {
+        error = fmt::format("initial_state '{}' is not defined", root["initial_state"].asString());
+        return false;
+    }
+    if (!RaidDirectorV1_ValidateMemory(root, error))
+        return false;
+
+    const std::array<const char *, 3> object_foundation_roots = { "sequences", "item_profiles", "gadget_profiles" };
+    for (const char *field : object_foundation_roots)
+    {
+        if (root.isMember(field) && (!root[field].isObject() || !root[field].empty()))
+        {
+            error = fmt::format("{} must be an empty object in Runtime Foundation Proof 1", field);
+            return false;
+        }
+    }
+    if (root.isMember("bindings") && (!root["bindings"].isArray() || !root["bindings"].empty()))
+    {
+        error = "bindings must be an empty array in Runtime Foundation Proof 1";
+        return false;
+    }
+
+    for (const std::string &name : root["states"].getMemberNames())
+    {
+        if (!RaidDirectorV1_IsIdentifier(name))
+        {
+            error = fmt::format("state id '{}' is not a V1 identifier", name);
+            return false;
+        }
+        const Json::Value &state = root["states"][name];
+        if (!state.isObject())
+        {
+            error = fmt::format("state '{}' must be an object", name);
+            return false;
+        }
+        for (const std::string &field : state.getMemberNames())
+        {
+            if (field != "enter" && field != "exit")
+            {
+                error = fmt::format("state '{}'.{} is not implemented by Runtime Foundation Proof 1", name, field);
+                return false;
+            }
+        }
+        if (state.isMember("enter") && !RaidDirectorV1_ValidateConsequences(state["enter"], root, fmt::format("state '{}'.enter", name), error))
+            return false;
+        if (state.isMember("exit") && !RaidDirectorV1_ValidateConsequences(state["exit"], root, fmt::format("state '{}'.exit", name), error))
+            return false;
+    }
+
+    if (root.isMember("events") && !root["events"].isArray())
+    {
+        error = "events must be an array";
+        return false;
+    }
+    for (Json::ArrayIndex i = 0; i < root["events"].size(); ++i)
+    {
+        const Json::Value &listener = root["events"][i];
+        const std::string context = fmt::format("events[{}]", i);
+        if (!listener.isObject())
+        {
+            error = context + " must be an object";
+            return false;
+        }
+        if (listener.isMember("signal"))
+        {
+            error = context + ".signal is legacy syntax and is rejected by q2raid.director.v1";
+            return false;
+        }
+        if (listener.isMember("set_state"))
+        {
+            error = context + ".set_state is legacy syntax and is rejected by q2raid.director.v1";
+            return false;
+        }
+        for (const std::string &field : listener.getMemberNames())
+        {
+            if (field != "event" && field != "source" && field != "from_state" && field != "when" && field != "do")
+            {
+                error = fmt::format("{}.{} is a V1 listener feature not implemented by Runtime Foundation Proof 1", context, field);
+                return false;
+            }
+        }
+        if (!listener["event"].isString() || !RaidDirectorV1_IsIdentifier(listener["event"].asString()))
+        {
+            error = context + ".event must be a V1 event identifier";
+            return false;
+        }
+        if (listener["event"].asString() != "activate")
+        {
+            error = fmt::format("{}.event '{}' is valid-or-future V1 vocabulary not implemented by Runtime Foundation Proof 1", context, listener["event"].asString());
+            return false;
+        }
+        const Json::Value &source = listener["source"];
+        if (!source.isObject() || source.size() != 1 || !source["entity"].isString() || source["entity"].asString().empty())
+        {
+            error = context + ".source must be {\"entity\": \"<stable targetname>\"}";
+            return false;
+        }
+        if (listener.isMember("from_state") &&
+            (!listener["from_state"].isString() || !root["states"].isMember(listener["from_state"].asString())))
+        {
+            error = context + ".from_state must name a defined state";
+            return false;
+        }
+        if (listener.isMember("when") && !RaidDirectorV1_ValidateExpression(listener["when"], root, context + ".when", error))
+            return false;
+        if (listener.isMember("do") && !RaidDirectorV1_ValidateConsequences(listener["do"], root, context + ".do", error))
+            return false;
+    }
+
+    if (root.isMember("reset") && !RaidDirectorV1_ValidateConsequences(root["reset"], root, "reset", error))
+        return false;
+    return true;
+}
+
+void RaidDirectorV1_InitializeMemory()
+{
+    RaidDirectorV1_ResetMemory();
+}
+
+void RaidDirectorV1_ResetMemory()
+{
+    director.memory = Json::Value(Json::objectValue);
+    const Json::Value &declarations = director.document["memory"];
+    if (!declarations.isObject())
+        return;
+    for (const std::string &name : declarations.getMemberNames())
+        director.memory[name] = declarations[name]["default"];
+}
+
+Json::Value RaidDirectorV1_EvaluateExpression(const Json::Value &expression, const raid_director_v1_event_t *event)
+{
+    (void) event;
+    if (expression.isNull() || expression.isBool() || expression.isNumeric() || expression.isString())
+        return expression;
+    if (expression.isMember("mem"))
+        return director.memory[expression["mem"].asString()];
+    if (expression.isMember("director"))
+        return director.state;
+    if (expression.isMember("gte"))
+    {
+        const Json::Value left = RaidDirectorV1_EvaluateExpression(expression["gte"][0], event);
+        const Json::Value right = RaidDirectorV1_EvaluateExpression(expression["gte"][1], event);
+        return left.isNumeric() && right.isNumeric() && left.asDouble() >= right.asDouble();
+    }
+    if (expression.isMember("eq"))
+    {
+        const Json::Value left = RaidDirectorV1_EvaluateExpression(expression["eq"][0], event);
+        const Json::Value right = RaidDirectorV1_EvaluateExpression(expression["eq"][1], event);
+        if (left.isNumeric() && right.isNumeric())
+            return left.asDouble() == right.asDouble();
+        if (left.isBool() && right.isBool())
+            return left.asBool() == right.asBool();
+        if (left.isString() && right.isString())
+            return left.asString() == right.asString();
+        return left.isNull() && right.isNull();
+    }
+    if (expression.isMember("and"))
+    {
+        for (const Json::Value &operand : expression["and"])
+        {
+            const Json::Value value = RaidDirectorV1_EvaluateExpression(operand, event);
+            const bool truth = value.isBool() ? value.asBool() : value.isNumeric() ? value.asDouble() != 0.0 :
+                value.isString() ? !value.asString().empty() : !value.isNull();
+            if (!truth)
+                return false;
+        }
+        return true;
+    }
+    return Json::Value();
+}
+
+bool RaidDirectorV1_ExecuteConsequences(const Json::Value &consequences, const raid_director_v1_event_t *event)
+{
+    if (!consequences.isArray())
+        return false;
+
+    for (const Json::Value &consequence : consequences)
+    {
+        if (consequence.isMember("mutate"))
+        {
+            const std::string memory_name = consequence["memory"].asString();
+            const Json::Value value = RaidDirectorV1_EvaluateExpression(consequence["value"], event);
+            director.memory[memory_name] = director.memory[memory_name].asDouble() + value.asDouble();
+        }
+        else if (consequence.isMember("if"))
+        {
+            const Json::Value condition = RaidDirectorV1_EvaluateExpression(consequence["if"], event);
+            const bool truth = condition.isBool() ? condition.asBool() : condition.isNumeric() ? condition.asDouble() != 0.0 :
+                condition.isString() ? !condition.asString().empty() : !condition.isNull();
+            const Json::Value &branch = truth ? consequence["then"] : consequence["else"];
+            if (RaidDirectorV1_ExecuteConsequences(branch, event))
+                return true;
+        }
+        else if (consequence.isMember("transition"))
+        {
+            RaidDirectorV1_Transition(consequence["transition"].asString());
+            return true;
+        }
+        else if (consequence.isMember("op") && consequence["op"].asString() == "fire_target")
+        {
+            RaidDirectorV1_FireTarget(consequence["target"], event);
+        }
+    }
+    return false;
+}
+
+bool RaidDirectorV1_Transition(const std::string &state_name)
+{
+    if (!director.loaded || !director.document["states"].isMember(state_name))
+        return false;
+
+    const std::string previous = director.state;
+    RaidDirectorV1_ExecuteConsequences(director.document["states"][previous]["exit"], nullptr);
+    director.state = state_name;
+    gi.Com_PrintFmt("[raid] V1 state: '{}' -> '{}'\n", previous, director.state);
+    RaidDirectorV1_ExecuteConsequences(director.document["states"][director.state]["enter"], nullptr);
+    return true;
+}
+
+bool RaidDirectorV1_MatchListener(const Json::Value &listener, const raid_director_v1_event_t &event)
+{
+    if (listener["event"].asString() != event.event)
+        return false;
+    if (!event.source.valid || listener["source"]["entity"].asString() != event.source.targetname)
+        return false;
+    if (listener.isMember("from_state") && listener["from_state"].asString() != director.state)
+        return false;
+    if (listener.isMember("when"))
+    {
+        const Json::Value condition = RaidDirectorV1_EvaluateExpression(listener["when"], &event);
+        const bool truth = condition.isBool() ? condition.asBool() : condition.isNumeric() ? condition.asDouble() != 0.0 :
+            condition.isString() ? !condition.asString().empty() : !condition.isNull();
+        if (!truth)
+            return false;
+    }
+    return true;
+}
+
+void RaidDirectorV1_DispatchEvent(const raid_director_v1_event_t &event)
+{
+    const Json::Value &listeners = director.document["events"];
+    if (!listeners.isArray())
+        return;
+    for (const Json::Value &listener : listeners)
+        if (RaidDirectorV1_MatchListener(listener, event))
+            RaidDirectorV1_ExecuteConsequences(listener["do"], &event);
+}
+
+void RaidDirectorV1_FireTarget(const Json::Value &target, const raid_director_v1_event_t *event)
+{
+    edict_t *activator = nullptr;
+    if (event && event->actor.valid && event->actor.entity_number < globals.num_edicts)
+    {
+        edict_t *candidate = &g_edicts[event->actor.entity_number];
+        if (candidate->inuse && candidate->spawn_count == event->actor.spawn_count)
+            activator = candidate;
+    }
+    RaidDirector_FireTarget(target["target"].asString(), activator);
+}
+
+void RaidDirectorV1_DumpMemory()
+{
+    gi.Com_Print("[raid] V1 Working Memory:\n");
+    for (const std::string &name : director.memory.getMemberNames())
+    {
+        const Json::Value &value = director.memory[name];
+        if (value.isNumeric())
+            gi.Com_PrintFmt("[raid]   {} = {}\n", name, value.asDouble());
+        else if (value.isBool())
+            gi.Com_PrintFmt("[raid]   {} = {}\n", name, value.asBool());
+        else if (value.isString())
+            gi.Com_PrintFmt("[raid]   {} = '{}'\n", name, value.asString());
+        else
+            gi.Com_PrintFmt("[raid]   {} = <non-scalar>\n", name);
+    }
+}
+
 std::filesystem::path RaidDirector_ResolvePath(const char *path)
 {
     std::filesystem::path requested(path ? path : "");
@@ -1103,6 +1736,8 @@ void RaidDirector_ResetForMap(const char *mapname)
     director.encounter_name.clear();
     director.state.clear();
     director.document = Json::Value();
+    director.memory = Json::Value(Json::objectValue);
+    director.dialect = raid_director_dialect_t::none;
     director.mapname = mapname ? mapname : "";
 }
 
@@ -1222,8 +1857,25 @@ void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t
     if (!director.loaded || !source || !source->targetname || !signal)
         return;
 
-    queued_events.push_back({ source->targetname, signal,
-        activator ? activator->s.number : 0, activator ? activator->spawn_count : 0 });
+    queued_raid_event_t queued;
+    queued.source = source->targetname;
+    queued.signal = signal;
+    queued.activator_number = activator ? activator->s.number : 0;
+    queued.activator_spawn_count = activator ? activator->spawn_count : 0;
+    if (director.dialect == raid_director_dialect_t::v1)
+    {
+        queued.v1.event = signal;
+        queued.v1.source = { true, source->s.number, source->spawn_count, source->targetname };
+        queued.v1.position = source->s.origin;
+        if (activator)
+        {
+            queued.v1.actor = { true, activator->s.number, activator->spawn_count,
+                activator->targetname ? activator->targetname : "" };
+            if (activator->client)
+                queued.v1.player = queued.v1.actor;
+        }
+    }
+    queued_events.push_back(std::move(queued));
     if (dispatching_events)
         return;
 
@@ -1233,6 +1885,11 @@ void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t
     {
         queued_raid_event_t queued = std::move(queued_events.front());
         queued_events.pop_front();
+        if (director.dialect == raid_director_dialect_t::v1)
+        {
+            RaidDirectorV1_DispatchEvent(queued.v1);
+            continue;
+        }
         edict_t *event_activator = nullptr;
         if (queued.activator_number && queued.activator_number < globals.num_edicts)
         {
@@ -1312,8 +1969,23 @@ bool RaidDirector_Load(const char *path)
         return false;
     }
 
+    raid_director_dialect_t dialect = raid_director_dialect_t::legacy;
     std::string validation_error;
-    if (!RaidDirector_Validate(root, validation_error))
+    if (root.isMember("schema"))
+    {
+        if (!root["schema"].isString() || root["schema"].asString() != "q2raid.director.v1")
+        {
+            gi.Com_PrintFmt("[raid] Invalid encounter JSON '{}': unsupported Director schema\n", resolved.string());
+            return false;
+        }
+        dialect = raid_director_dialect_t::v1;
+        if (!RaidDirectorV1_Validate(root, validation_error))
+        {
+            gi.Com_PrintFmt("[raid] Invalid V1 encounter JSON '{}': {}\n", resolved.string(), validation_error);
+            return false;
+        }
+    }
+    else if (!RaidDirector_Validate(root, validation_error))
     {
         gi.Com_PrintFmt("[raid] Invalid encounter JSON '{}': {}\n", resolved.string(), validation_error);
         return false;
@@ -1321,15 +1993,22 @@ bool RaidDirector_Load(const char *path)
 
     RaidDirector_ClearDocument();
     director.document = std::move(root);
+    director.dialect = dialect;
     director.script_path = path;
     director.encounter_name = director.document.get("encounter", director.mapname).asString();
     director.state = director.document["initial_state"].asString();
     director.loaded = true;
+    if (director.dialect == raid_director_dialect_t::v1)
+        RaidDirectorV1_InitializeMemory();
 
     RaidMonsters_PrepareRosters();
-    RaidDirector_ExecuteEnter(director.state, nullptr);
+    if (director.dialect == raid_director_dialect_t::v1)
+        RaidDirectorV1_ExecuteConsequences(director.document["states"][director.state]["enter"], nullptr);
+    else
+        RaidDirector_ExecuteEnter(director.state, nullptr);
 
-    gi.Com_PrintFmt("[raid] Loaded encounter '{}' from '{}' (initial state '{}', {} states)\n",
+    gi.Com_PrintFmt("[raid] Loaded {} encounter '{}' from '{}' (initial state '{}', {} states)\n",
+        director.dialect == raid_director_dialect_t::v1 ? "V1" : "legacy",
         director.encounter_name,
         resolved.string(),
         director.state,
@@ -1360,7 +2039,7 @@ bool RaidDirector_ResetEncounter()
         return false;
     }
 
-    if (director.document["states"].isMember(director.state))
+    if (director.dialect != raid_director_dialect_t::v1 && director.document["states"].isMember(director.state))
         RaidDirector_ExecuteOperations(director.document["states"][director.state]["exit"],
             fmt::format("state '{}' exit", director.state), nullptr);
 
@@ -1377,8 +2056,17 @@ bool RaidDirector_ResetEncounter()
     RaidDirector_RestorePlayers();
     RaidDirector_ClearTransientState();
     director.state = director.document["initial_state"].asString();
-    RaidDirector_ExecuteOperations(director.document["reset"], "encounter reset", nullptr);
-    RaidDirector_ExecuteEnter(director.state, nullptr);
+    if (director.dialect == raid_director_dialect_t::v1)
+    {
+        RaidDirectorV1_ResetMemory();
+        RaidDirectorV1_ExecuteConsequences(director.document["reset"], nullptr);
+        RaidDirectorV1_ExecuteConsequences(director.document["states"][director.state]["enter"], nullptr);
+    }
+    else
+    {
+        RaidDirector_ExecuteOperations(director.document["reset"], "encounter reset", nullptr);
+        RaidDirector_ExecuteEnter(director.state, nullptr);
+    }
     gi.Com_PrintFmt("[raid] Encounter '{}' reset to initial state '{}'\n", director.encounter_name, director.state);
     return true;
 }
@@ -1395,6 +2083,9 @@ bool RaidDirector_SetState(const char *state_name)
         gi.Com_PrintFmt("[raid] Unknown Director state '{}'\n", state_name ? state_name : "");
         return false;
     }
+
+    if (director.dialect == raid_director_dialect_t::v1)
+        return RaidDirectorV1_Transition(state_name);
 
     const std::string previous = director.state;
     RaidDirector_ExecuteOperations(director.document["states"][previous]["exit"], fmt::format("state '{}' exit", previous), nullptr);
@@ -1419,9 +2110,12 @@ void RaidDirector_TestFlash(bool dark)
 
 void RaidDirector_Dump()
 {
-    gi.Com_PrintFmt("[raid] Director: initialized={}, loaded={}, map='{}', encounter='{}', state='{}', script='{}'\n",
+    const char *dialect = director.dialect == raid_director_dialect_t::v1 ? "v1" :
+        director.dialect == raid_director_dialect_t::legacy ? "legacy" : "none";
+    gi.Com_PrintFmt("[raid] Director: initialized={}, loaded={}, dialect='{}', map='{}', encounter='{}', state='{}', script='{}'\n",
         director.initialized,
         director.loaded,
+        dialect,
         director.mapname,
         director.encounter_name,
         director.state,
@@ -1434,6 +2128,8 @@ void RaidDirector_Dump()
     for (const std::string &name : director.document["states"].getMemberNames())
         gi.Com_PrintFmt(" {}{}", name, name == director.state ? "*" : "");
     gi.Com_Print("\n");
+    if (director.dialect == raid_director_dialect_t::v1)
+        RaidDirectorV1_DumpMemory();
 }
 
 void RaidDirector_WriteSave(Json::Value &output)
