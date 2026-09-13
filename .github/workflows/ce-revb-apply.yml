@@ -1,0 +1,102 @@
+name: Apply C/E Revision B candidate
+
+on:
+  push:
+    branches:
+      - 'tmp/ce-revb-apply-20260913'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out helper payload
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preserve reviewed Revision B payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .github/ce-revb/Q2RAID_DIRECTOR_V2_CE_SOURCE_ASSEMBLY_REV_B_2026-09-13.zip /tmp/ce-revb.zip
+          echo 'c6a0b1d9df20ab57492f0a306db4f4731d09779f7971e2978d2f4658959781db  /tmp/ce-revb.zip' | sha256sum -c -
+          rm -rf /tmp/ce-revb
+          mkdir -p /tmp/ce-revb
+          unzip -q /tmp/ce-revb.zip -d /tmp/ce-revb
+
+      - name: Apply reviewed candidate to frozen work-unit base
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=b42eb84fbd0220743f5e45444e79e5c79f4f7dc6
+          TARGET='wu/director-v2-contracts-c-e-01'
+          git checkout -B "$TARGET" "$BASE"
+          test "$(git rev-parse HEAD)" = "$BASE"
+          test -z "$(git status --porcelain)"
+          python3 /tmp/ce-revb/q2raid-ce-assembly/apply_ce_source_assembly_revB.py "$GITHUB_WORKSPACE"
+          git diff --check
+
+      - name: Enforce bounded changed-file set
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/expected.txt <<'EOF'
+          raid/Q2RAID_INTERFACE_REGISTRY_2026-09-05.md
+          raid/encounters/CE_A.json
+          raid/encounters/CE_B.json
+          raid/encounters/CE_BAD.json
+          rerelease/g_svcmds.cpp
+          rerelease/raid_director.cpp
+          rerelease/raid_director.h
+          EOF
+          git status --porcelain | sed -E 's/^.. //' | sort > /tmp/actual.txt
+          echo 'Expected changed files:'
+          cat /tmp/expected.txt
+          echo 'Actual changed files:'
+          cat /tmp/actual.txt
+          diff -u /tmp/expected.txt /tmp/actual.txt
+
+      - name: Guard interface and authority boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -R -n -E 'raid_ctx_(load|activate|unload|reset|dump|selftest)|raid_v2_event_(dump|selftest)|raid_event_epoch_dump' rerelease raid/Q2RAID_INTERFACE_REGISTRY_2026-09-05.md
+          ! grep -n -E 'RaidDirector_FireTarget|G_UseTargets' /tmp/ce-revb/q2raid-ce-assembly/rerelease/raid_director_ce_internal.revB.inc /tmp/ce-revb/q2raid-ce-assembly/rerelease/raid_director_ce_public.revB.inc
+          ! grep -n -E 'RaidCarry_ResetAll|RaidHover_Reset|RaidMonsters_ClearMap|RaidHats_ClearMap|RaidDowned_ResetAll|RaidGrenade_ResetAll|RaidDirector_ClearDocument' /tmp/ce-revb/q2raid-ce-assembly/rerelease/raid_director_ce_internal.revB.inc /tmp/ce-revb/q2raid-ce-assembly/rerelease/raid_director_ce_public.revB.inc
+          ! grep -n -E 'RaidDirectorV2_(EvaluateExpression|ExecuteConsequences|Transition)' rerelease/raid_director.cpp
+          python3 -m json.tool raid/encounters/CE_A.json >/dev/null
+          python3 -m json.tool raid/encounters/CE_B.json >/dev/null
+          python3 -m json.tool raid/encounters/CE_BAD.json >/dev/null
+
+      - name: Commit exact bounded work unit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'q2raid-bounded-wu'
+          git config user.email 'q2raid-bounded-wu@users.noreply.github.com'
+          git add \
+            rerelease/raid_director.cpp \
+            rerelease/raid_director.h \
+            rerelease/g_svcmds.cpp \
+            raid/Q2RAID_INTERFACE_REGISTRY_2026-09-05.md \
+            raid/encounters/CE_A.json \
+            raid/encounters/CE_B.json \
+            raid/encounters/CE_BAD.json
+          git diff --cached --check
+          git diff --cached --name-only | sort > /tmp/staged.txt
+          diff -u /tmp/expected.txt /tmp/staged.txt
+          git commit -m 'Implement Director V2 Contracts C/E'
+          echo "C/E commit: $(git rev-parse HEAD)"
+          echo "C/E parent: $(git rev-parse HEAD^)"
+          echo "C/E tree: $(git rev-parse HEAD^{tree})"
+
+      - name: Push work unit fast-forward only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin wu/director-v2-contracts-c-e-01
+          test "$(git rev-parse FETCH_HEAD)" = 'b42eb84fbd0220743f5e45444e79e5c79f4f7dc6'
+          git push origin HEAD:refs/heads/wu/director-v2-contracts-c-e-01
