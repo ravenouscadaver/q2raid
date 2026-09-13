@@ -229,6 +229,9 @@ Server commands:
 - `raid_reload`
 - `raid_reset`
 - `raid_dump`
+- `raid_event_caps` — Contract-D operator diagnostic; dumps the closed event-capability/canonical-producer registry. Not encounter-authoring grammar.
+- `raid_event_check` — Contract-D operator diagnostic; checks a current-map `targetname` + signal against physical capability metadata. Not encounter-authoring grammar.
+- `raid_event_selftest` — Contract-D operator diagnostic; non-mutating registry/provenance self-test. Not encounter-authoring grammar.
 - `raid_monster_dump`
 - `raid_set_state`
 - `raid_bot_add`

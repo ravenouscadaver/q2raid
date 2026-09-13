@@ -31,5 +31,14 @@ bool RaidDirector_SetState(const char *state_name);
 void RaidDirector_Dump();
 void RaidDirector_TestFlash(bool dark);
 
+// Director V2 Contract-D capability substrate. These functions are deliberately
+// observational: they validate the closed physical event-capability vocabulary
+// and current-map bindings without changing V1 dispatch or gameplay state.
+bool RaidDirector_EventCapabilityRegistryValid();
+bool RaidDirector_EventCapabilitySupported(const char *classname, const char *signal, const char **producer = nullptr);
+void RaidDirector_DumpEventCapabilities();
+void RaidDirector_CheckEventCapability(const char *targetname, const char *signal);
+bool RaidDirector_RunEventCapabilitySelfTest();
+
 void RaidDirector_WriteSave(Json::Value &output);
 void RaidDirector_ReadSave(const Json::Value &input);
