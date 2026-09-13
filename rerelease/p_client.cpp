@@ -1,3 +1,10 @@
+// Q2RAID MODIFIED
+// RAID_STATUS: IMPLEMENTED_UNBUILT
+// RAID_STATUS_DATE: 2026-08-29
+// RAID_FEATURE: terminal_mouse_input_and_bleedout_corpse
+// RAID_EVIDENCE: user runtime reports after build 88
+// RAID_PROTECTION: READ_ONLY_UNLESS_USER_AUTHORIZED
+
 // Copyright (c) ZeniMax Media Inc.
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
@@ -698,12 +705,13 @@ DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 			self->client->anim_priority = ANIM_DEATH;
 			if (raid_bleedout_corpse)
 			{
-				switch (irandom(3))
-				{
-				case 0: self->s.frame = self->client->anim_end = FRAME_death106; break;
-				case 1: self->s.frame = self->client->anim_end = FRAME_death206; break;
-				case 2: self->s.frame = self->client->anim_end = FRAME_death308; break;
-				}
+				// Bleedout has already shown the downed/crawl presentation. Land
+				// directly on the ordinary prone player corpse and hold that exact
+				// model frame; do not replay a stand/fall or choose the kneeling pose.
+				self->s.modelindex = MODELINDEX_PLAYER;
+				self->s.frame = FRAME_death106;
+				self->s.old_frame = FRAME_death106;
+				self->client->anim_end = FRAME_death106;
 			}
 			else if (self->client->ps.pmove.pm_flags & PMF_DUCKED)
 			{
@@ -3292,10 +3300,9 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 	client->latched_buttons |= client->buttons & ~client->oldbuttons;
 	client->cmd = *ucmd;
 
-	if (RaidUI_HandleInput(ent, ucmd))
-		return;
+	const bool raid_ui_captured_input = RaidUI_HandleInput(ent, ucmd);
 
-	if (client->menu && ent->movetype != MOVETYPE_NOCLIP)
+	if (client->menu && ent->movetype != MOVETYPE_NOCLIP && !raid_ui_captured_input)
 	{
 		client->ps.pmove.pm_type = PM_FREEZE;
 		ent->velocity = {};
