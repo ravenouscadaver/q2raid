@@ -1,0 +1,13 @@
+{
+  "name": "q2raid-terminal-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "npm run build && node server.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

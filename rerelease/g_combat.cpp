@@ -3,6 +3,7 @@
 // g_combat.c
 
 #include "g_local.h"
+#include "raid_downed.h"
 
 /*
 ============
@@ -749,6 +750,9 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
 
 		if ((targ->flags & FL_IMMORTAL) && targ->health <= 0)
 			targ->health = 1;
+
+		if (client && targ->health <= 0)
+			RaidDowned_InterceptFatalDamage(targ);
 
 		// PGM - spheres need to know who to shoot at
 		if (client && client->owned_sphere)

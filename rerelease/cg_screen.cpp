@@ -1,6 +1,7 @@
 // Copyright (c) ZeniMax Media Inc.
 // Licensed under the GNU General Public License 2.0.
 #include "cg_local.h"
+#include "cg_raid_ui.h"
 
 constexpr int32_t STAT_MINUS      = 10;  // num frame for '-' stats digit
 constexpr const char *sb_nums[2][11] =
@@ -368,7 +369,7 @@ static cl_centerprint_t &CG_QueueCenterPrint(int isplit, bool instant)
             return center;
     }
     
-    // none, so update the current one (the new end of buffer)
+    // none left, so update the current one (the new end of buffer)
     // and skip ahead
     auto &center = icl.centers[icl.center_index.value()];
     icl.center_index = (icl.center_index.value() + 1) % MAX_CENTER_PRINTS;
@@ -396,7 +397,6 @@ void CG_ParseCenterPrint (const char *str, int isplit, bool instant) // [Sam-KEX
 
     // split the string into lines
     size_t line_start = 0;
-
     std::string string(str);
 
     center.binds.clear();
@@ -1729,7 +1729,85 @@ void CG_DrawHUD (int32_t isplit, const cg_server_data_t *data, vrect_t hud_vrect
 
     // draw HUD
     if (!cl_skipHud->integer && !(ps->stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD))
+    {
         CG_ExecuteLayoutString(cgi.get_configstring(CS_STATUSBAR), hud_vrect, hud_safe, scale, playernum, ps);
+
+        constexpr std::array<player_stat_t, 4> status_stats = {
+            STAT_RAID_STATUS, STAT_RAID_STATUS_2, STAT_RAID_STATUS_3, STAT_RAID_STATUS_4
+        };
+        constexpr std::array<player_stat_t, 4> status_time_stats = {
+            STAT_RAID_STATUS_TIME, STAT_RAID_STATUS_TIME_2, STAT_RAID_STATUS_TIME_3, STAT_RAID_STATUS_TIME_4
+        };
+        int status_row = 0;
+        for (size_t slot = 0; slot < status_stats.size(); ++slot)
+        {
+            const int code = ps->stats[status_stats[slot]];
+            if (!code)
+                continue;
+            const char *label = code == 1 ? "VOLATILE" : code == 2 ? "DOOMSDAY" : "STATUS";
+            const std::string status = fmt::format("{}  {:02}", label, std::max<int16_t>(0, ps->stats[status_time_stats[slot]]));
+            cgi.SCR_DrawFontString(status.c_str(),
+                (hud_vrect.x + (hud_vrect.width / 2)) * scale,
+                (hud_vrect.y + hud_vrect.height - 52 - (status_row * 12)) * scale,
+                scale, code == 1 ? rgba_t{ 255, 196, 64, 255 } : rgba_t{ 255, 64, 64, 255 }, true, text_align_t::CENTER);
+            ++status_row;
+        }
+
+        const int hat_name_slot = ps->stats[STAT_RAID_HAT_NAME] - 1;
+        if (hat_name_slot >= 0 && hat_name_slot < 32)
+        {
+            const int packed_rank = std::max<int>(0, ps->stats[STAT_RAID_HAT_RANK]);
+            const int rank = std::clamp(packed_rank & 3, 0, 3);
+            const bool has_shield = (packed_rank & (1 << 14)) != 0;
+            constexpr std::array<rgba_t, 4> rank_colors = {
+                rgba_t{ 255, 255, 255, 255 }, rgba_t{ 255, 80, 64, 255 },
+                rgba_t{ 80, 180, 255, 255 }, rgba_t{ 210, 96, 255, 255 }
+            };
+            const char *name = cgi.get_configstring(CONFIG_RAID_HAT_NAME + hat_name_slot);
+            const float center_x = (hud_vrect.x + hud_vrect.width * 0.5f) * scale;
+            const float name_y = (hud_vrect.y + hud_vrect.height * 0.5f + 42.0f) * scale;
+            cgi.SCR_DrawFontString(name && *name ? name : "RAID TARGET", center_x, name_y,
+                scale, rank_colors[rank], true, text_align_t::CENTER);
+
+            const float width = 144.0f * scale;
+            const float height = 5.0f * scale;
+            const float x = center_x - width * 0.5f;
+            const float y = name_y + cgi.SCR_FontLineHeight(scale) + 2.0f * scale;
+            const float health = std::clamp<int>(ps->stats[STAT_RAID_HAT_HEALTH], 0, 1000) / 1000.0f;
+            const float shield = std::clamp((packed_rank & 0x3ffc) >> 2, 0, 1000) / 1000.0f;
+            cgi.SCR_DrawColorPic(x - scale, y - scale, width + 2.0f * scale, height + 2.0f * scale,
+                "_white", rgba_t{ 0, 0, 0, 220 });
+            cgi.SCR_DrawColorPic(x, y, width, height, "_white", rgba_t{ 48, 48, 48, 230 });
+            if (health > 0.0f)
+                cgi.SCR_DrawColorPic(x, y, width * health, height, "_white", rank_colors[rank]);
+            if (has_shield)
+            {
+                constexpr int shield_stops = 45;
+                const int active_stops = static_cast<int>(std::ceil(shield * shield_stops));
+                const std::string empty_wrapper(shield_stops, '.');
+                const std::string active_wrapper(active_stops, '.');
+                const float shield_y = y + height * 0.5f - cgi.SCR_FontLineHeight(scale) * 0.5f;
+                const float shield_x = center_x - cgi.SCR_MeasureFontString(empty_wrapper.c_str(), scale).x * 0.5f;
+                // Shield is a separate font presentation drawn in front of
+                // the health bar. Rank colour remains exclusively on the name
+                // and health presentation above.
+                cgi.SCR_DrawFontString(empty_wrapper.c_str(), shield_x, shield_y,
+                    scale, rgba_t{ 24, 68, 82, 230 }, true, text_align_t::LEFT);
+                if (!active_wrapper.empty())
+                    cgi.SCR_DrawFontString(active_wrapper.c_str(), shield_x, shield_y,
+                        scale, rgba_t{ 96, 224, 255, 255 }, true, text_align_t::LEFT);
+            }
+        }
+
+        const char *raid_message = cgi.get_configstring(CONFIG_RAID_MESSAGE);
+        if (raid_message && *raid_message)
+            cgi.SCR_DrawFontString(raid_message,
+                (hud_vrect.x + 100) * scale,
+                (hud_vrect.y + hud_vrect.height - 76) * scale,
+                scale, rgba_white, true, text_align_t::CENTER);
+    }
+
+    CG_RaidUI_Draw(ps, hud_vrect, scale);
 
     // draw centerprint string
     CG_CheckDrawCenterString(ps, hud_vrect, hud_safe, isplit, scale);
@@ -1759,6 +1837,7 @@ void CG_TouchPics()
             cgi.Draw_RegisterPic(str);
 
     cgi.Draw_RegisterPic("inventory");
+    CG_RaidUI_TouchPics();
 
     font_y_offset = (cgi.SCR_FontLineHeight(1) - CONCHAR_WIDTH) / 2;
 }

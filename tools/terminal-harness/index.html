@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q2Raid Terminal Harness</title>
+  <link rel="stylesheet" href="/tools/terminal-harness/styles.css">
+</head>
+<body>
+  <header>
+    <strong>Q2Raid Terminal Harness</strong>
+    <span class="badge">LOCAL SDK</span>
+  </header>
+  <main>
+    <section class="stage">
+      <div class="toolbar">
+        <label>Terminal JSON
+          <input id="terminal-path" value="raid/terminals/entrance_terminal.json" spellcheck="false">
+        </label>
+        <button id="load">Load / Reload</button>
+        <button id="reset">Reset</button>
+      </div>
+      <div class="canvas-shell">
+        <canvas id="terminal" width="975" height="1024" aria-label="Q2Raid terminal preview"></canvas>
+      </div>
+      <p class="hint">Mouse: point + click keys. Physical keyboard input is also accepted. ESC cancels the harness session.</p>
+    </section>
+    <aside>
+      <h2>State</h2>
+      <pre id="state"></pre>
+      <h2>Runtime adapter</h2>
+      <pre id="events"></pre>
+      <h2>Assets</h2>
+      <pre id="assets"></pre>
+    </aside>
+  </main>
+  <script type="module" src="/tools/terminal-harness/dist/main.js"></script>
+</body>
+</html>

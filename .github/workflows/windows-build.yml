@@ -1,0 +1,72 @@
+name: Windows game DLL
+
+on:
+  push:
+    branches:
+      - main
+      - director-scaffold
+      - 'wu/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Enable MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" integrate install
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+            --triplet x64-windows-static `
+            --x-manifest-root="$env:GITHUB_WORKSPACE\rerelease" `
+            --x-install-root="$env:GITHUB_WORKSPACE\vcpkg_installed"
+
+      - name: Stamp build identity
+        shell: pwsh
+        run: |
+          @"
+          #pragma once
+          #define Q2RAID_BUILD_SHA "$env:GITHUB_SHA"
+          #define Q2RAID_BUILD_TAG "Q2RAID"
+          "@ | Set-Content -Path "rerelease\raid_build_id.h" -Encoding ascii
+
+      - name: Build release DLL
+        shell: pwsh
+        run: |
+          msbuild rerelease\game.sln `
+            /m `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /p:VcpkgEnableManifest=false `
+            /p:VcpkgTriplet=x64-windows-static `
+            /p:VcpkgInstalledDir="$env:GITHUB_WORKSPACE\vcpkg_installed\"
+
+      - name: Write build manifest
+        shell: pwsh
+        run: |
+          $dllHash = (Get-FileHash "game_x64.dll" -Algorithm SHA256).Hash.ToLower()
+          @"
+          Q2RAID_BUILD_SHA=$env:GITHUB_SHA
+          Q2RAID_BUILD_REF=$env:GITHUB_REF
+          Q2RAID_WORKFLOW_RUN_ID=$env:GITHUB_RUN_ID
+          Q2RAID_WORKFLOW_RUN_NUMBER=$env:GITHUB_RUN_NUMBER
+          Q2RAID_DLL_SHA256=$dllHash
+          "@ | Set-Content -Path "Q2RAID_BUILD_MANIFEST.txt" -Encoding ascii
+          Get-Content "Q2RAID_BUILD_MANIFEST.txt"
+
+      - name: Upload game DLL and build manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: q2raid-game-x64
+          path: |
+            game_x64.dll
+            game_x64.pdb
+            Q2RAID_BUILD_MANIFEST.txt
+          if-no-files-found: error

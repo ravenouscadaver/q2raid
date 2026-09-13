@@ -1,0 +1,37 @@
+{
+  "encounter": "Carnage Report Proof",
+  "initial_state": "active",
+  "states": {
+    "active": {
+      "enter": [
+        {
+          "op": "post_encounter_message",
+          "text": "CARNAGE TRACKER ACTIVE",
+          "duration": 2.0,
+          "priority": 1
+        }
+      ]
+    },
+    "mechanic_complete": {
+      "enter": [
+        {
+          "op": "post_encounter_message",
+          "text": "MECHANIC COMPLETE",
+          "duration": 2.0,
+          "priority": 1
+        }
+      ]
+    },
+    "wipe": {
+      "enter": [
+        {
+          "op": "post_encounter_message",
+          "text": "THE DARKNESS CONSUMES YOU",
+          "duration": 2.5,
+          "priority": 10
+        }
+      ]
+    }
+  },
+  "reset": []
+}

@@ -3,6 +3,14 @@
 #include "g_local.h"
 #include "m_player.h"
 #include "bots/bot_includes.h"
+#include "raid_director.h"
+#include "raid_thirdperson.h"
+#include "raid_items.h"
+#include "raid_downed.h"
+#include "raid_grenade.h"
+#include "raid_reconstruction.h"
+#include "raid_bots.h"
+#include "raid_ui.h"
 
 void SP_misc_teleporter_dest(edict_t *ent);
 
@@ -533,6 +541,13 @@ player_die
 */
 DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t &point, const mod_t &mod) -> void
 {
+	const bool raid_bleedout_corpse = RaidDowned_IsBleedoutDeath(self);
+	RaidUI_Close(self);
+	RaidGrenade_OnDeath(self);
+	if (!self->deadflag)
+		RaidReconstruction_OnDeath(self);
+	RaidDowned_OnDeath(self);
+	RaidCarry_OnPlayerDeath(self);
 	PlayerTrail_Destroy(self);
 
 	self->avelocity = {};
@@ -681,7 +696,16 @@ DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 		{
 			// start a death animation
 			self->client->anim_priority = ANIM_DEATH;
-			if (self->client->ps.pmove.pm_flags & PMF_DUCKED)
+			if (raid_bleedout_corpse)
+			{
+				switch (irandom(3))
+				{
+				case 0: self->s.frame = self->client->anim_end = FRAME_death106; break;
+				case 1: self->s.frame = self->client->anim_end = FRAME_death206; break;
+				case 2: self->s.frame = self->client->anim_end = FRAME_death308; break;
+				}
+			}
+			else if (self->client->ps.pmove.pm_flags & PMF_DUCKED)
 			{
 				self->s.frame = FRAME_crdeath1 - 1;
 				self->client->anim_end = FRAME_crdeath5;
@@ -736,10 +760,12 @@ DIE(player_die) (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 
 			if (allPlayersDead) // allow respawns for telefrags and weird shit
 			{
-				level.coop_level_restart_time = level.time + 5_sec;
-
-				for (auto player : active_players())
-					gi.LocCenter_Print(player, "$g_coop_lose");
+				if (!RaidDirector_OnPartyWipe())
+				{
+					level.coop_level_restart_time = level.time + 5_sec;
+					for (auto player : active_players())
+						gi.LocCenter_Print(player, "$g_coop_lose");
+				}
 			}
 		
 			// in 3 seconds, attempt a respawn or put us into
@@ -1946,6 +1972,18 @@ static bool use_squad_respawn = false;
 static bool spawn_from_begin = false;
 static vec3_t squad_respawn_position, squad_respawn_angles;
 
+void RaidRespawnAt(edict_t *ent, const vec3_t &origin, const vec3_t &angles)
+{
+	if (!ent || !ent->client)
+		return;
+	use_squad_respawn = true;
+	squad_respawn_position = origin;
+	squad_respawn_angles = angles;
+	ent->client->pers.health = ent->client->pers.max_health = ent->max_health;
+	respawn(ent);
+	use_squad_respawn = false;
+}
+
 inline void PutClientOnSpawnPoint(edict_t *ent, const vec3_t &spawn_origin, const vec3_t &spawn_angles)
 {
 	gclient_t *client = ent->client;
@@ -2929,8 +2967,16 @@ Will not be called between levels.
 */
 void ClientDisconnect(edict_t *ent)
 {
+	RaidGrenade_Disconnect(ent);
+	RaidDirector_OnClientDisconnect(ent);
+	RaidDowned_Disconnect(ent);
+	RaidReconstruction_OnDisconnect(ent);
+	RaidUI_Disconnect(ent);
 	if (!ent->client)
 		return;
+
+	RaidCarry_Drop(ent);
+	RaidThirdPerson_Disconnect(ent);
 
 	// ZOID
 	CTFDeadDropFlag(ent);
@@ -3144,6 +3190,88 @@ This will be called once for each client frame, which will
 usually be a couple times for each server frame.
 ==============
 */
+namespace
+{
+struct raid_jump_state_t
+{
+    bool jump_held = false;
+    bool double_used = false;
+    bool coyote_used = false;
+    bool departed_by_jump = false;
+    bool long_jump_pending = false;
+    gtime_t last_grounded;
+};
+
+raid_jump_state_t raid_jump_states[MAX_CLIENTS];
+
+void RaidMovement_FilterJump(edict_t *ent, pmove_t &pm)
+{
+    static cvar_t *double_jump = gi.cvar("raid_double_jump", "0", CVAR_NOFLAGS);
+    static cvar_t *double_velocity = gi.cvar("raid_double_jump_velocity", "300", CVAR_NOFLAGS);
+    static cvar_t *coyote_time = gi.cvar("raid_coyote_time", "0", CVAR_NOFLAGS);
+    static cvar_t *coyote_window = gi.cvar("raid_coyote_window", "0.08", CVAR_NOFLAGS);
+    static cvar_t *long_jump = gi.cvar("raid_long_jump", "0", CVAR_NOFLAGS);
+    static cvar_t *long_jump_min_speed = gi.cvar("raid_long_jump_min_speed", "120", CVAR_NOFLAGS);
+    raid_jump_state_t &state = raid_jump_states[ent->s.number - 1];
+    const bool grounded = ent->groundentity != nullptr;
+    const bool jump_down = !!(pm.cmd.buttons & BUTTON_JUMP);
+    const bool jump_pressed = jump_down && !state.jump_held;
+    state.long_jump_pending = false;
+
+    if (grounded)
+    {
+        state.last_grounded = level.time;
+        state.double_used = false;
+        state.coyote_used = false;
+        state.departed_by_jump = jump_pressed;
+        const float planar_speed = vec3_t{ pm.s.velocity[0], pm.s.velocity[1], 0 }.length();
+        if (long_jump->integer && jump_pressed && (pm.cmd.buttons & BUTTON_CROUCH) &&
+            pm.cmd.forwardmove > 0 && planar_speed >= std::clamp(long_jump_min_speed->value, 1.0f, 1000.0f))
+        {
+            state.long_jump_pending = true;
+            state.double_used = true;
+        }
+    }
+    else if (jump_pressed && pm.s.pm_type == PM_NORMAL)
+    {
+        const bool can_coyote = coyote_time->integer && !state.departed_by_jump && !state.coyote_used &&
+            level.time <= state.last_grounded + gtime_t::from_sec(std::clamp(coyote_window->value, 0.0f, 0.25f));
+        if (can_coyote)
+        {
+            pm.s.velocity[2] = std::max(pm.s.velocity[2], 270.0f);
+            state.coyote_used = true;
+            state.departed_by_jump = true;
+        }
+        else if (double_jump->integer && !state.double_used)
+        {
+            pm.s.velocity[2] = std::max(pm.s.velocity[2], std::clamp(double_velocity->value, 1.0f, 1000.0f));
+            state.double_used = true;
+        }
+    }
+    state.jump_held = jump_down;
+}
+
+void RaidMovement_ApplyLongJump(edict_t *ent, pmove_t &pm)
+{
+    raid_jump_state_t &state = raid_jump_states[ent->s.number - 1];
+    if (!state.long_jump_pending)
+        return;
+    state.long_jump_pending = false;
+    if (!pm.jump_sound || pm.s.pm_type != PM_NORMAL)
+        return;
+
+    static cvar_t *long_jump_speed = gi.cvar("raid_long_jump_speed", "520", CVAR_NOFLAGS);
+    static cvar_t *long_jump_vertical = gi.cvar("raid_long_jump_vertical", "270", CVAR_NOFLAGS);
+    vec3_t direction = { pm.s.velocity[0], pm.s.velocity[1], 0 };
+    if (direction.normalize() == 0.0f)
+        return;
+    const float speed = std::clamp(long_jump_speed->value, 1.0f, 1200.0f);
+    pm.s.velocity[0] = direction[0] * speed;
+    pm.s.velocity[1] = direction[1] * speed;
+    pm.s.velocity[2] = std::max(pm.s.velocity[2], std::clamp(long_jump_vertical->value, 1.0f, 1000.0f));
+}
+}
+
 void ClientThink(edict_t *ent, usercmd_t *ucmd)
 {
 	gclient_t *client;
@@ -3153,6 +3281,9 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
 	level.current_entity = ent;
 	client = ent->client;
+	client->menu_suppressed_buttons &= ucmd->buttons;
+	ucmd->buttons &= ~client->menu_suppressed_buttons;
+	RaidGrenade_FilterCommand(ent, *ucmd);
 
 	// [Paril-KEX] pass buttons through even if we are in intermission or
 	// chasing.
@@ -3160,6 +3291,21 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 	client->buttons = ucmd->buttons;
 	client->latched_buttons |= client->buttons & ~client->oldbuttons;
 	client->cmd = *ucmd;
+
+	if (RaidUI_HandleInput(ent, ucmd))
+		return;
+
+	if (client->menu && ent->movetype != MOVETYPE_NOCLIP)
+	{
+		client->ps.pmove.pm_type = PM_FREEZE;
+		ent->velocity = {};
+		HandleMenuMovement(ent, ucmd);
+		ucmd->forwardmove = 0;
+		ucmd->sidemove = 0;
+		ucmd->buttons = BUTTON_NONE;
+		client->latched_buttons = BUTTON_NONE;
+		return;
+	}
 
 	if ((ucmd->buttons & BUTTON_CROUCH) && pm_config.n64_physics)
 	{
@@ -3193,6 +3339,12 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 			client->ps.pmove.viewheight = ent->viewheight = 22;
 		else
 			client->ps.pmove.viewheight = ent->viewheight = 0;
+		ent->movetype = MOVETYPE_NOCLIP;
+		return;
+	}
+
+	if (RaidReconstruction_HandleSpectatorInput(ent, ucmd))
+	{
 		ent->movetype = MOVETYPE_NOCLIP;
 		return;
 	}
@@ -3252,14 +3404,20 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 			pm.snapinitial = true;
 
 		pm.cmd = *ucmd;
+		RaidDowned_FilterCommand(ent, pm.cmd);
+		RaidMovement_FilterJump(ent, pm);
+		const float raid_move_scale = RaidCarry_MovementScale(ent);
+		pm.cmd.forwardmove *= raid_move_scale;
+		pm.cmd.sidemove *= raid_move_scale;
 		pm.player = ent;
-		pm.trace = gi.game_import_t::trace;
+		pm.trace = RaidCarry_IsCarrying(ent) ? RaidCarry_PmoveTrace : gi.game_import_t::trace;
 		pm.clip = SV_PM_Clip;
 		pm.pointcontents = gi.pointcontents;
 		pm.viewoffset = ent->client->ps.viewoffset;
 
 		// perform a pmove
 		Pmove(&pm);
+		RaidMovement_ApplyLongJump(ent, pm);
 
 		if (pm.groundentity && ent->groundentity)
 		{
@@ -3374,6 +3532,8 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 				other->touch(other, ent, tr, true);
 		}
 	}
+
+	RaidCarry_Update(ent);
 
 	// fire weapon from final position if needed
 	if (client->latched_buttons & BUTTON_ATTACK)
@@ -3653,13 +3813,19 @@ static bool G_CoopRespawn(edict_t *ent)
 	if (!coop->integer)
 		return false;
 	// if we don't have squad or lives, it doesn't matter
-	else if (!g_coop_squad_respawn->integer && !g_coop_enable_lives->integer)
+	else if (!g_coop_squad_respawn->integer && !g_coop_enable_lives->integer &&
+		!RaidReconstruction_IsQueued(ent))
 		return false;
 
 	respawn_state_t state = RESPAWN_NONE;
+	if (RaidReconstruction_IsQueued(ent))
+	{
+		state = RESPAWN_SPECTATE;
+		ent->client->coop_respawn_state = COOP_RESPAWN_WAITING;
+	}
 
 	// first pass: if we have no lives left, just move to spectator
-	if (g_coop_enable_lives->integer)
+	if (state == RESPAWN_NONE && g_coop_enable_lives->integer)
 	{
 		if (ent->client->pers.lives == 0)
 		{
@@ -3744,6 +3910,7 @@ static bool G_CoopRespawn(edict_t *ent)
 			// TODO: check if anything else needs to be reset
 			gi.linkentity(ent);
 			GetChaseTarget(ent);
+			RaidReconstruction_EnterSpectator(ent);
 		}
 	}
 
@@ -3791,10 +3958,11 @@ void ClientBeginServerFrame(edict_t *ent)
 	}
 
 	// run weapon animations if it hasn't been done by a ucmd_t
-	if (!client->weapon_thunk && !client->resp.spectator)
+	if (!client->weapon_thunk && !client->resp.spectator && !RaidDowned_IsDown(ent) && !RaidBots_BlocksWeapons(ent))
 		Think_Weapon(ent);
 	else
 		client->weapon_thunk = false;
+	RaidGrenade_Update(ent);
 
 	if (ent->deadflag)
 	{

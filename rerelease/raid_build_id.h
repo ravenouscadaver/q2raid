@@ -1,0 +1,9 @@
+#pragma once
+
+#ifndef Q2RAID_BUILD_SHA
+#define Q2RAID_BUILD_SHA "DEV-UNSTAMPED"
+#endif
+
+#ifndef Q2RAID_BUILD_TAG
+#define Q2RAID_BUILD_TAG "CHAIN-PROBE-20260906-A"
+#endif

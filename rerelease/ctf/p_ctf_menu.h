@@ -9,8 +9,10 @@ enum
 };
 
 struct pmenu_t;
+struct pmenuhnd_t;
 
 using UpdateFunc_t = void (*)(edict_t *ent);
+using CloseFunc_t = void (*)(edict_t *ent, pmenuhnd_t *hnd);
 
 struct pmenuhnd_t
 {
@@ -18,7 +20,10 @@ struct pmenuhnd_t
 	int		     cur;
 	int		     num;
 	void	    *arg;
+	void        *owner;
 	UpdateFunc_t UpdateFunc;
+	CloseFunc_t CloseFunc;
+	bool         draw_layout;
 };
 
 using SelectFunc_t = void (*)(edict_t *ent, pmenuhnd_t *hnd);
@@ -31,7 +36,9 @@ struct pmenu_t
 	char         text_arg1[64];
 };
 
-pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, void *arg, UpdateFunc_t UpdateFunc);
+pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, void *arg,
+	UpdateFunc_t UpdateFunc, void *owner = nullptr, CloseFunc_t CloseFunc = nullptr,
+	bool draw_layout = true);
 void		PMenu_Close(edict_t *ent);
 void		PMenu_UpdateEntry(pmenu_t *entry, const char *text, int align, SelectFunc_t SelectFunc);
 void		PMenu_Do_Update(edict_t *ent);

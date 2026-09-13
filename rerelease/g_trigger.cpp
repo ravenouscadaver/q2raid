@@ -1,6 +1,7 @@
 // Copyright (c) ZeniMax Media Inc.
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
+#include "raid_director.h"
 
 // PGM - some of these are mine, some id's. I added the define's.
 constexpr spawnflags_t SPAWNFLAG_TRIGGER_MONSTER = 0x01_spawnflag;
@@ -39,6 +40,7 @@ void multi_trigger(edict_t *ent)
 	if (ent->nextthink)
 		return; // already been triggered
 
+	RaidDirector_NotifyEntityEvent(ent, "activate", ent->activator);
 	G_UseTargets(ent, ent->activator);
 
 	if (ent->wait > 0)

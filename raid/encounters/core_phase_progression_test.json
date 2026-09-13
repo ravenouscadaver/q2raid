@@ -1,0 +1,74 @@
+{
+  "encounter": "core_phase_progression_test",
+  "initial_state": "phase_1",
+  "statuses": {
+    "doomsday": {
+      "duration": 30,
+      "stack_policy": "refresh",
+      "expire_message": "DOOMSDAY",
+      "on_expire": [
+        { "op": "play_sound", "sound": "world/x_alarm.wav" },
+        { "op": "screen_shake", "duration": 3, "intensity": 6 },
+        { "op": "kill_player" }
+      ]
+    }
+  },
+  "events": [
+    {
+      "source": "regulator_socket_1",
+      "signal": "deposit",
+      "from_state": "phase_1",
+      "set_state": "phase_2"
+    },
+    {
+      "source": "regulator_socket_2",
+      "signal": "deposit",
+      "from_state": "phase_2",
+      "set_state": "phase_3"
+    },
+    {
+      "source": "regulator_socket_3",
+      "signal": "deposit",
+      "from_state": "phase_3",
+      "set_state": "complete"
+    }
+  ],
+  "states": {
+    "phase_1": {
+      "enter": [
+        { "op": "post_encounter_message", "text": "PHASE ONE - CHARGE AND DEPOSIT CORE 1", "duration": 6, "priority": 10 }
+      ]
+    },
+    "phase_2": {
+      "enter": [
+        { "op": "post_encounter_message", "text": "PHASE TWO - CHARGE AND DEPOSIT CORE 2", "duration": 6, "priority": 20 },
+        { "op": "play_sound", "sound": "misc/power1.wav", "scope": "all" }
+      ]
+    },
+    "phase_3": {
+      "enter": [
+        { "op": "apply_status", "status": "doomsday", "scope": "all", "duration": 30, "stack_policy": "refresh" },
+        { "op": "post_encounter_message", "text": "FINAL CORE - DOOMSDAY ACTIVE", "duration": 8, "priority": 30 },
+        { "op": "play_sound", "sound": "world/x_alarm.wav", "scope": "all" }
+      ],
+      "exit": [
+        { "op": "clear_status", "status": "doomsday", "scope": "all" }
+      ]
+    },
+    "complete": {
+      "enter": [
+        { "op": "post_encounter_message", "text": "REGULATOR STABILIZED", "duration": 8, "priority": 40 },
+        { "op": "play_sound", "sound": "weapons/bfg__x1b.wav", "scope": "all" }
+      ]
+    },
+    "wipe": {
+      "enter": [
+        { "op": "post_encounter_message", "text": "FIRETEAM LOST - RESETTING", "duration": 5, "priority": 100 }
+      ]
+    }
+  },
+  "reset": [
+    { "op": "clear_status", "status": "doomsday", "scope": "all" },
+    { "op": "post_encounter_message", "text": "CORE TEST RESET", "duration": 3, "priority": 100 }
+  ]
+}

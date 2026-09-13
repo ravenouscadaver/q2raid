@@ -1,0 +1,43 @@
+{
+  "encounter": "status_bridge_test",
+  "initial_state": "testing",
+  "events": [
+    {
+      "source": "trigger_status_apply",
+      "signal": "activate",
+      "do": [
+        {
+          "op": "apply_status",
+          "status": "volatile",
+          "duration": 15,
+          "expire_message": "VOLATILE EXPIRED"
+        },
+        {
+          "op": "post_message",
+          "scope": "activator",
+          "text": "VOLATILE APPLIED"
+        }
+      ]
+    },
+    {
+      "source": "trigger_status_clear",
+      "signal": "activate",
+      "do": [
+        {
+          "op": "clear_status",
+          "status": "volatile"
+        },
+        {
+          "op": "post_message",
+          "scope": "activator",
+          "text": "VOLATILE CLEARED"
+        }
+      ]
+    }
+  ],
+  "states": {
+    "testing": {
+      "enter": []
+    }
+  }
+}
