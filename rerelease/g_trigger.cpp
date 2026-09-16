@@ -40,6 +40,7 @@ void multi_trigger(edict_t *ent)
 	if (ent->nextthink)
 		return; // already been triggered
 
+	raid_director_physical_fact_scope_t physical_fact_scope;
 	RaidDirector_NotifyEntityEvent(ent, "activate", ent->activator);
 	G_UseTargets(ent, ent->activator);
 

@@ -7,6 +7,19 @@
 
 struct edict_t;
 
+// Private game-module guard for authoritative native fact publication. It
+// snapshots facts immediately but prevents authored Director consequences from
+// interrupting the owning native transaction before its bookkeeping commits.
+class raid_director_physical_fact_scope_t
+{
+public:
+    raid_director_physical_fact_scope_t();
+    ~raid_director_physical_fact_scope_t();
+
+    raid_director_physical_fact_scope_t(const raid_director_physical_fact_scope_t &) = delete;
+    raid_director_physical_fact_scope_t &operator=(const raid_director_physical_fact_scope_t &) = delete;
+};
+
 // Server-authoritative raid encounter coordinator. There is deliberately one
 // runtime instance in the game DLL; clients only receive its normal replicated
 // gameplay outputs.

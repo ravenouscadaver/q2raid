@@ -21,6 +21,7 @@ TOUCH(raid_interaction_touch) (edict_t *self, edict_t *other, const trace_t &, b
     if (!other->client || other->health <= 0 || RaidDowned_IsDown(other) ||
         level.time < self->touch_debounce_time)
         return;
+    raid_director_physical_fact_scope_t physical_fact_scope;
     self->touch_debounce_time = level.time +
         gtime_t::from_sec(self->wait > 0.0f ? self->wait : 0.5f);
     RaidDirector_NotifyEntityEvent(self, "interact", other);

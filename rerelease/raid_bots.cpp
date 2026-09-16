@@ -82,10 +82,10 @@ void ReplaceState(edict_t *bot, bot_state_t state)
 
 void Fail(bot_state_t &state, const char *signal)
 {
-    if (edict_t *goal = Resolve(state.goal))
-        RaidDirector_NotifyEntityEvent(goal, signal, Resolve(state.bot));
     state.completed = true;
     state.hold = false;
+    if (edict_t *goal = Resolve(state.goal))
+        RaidDirector_NotifyEntityEvent(goal, signal, Resolve(state.bot));
 }
 }
 
@@ -186,8 +186,8 @@ void RaidBots_RunFrame()
 
         if (state.task == bot_task_t::move)
         {
-            RaidDirector_NotifyEntityEvent(goal, "bot_goal_reached", bot);
             state.completed = true;
+            RaidDirector_NotifyEntityEvent(goal, "bot_goal_reached", bot);
             continue;
         }
 
@@ -208,9 +208,9 @@ void RaidBots_RunFrame()
         }
         if (!state.completed && level.time >= state.operation_started + gtime_t::from_sec(state.duration))
         {
-            RaidDirector_NotifyEntityEvent(gadget, "bot_operate_complete", bot);
             state.completed = true;
             state.task = state.hold ? bot_task_t::hold : bot_task_t::move;
+            RaidDirector_NotifyEntityEvent(gadget, "bot_operate_complete", bot);
         }
     }
     bot_states.erase(std::remove_if(bot_states.begin(), bot_states.end(), [](const bot_state_t &state) {

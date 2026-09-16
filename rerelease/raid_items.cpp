@@ -294,14 +294,15 @@ void UpdateCharging(edict_t *player, edict_t *item)
     edict_t *trigger = FindChargingTrigger(item, RaidCarry_HeldOrigin(player));
     if (!trigger)
     {
-        if (carry.charge_trigger_number)
+        const bool charge_cancelled = carry.charge_trigger_number != 0;
+        carry.charge_trigger_number = 0;
+        carry.charge_trigger_spawn_count = 0;
+        carry.charge_started = 0_ms;
+        if (charge_cancelled)
         {
             RaidDirector_NotifyEntityEvent(item, "charge_cancelled", player);
             gi.LocClient_Print(player, PRINT_HIGH, "CORE CHARGE INTERRUPTED\n");
         }
-        carry.charge_trigger_number = 0;
-        carry.charge_trigger_spawn_count = 0;
-        carry.charge_started = 0_ms;
         return;
     }
 
@@ -714,9 +715,9 @@ void RaidHover_RunFrame()
 
         if (best != previous)
         {
+            state = {};
             if (previous)
                 RaidDirector_NotifyEntityEvent(previous, "hover_exit", player);
-            state = {};
             if (best)
             {
                 state.entity_number = best->s.number;

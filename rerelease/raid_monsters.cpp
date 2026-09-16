@@ -479,13 +479,13 @@ THINK(raid_monster_door_think) (edict_t *self) -> void
         {
             runtime.deployed_any = true;
             runtime.leashes.push_back({ Ref(pending), pending->pos1 });
-            RaidDirector_NotifyEntityEvent(self, "deploy", pending);
             --runtime.release_remaining;
             ++active;
             runtime.pending = {};
             runtime.pending_woken = false;
             runtime.next_release = level.time + gtime_t::from_sec(interval);
             runtime.last_status = "monster visibly deployed";
+            RaidDirector_NotifyEntityEvent(self, "deploy", pending);
         }
     }
 

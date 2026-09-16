@@ -169,6 +169,7 @@ struct queued_raid_event_t
 };
 std::deque<queued_raid_event_t> queued_events;
 bool dispatching_events = false;
+int native_fact_scope_depth = 0;
 
 void RaidDirector_ExecuteOperations(const Json::Value &operations, const std::string &context, edict_t *activator);
 void RaidDirector_ClearStatusHUD(edict_t *player);
@@ -396,7 +397,6 @@ void RaidDirector_ClearTransientState()
     color_cycles.clear();
     player_statuses.clear();
     queued_events.clear();
-    dispatching_events = false;
     director.wipe_pending = false;
     director.wipe_reset_at = 0_ms;
     raid_message_expires = 0_ms;
@@ -1703,6 +1703,9 @@ void RaidDirector_Init()
     raid_autoload = gi.cvar("raid_autoload", "1", CVAR_NOFLAGS);
     raid_game_dir = gi.cvar("game", "", CVAR_NOFLAGS);
 
+    queued_events.clear();
+    dispatching_events = false;
+    native_fact_scope_depth = 0;
     director = {};
     director.initialized = true;
     gi.Com_Print("[raid] Director initialized (single server authority)\n");
@@ -1852,31 +1855,11 @@ void RaidDirector_RunFrame()
     }
 }
 
-void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t *activator)
+namespace
 {
-    if (!director.loaded || !source || !source->targetname || !signal)
-        return;
-
-    queued_raid_event_t queued;
-    queued.source = source->targetname;
-    queued.signal = signal;
-    queued.activator_number = activator ? activator->s.number : 0;
-    queued.activator_spawn_count = activator ? activator->spawn_count : 0;
-    if (director.dialect == raid_director_dialect_t::v1)
-    {
-        queued.v1.event = signal;
-        queued.v1.source = { true, source->s.number, source->spawn_count, source->targetname };
-        queued.v1.position = source->s.origin;
-        if (activator)
-        {
-            queued.v1.actor = { true, activator->s.number, activator->spawn_count,
-                activator->targetname ? activator->targetname : "" };
-            if (activator->client)
-                queued.v1.player = queued.v1.actor;
-        }
-    }
-    queued_events.push_back(std::move(queued));
-    if (dispatching_events)
+void RaidDirector_DrainQueuedEvents()
+{
+    if (dispatching_events || native_fact_scope_depth > 0 || queued_events.empty())
         return;
 
     dispatching_events = true;
@@ -1932,12 +1915,57 @@ void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t
     }
     if (!queued_events.empty())
     {
-        gi.Com_PrintFmt("[raid] Event budget exhausted; discarded {} recursively generated events\n", queued_events.size());
+        gi.Com_PrintFmt("[raid] Event budget exhausted; discarded {} queued events\n", queued_events.size());
         queued_events.clear();
     }
     dispatching_events = false;
 }
+}
 
+raid_director_physical_fact_scope_t::raid_director_physical_fact_scope_t()
+{
+    ++native_fact_scope_depth;
+}
+
+raid_director_physical_fact_scope_t::~raid_director_physical_fact_scope_t()
+{
+    if (native_fact_scope_depth <= 0)
+    {
+        gi.Com_Print("[raid] Physical fact scope depth underflow\n");
+        native_fact_scope_depth = 0;
+        return;
+    }
+
+    --native_fact_scope_depth;
+    RaidDirector_DrainQueuedEvents();
+}
+
+void RaidDirector_NotifyEntityEvent(edict_t *source, const char *signal, edict_t *activator)
+{
+    if (!director.loaded || !source || !source->targetname || !signal)
+        return;
+
+    queued_raid_event_t queued;
+    queued.source = source->targetname;
+    queued.signal = signal;
+    queued.activator_number = activator ? activator->s.number : 0;
+    queued.activator_spawn_count = activator ? activator->spawn_count : 0;
+    if (director.dialect == raid_director_dialect_t::v1)
+    {
+        queued.v1.event = signal;
+        queued.v1.source = { true, source->s.number, source->spawn_count, source->targetname };
+        queued.v1.position = source->s.origin;
+        if (activator)
+        {
+            queued.v1.actor = { true, activator->s.number, activator->spawn_count,
+                activator->targetname ? activator->targetname : "" };
+            if (activator->client)
+                queued.v1.player = queued.v1.actor;
+        }
+    }
+    queued_events.push_back(std::move(queued));
+    RaidDirector_DrainQueuedEvents();
+}
 bool RaidDirector_Load(const char *path)
 {
     if (!director.initialized)
